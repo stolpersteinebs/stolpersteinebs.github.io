@@ -323,14 +323,27 @@
             </a>
             
             <ul class="nav-menu">
-                <li><a href="/" class="nav-link {% if page.url == '/' %}active{% endif %}">
+                <li><a href="/" class="nav-link" data-nav="home">
                     <i class="fas fa-home"></i>
                     <span>Startseite</span>
                 </a></li>
                 
-                <li><a href="/lernenundwerte" class="nav-link {% if page.url contains 'lernenundwerte' %}active{% endif %}">
+                <li><a href="/lernenundwerte/" class="nav-link" data-nav="lernenundwerte">
                     <i class="fas fa-graduation-cap"></i>
                     <span>Lernen & Werte</span>
+                </a></li>
+                
+                <!-- Hier weitere Seiten hinzufügen -->
+                <!-- Beispiel für eine weitere Seite:
+                <li><a href="/geschichte/" class="nav-link" data-nav="geschichte">
+                    <i class="fas fa-landmark"></i>
+                    <span>Geschichte</span>
+                </a></li>
+                -->
+                
+                <li><a href="https://github.com/deinusername/dein-repo" class="nav-link" target="_blank">
+                    <i class="fab fa-github"></i>
+                    <span>GitHub</span>
                 </a></li>
             </ul>
         </div>
@@ -341,9 +354,7 @@
         <div class="content-container">
             <header class="page-header">
                 <h1 class="page-title">{{ page.title | default: "Willkommen" }}</h1>
-                {% if page.subtitle %}
-                <p class="page-subtitle">{{ page.subtitle }}</p>
-                {% endif %}
+                <p class="page-subtitle" id="page-subtitle"></p>
             </header>
             
             <div class="page-content">
@@ -372,7 +383,7 @@
             </div>
             
             <div class="footer-info">
-                <p>© {{ site.time | date: '%Y' }} CJD Braunschweig. Alle Rechte vorbehalten.</p>
+                <p>© <span id="current-year"></span> CJD Braunschweig. Alle Rechte vorbehalten.</p>
             </div>
         </div>
     </footer>
@@ -381,18 +392,13 @@
         // Aktive Navigation hervorheben
         document.addEventListener('DOMContentLoaded', function() {
             const currentPath = window.location.pathname;
-            const navLinks = document.querySelectorAll('.nav-link');
+            const navLinks = document.querySelectorAll('.nav-link[data-nav]');
             
             navLinks.forEach(link => {
-                const linkPath = new URL(link.href).pathname;
+                const linkPath = link.getAttribute('href');
                 if (currentPath === linkPath || 
                    (currentPath.startsWith(linkPath) && linkPath !== '/')) {
                     link.classList.add('active');
-                }
-                
-                // Entferne Jekyll-Template-Tags (falls sie nicht ersetzt wurden)
-                if (link.innerHTML.includes('{%')) {
-                    link.classList.remove('active');
                 }
             });
             
@@ -411,6 +417,16 @@
                     this.style.transform = 'translateY(0) scale(1)';
                 });
             });
+            
+            // Aktuelles Jahr im Footer setzen
+            document.getElementById('current-year').textContent = new Date().getFullYear();
+            
+            // Subtitle auslesen (falls vorhanden)
+            const subtitleEl = document.getElementById('page-subtitle');
+            const subtitleText = document.querySelector('.page-subtitle')?.textContent?.trim();
+            if (subtitleText && subtitleText.length > 0) {
+                subtitleEl.textContent = subtitleText;
+            }
         });
     </script>
 </body>
