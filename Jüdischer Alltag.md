@@ -1,2 +1,3 @@
 # Jüdischer Alltag
-## von 
+
+> von **Max, Adel, Felix, Cengiz, Jona**
