@@ -321,30 +321,37 @@
         </div>
 
         <div class="buttons-section">
-            <a href="#" class="button button-1" onclick="showInfo('geschichte')">
+            <a href="https://stolpersteinebs.github.io/jüdischeralltag" class="button button-1">
                 <div class="button-icon"><i class="fas fa-landmark"></i></div>
-                <div class="button-title">Geschichte & Wurzeln</div>
+                <div class="button-title">Jüdischer Alltag</div>
                 <div class="button-desc">Von den Anfängen bis zur Gegenwart: Verfolgen Sie die jüdische Geschichte durch die Epochen.</div>
             </a>
             
-            <a href="#" class="button button-2" onclick="showInfo('kunst')">
+            <a href="https://stolpersteinebs.github.com/lernenundwerte" class="button button-2">
                 <div class="button-icon"><i class="fas fa-palette"></i></div>
-                <div class="button-title">Kunst & Kultur</div>
+                <div class="button-title">Lernen & Werte</div>
                 <div class="button-desc">Entdecken Sie jüdische Kunst, Musik, Literatur und kulturelle Ausdrucksformen.</div>
             </a>
             
-            <a href="#" class="button button-3" onclick="showInfo('traditionen')">
+            <a href="https://example.com/traditionen" class="button button-3">
                 <div class="button-icon"><i class="fas fa-torah"></i></div>
                 <div class="button-title">Traditionen & Rituale</div>
                 <div class="button-desc">Tauchen Sie ein in die religiösen Bräuche, Feste und Lebenszyklen des Judentums.</div>
             </a>
             
-            <a href="#" class="button button-4" onclick="showInfo('zeitzeugen')">
+            <a href="https://example.com/zeitzeugen" class="button button-4">
                 <div class="button-icon"><i class="fas fa-microphone-alt"></i></div>
                 <div class="button-title">Zeitzeugen & Dialog</div>
                 <div class="button-desc">Hören Sie persönliche Geschichten und treten Sie in den interkulturellen Dialog.</div>
             </a>
         </div>
+        
+        <!-- HINWEIS: Die oben verwendeten URLs (https://example.com/...) sind Platzhalter.
+             Bitte ersetzen Sie diese durch die tatsächlichen URLs Ihrer Ausstellungsbereiche.
+             Beispiel: 
+             - https://cjd-braunschweig.de/ausstellung/geschichte
+             - https://cjd-braunschweig.de/ausstellung/kunst
+             - etc. -->
 
         <footer class="footer">
             <p><strong>CJD Braunschweig</strong> · Christophorusschule · 38102 Braunschweig · Tel: 0531 123456</p>
@@ -354,17 +361,7 @@
     </div>
 
     <script>
-        function showInfo(section) {
-            const messages = {
-                geschichte: "Geschichte & Wurzeln: Diese Sektion zeigt archäologische Funde, historische Dokumente und interaktive Zeitleisten von der Antike bis heute.",
-                kunst: "Kunst & Kultur: Hier finden Sie Werke jüdischer Künstler*innen, traditionelle Handwerkskunst und multimediale Installationen.",
-                traditionen: "Traditionen & Rituale: Erfahren Sie mehr über Schabbat, koschere Küche, Lebenszyklen und jüdische Feste im Jahreskreis.",
-                zeitzeugen: "Zeitzeugen & Dialog: Videointerviews, Audioaufnahmen und interaktive Stationen fördern den Austausch und das Verständnis."
-            };
-            alert(messages[section] || "Informationen zu diesem Bereich werden geladen.");
-        }
-
-        // Einfache Animation für die Menorah-Symbol
+        // Einfache Animation für die Menorah-Symbole
         document.addEventListener('DOMContentLoaded', function() {
             const menorahs = document.querySelectorAll('.menorah');
             menorahs.forEach(function(menorah, index) {
@@ -379,6 +376,13 @@
                 });
                 button.addEventListener('mouseleave', function() {
                     this.style.transform = 'translateY(0) scale(1)';
+                });
+            });
+            
+            // Optional: Logging für Klicks auf Buttons (für Analytics)
+            buttons.forEach(function(button) {
+                button.addEventListener('click', function() {
+                    console.log('Button geklickt:', this.querySelector('.button-title').textContent);
                 });
             });
         });
