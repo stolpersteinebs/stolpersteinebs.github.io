@@ -1,5 +1,6 @@
 ---
 layout: default
+title: "Lernen und Werte"
 permalink: /lernenundwerte
 ---
 [Zurück zur Startseite](https://stolpersteinebs.github.io)
