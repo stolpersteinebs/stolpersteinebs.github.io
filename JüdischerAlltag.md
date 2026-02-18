@@ -1,6 +1,6 @@
 ---
 layout: default
-permalink: /jüdischeralltag/
+permalink: /juedischeralltag/
 ---
 [Zurück zur Startseite](https://stolpersteinebs.github.io)
 # Jüdischer Alltag
