@@ -1,5 +1,5 @@
 ---
-layout:default
+layout: default
 permalink: /lernenundwerte
 ---
 # Lernen und Werte
