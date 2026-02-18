@@ -1,6 +1,3 @@
----
-layout: default
----
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -10,6 +7,7 @@ layout: default
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
+        /* ALLE bestehenden CSS-Variablen und Styles aus deiner ausstellung.html hier übernehmen */
         :root {
             --primary-blue: #1a365d;
             --secondary-blue: #2d4a8a;
@@ -57,19 +55,111 @@ layout: default
             z-index: -1;
         }
 
+        /* NEUE NAVIGATION - Im Stil der Buttons */
+        .main-nav {
+            width: 100%;
+            max-width: 1200px;
+            background-color: var(--primary-blue);
+            border-radius: 15px 15px 0 0;
+            padding: 1.2rem 2rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 0;
+            position: relative;
+            z-index: 10;
+        }
+
+        .nav-inner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            text-decoration: none;
+            color: var(--text-light);
+            transition: var(--transition);
+        }
+
+        .nav-brand:hover {
+            color: var(--accent-gold);
+            transform: translateY(-2px);
+        }
+
+        .nav-icon {
+            font-size: 1.8rem;
+            color: var(--accent-gold);
+            animation: flicker 3s infinite alternate;
+        }
+
+        .nav-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .nav-subtitle {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 15px;
+            list-style: none;
+        }
+
+        .nav-link {
+            color: var(--text-light);
+            text-decoration: none;
+            padding: 0.7rem 1.2rem;
+            border-radius: 8px;
+            transition: var(--transition);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: var(--accent-gold);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-link.active {
+            background-color: var(--accent-gold);
+            color: var(--primary-blue);
+            font-weight: 600;
+        }
+
+        .nav-link i {
+            font-size: 1.1rem;
+        }
+
+        /* Container (leicht angepasst für Navigation) */
         .container {
             max-width: 1200px;
             width: 100%;
             background-color: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
+            border-radius: 0 0 20px 20px;
             box-shadow: var(--shadow);
             overflow: hidden;
             padding: 40px;
             position: relative;
             animation: fadeIn 1.5s ease-out;
             border: 1px solid rgba(212, 175, 55, 0.3);
+            margin-top: 0;
+            border-top: none;
         }
 
+        /* ALLE weiteren bestehenden Styles (Header, Content, Buttons, Footer) aus deiner ausstellung.html hier übernehmen */
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
@@ -254,10 +344,11 @@ layout: default
             max-width: 90%;
         }
 
-        .button-1 { background-color: #2d4a8a; }
-        .button-2 { background-color: #3a2c1c; }
-        .button-3 { background-color: #1a365d; }
-        .button-4 { background-color: #5a3921; }
+        /* NEUE BUTTON-FARBEN für die vier Bereiche */
+        .button-1 { background-color: #2d4a8a; } /* Lernen & Werte */
+        .button-2 { background-color: #3a2c1c; } /* Jüdischer Alltag */
+        .button-3 { background-color: #1a365d; } /* Einblicke & Erkenntnisse */
+        .button-4 { background-color: #5a3921; } /* Inspiration & Lehre */
 
         .footer {
             text-align: center;
@@ -297,10 +388,50 @@ layout: default
             .container { padding: 25px; }
             .content { flex-direction: column; }
             .buttons-section { grid-template-columns: 1fr; }
+            .main-nav { padding: 1rem; border-radius: 10px 10px 0 0; }
+            .nav-inner { flex-direction: column; gap: 15px; }
+            .nav-menu { flex-wrap: wrap; justify-content: center; }
+            .nav-link { padding: 0.5rem 0.8rem; font-size: 0.9rem; }
         }
     </style>
 </head>
 <body>
+    <!-- NEUE NAVIGATION -->
+    <nav class="main-nav">
+        <div class="nav-inner">
+            <a href="/" class="nav-brand">
+                <i class="fas fa-landmark nav-icon"></i>
+                <div>
+                    <div class="nav-title">CJD Braunschweig</div>
+                    <div class="nav-subtitle">Mit eigenen Augen</div>
+                </div>
+            </a>
+            
+            <ul class="nav-menu">
+                <li><a href="/" class="nav-link active">
+                    <i class="fas fa-home"></i>
+                    <span>Startseite</span>
+                </a></li>
+                <li><a href="/lernenundwerte" class="nav-link">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>Lernen & Werte</span>
+                </a></li>
+                <li><a href="/juedischeralltag" class="nav-link">
+                    <i class="fas fa-hands-praying"></i>
+                    <span>Jüdischer Alltag</span>
+                </a></li>
+                <li><a href="/einblicke" class="nav-link">
+                    <i class="fas fa-eye"></i>
+                    <span>Einblicke & Erkenntnisse</span>
+                </a></li>
+                <li><a href="/inspiration" class="nav-link">
+                    <i class="fas fa-lightbulb"></i>
+                    <span>Inspiration & Lehre</span>
+                </a></li>
+            </ul>
+        </div>
+    </nav>
+
     <div class="container">
         <header class="header">
             <h1>CJD Braunschweig präsentiert: <span class="menorah">✡</span> Mit eigenen Augen</h1>
@@ -323,69 +454,73 @@ layout: default
             </div>
         </div>
 
+        <!-- ANGEPASSTE BUTTONS für die vier neuen Bereiche -->
         <div class="buttons-section">
-            <a href="https://stolpersteinebs.github.io/jüdischeralltag" class="button button-1">
-                <div class="button-icon"><i class="fas fa-landmark"></i></div>
-                <div class="button-title">Jüdischer Alltag</div>
-                <div class="button-desc">Von den Anfängen bis zur Gegenwart: Verfolgen Sie die jüdische Geschichte durch die Epochen.</div>
-            </a>
-            
-            <a href="https://stolpersteinebs.github.io/lernenundwerte" class="button button-2">
-                <div class="button-icon"><i class="fas fa-palette"></i></div>
+            <a href="/lernenundwerte" class="button button-1">
+                <div class="button-icon"><i class="fas fa-graduation-cap"></i></div>
                 <div class="button-title">Lernen & Werte</div>
-                <div class="button-desc">Entdecken Sie jüdische Kunst, Musik, Literatur und kulturelle Ausdrucksformen.</div>
+                <div class="button-desc">Pädagogische Ansätze und Wertevermittlung im CJD Braunschweig</div>
             </a>
             
-            <a href="https://example.com/traditionen" class="button button-3">
-                <div class="button-icon"><i class="fas fa-torah"></i></div>
-                <div class="button-title">Traditionen & Rituale</div>
-                <div class="button-desc">Tauchen Sie ein in die religiösen Bräuche, Feste und Lebenszyklen des Judentums.</div>
+            <a href="/juedischeralltag" class="button button-2">
+                <div class="button-icon"><i class="fas fa-hands-praying"></i></div>
+                <div class="button-title">Jüdischer Alltag</div>
+                <div class="button-desc">Traditionen, Rituale und das tägliche Leben in der jüdischen Gemeinschaft</div>
             </a>
             
-            <a href="https://example.com/zeitzeugen" class="button button-4">
-                <div class="button-icon"><i class="fas fa-microphone-alt"></i></div>
-                <div class="button-title">Zeitzeugen & Dialog</div>
-                <div class="button-desc">Hören Sie persönliche Geschichten und treten Sie in den interkulturellen Dialog.</div>
+            <a href="/einblicke" class="button button-3">
+                <div class="button-icon"><i class="fas fa-eye"></i></div>
+                <div class="button-title">Einblicke & Erkenntnisse</div>
+                <div class="button-desc">Persönliche Geschichten und historische Einordnungen</div>
+            </a>
+            
+            <a href="/inspiration" class="button button-4">
+                <div class="button-icon"><i class="fas fa-lightbulb"></i></div>
+                <div class="button-title">Inspiration & Lehre</div>
+                <div class="button-desc">Bildungsimpulse und Lehren für die Gegenwart</div>
             </a>
         </div>
-        
-        <!-- HINWEIS: Die oben verwendeten URLs (https://example.com/...) sind Platzhalter.
-             Bitte ersetzen Sie diese durch die tatsächlichen URLs Ihrer Ausstellungsbereiche.
-             Beispiel: 
-             - https://cjd-braunschweig.de/ausstellung/geschichte
-             - https://cjd-braunschweig.de/ausstellung/kunst
-             - etc. -->
 
         <footer class="footer">
             <p><strong>CJD Braunschweig</strong> · Christophorusschule · 38102 Braunschweig · Tel: 0531 123456</p>
-            <p>Öffnungszeiten: Di–So 10–18 Uhr, Do bis 20 Uhr · <a href="#">Weitere Informationen</a> · <a href="#">Anfahrt</a></p>
+            <p>Öffnungszeiten: Di–So 10–18 Uhr, Do bis 20 Uhr · <a href="/impressum/">Impressum</a> · <a href="/kontakt/">Kontakt</a></p>
             <p>Diese Ausstellung wird unterstützt von: <span class="menorah">✡</span> Stiftung EVZ · <span class="menorah">✡</span> Zentralrat der Juden · <span class="menorah">✡</span> Stadt Braunschweig</p>
         </footer>
     </div>
 
     <script>
-        // Einfache Animation für die Menorah-Symbole
         document.addEventListener('DOMContentLoaded', function() {
-            const menorahs = document.querySelectorAll('.menorah');
-            menorahs.forEach(function(menorah, index) {
-                menorah.style.animationDelay = (index * 0.5) + 's';
+            // Aktive Navigation hervorheben
+            const currentPath = window.location.pathname;
+            const navLinks = document.querySelectorAll('.nav-link');
+            
+            navLinks.forEach(link => {
+                const linkPath = link.getAttribute('href');
+                if (currentPath === linkPath) {
+                    link.classList.add('active');
+                } else if (currentPath !== '/' && linkPath === '/') {
+                    link.classList.remove('active');
+                }
             });
             
-            // Hover-Effekt für Buttons verbessern
-            const buttons = document.querySelectorAll('.button');
+            // Menorah-Animation
+            const menorahs = document.querySelectorAll('.menorah, .nav-icon');
+            menorahs.forEach((menorah, index) => {
+                menorah.style.animationDelay = (index * 0.3) + 's';
+            });
+            
+            // Hover-Effekte
+            const buttons = document.querySelectorAll('.button, .nav-link');
             buttons.forEach(function(button) {
                 button.addEventListener('mouseenter', function() {
-                    this.style.transform = 'translateY(-8px) scale(1.02)';
+                    if (this.classList.contains('button')) {
+                        this.style.transform = 'translateY(-8px) scale(1.02)';
+                    } else {
+                        this.style.transform = 'translateY(-2px) scale(1.05)';
+                    }
                 });
                 button.addEventListener('mouseleave', function() {
                     this.style.transform = 'translateY(0) scale(1)';
-                });
-            });
-            
-            // Optional: Logging für Klicks auf Buttons (für Analytics)
-            buttons.forEach(function(button) {
-                button.addEventListener('click', function() {
-                    console.log('Button geklickt:', this.querySelector('.button-title').textContent);
                 });
             });
         });
