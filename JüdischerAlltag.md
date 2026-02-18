@@ -1,5 +1,6 @@
 ---
 layout: default
+title: Jüdischer Alltag
 permalink: /juedischeralltag/
 ---
 [Zurück zur Startseite](https://stolpersteinebs.github.io)
