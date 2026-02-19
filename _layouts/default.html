@@ -60,6 +60,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            position: relative; /* Für absolute Positionierung des Hamburger-Menüs */
         }
 
         .nav-brand {
@@ -93,6 +94,24 @@
             font-size: 0.9rem;
             opacity: 0.8;
             font-weight: 300;
+        }
+
+        /* Hamburger-Button */
+        .hamburger {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text-light);
+            font-size: 1.8rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            transition: var(--transition);
+            z-index: 1001;
+        }
+
+        .hamburger:hover {
+            color: var(--accent-gold);
+            transform: scale(1.1);
         }
 
         .nav-menu {
@@ -282,23 +301,47 @@
             }
         }
 
+        /* Hamburger-Menü ab 1024px */
+        @media (max-width: 1024px) {
+            .hamburger {
+                display: block;
+            }
+
+            .nav-menu {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                width: 100%;
+                background-color: var(--primary-blue);
+                flex-direction: column;
+                padding: 1rem 20px;
+                gap: 10px;
+                box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+                border-top: 1px solid rgba(212, 175, 55, 0.3);
+            }
+
+            .nav-menu.active {
+                display: flex;
+            }
+
+            .nav-link {
+                width: 100%;
+                justify-content: flex-start;
+                padding: 0.8rem 1rem;
+                white-space: normal;
+            }
+
+            .nav-link i {
+                width: 1.5rem;
+                text-align: center;
+            }
+        }
+
         @media (max-width: 768px) {
             .nav-container {
-                flex-direction: column;
-                gap: 15px;
+                flex-direction: row; /* Beibehalten für Hamburger */
                 padding: 0 15px;
-            }
-            
-            .nav-menu {
-                flex-wrap: wrap;
-                justify-content: center;
-                gap: 8px;
-                width: 100%;
-            }
-            
-            .nav-link {
-                padding: 0.5rem 0.8rem;
-                font-size: 0.85rem;
             }
             
             .page-title {
@@ -321,23 +364,16 @@
                 gap: 5px;
             }
             
-            .nav-menu {
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            .nav-link {
-                width: 100%;
-                justify-content: center;
-                text-align: center;
-            }
-            
             .brand-title {
                 font-size: 1.3rem;
             }
             
             .brand-subtitle {
                 font-size: 0.8rem;
+            }
+
+            .nav-menu {
+                padding: 0.5rem 15px;
             }
         }
     </style>
@@ -353,30 +389,35 @@
                     <div class="brand-subtitle">Mit eigenen Augen</div>
                 </div>
             </a>
+
+            <!-- Hamburger-Button (nur mobil sichtbar) -->
+            <button class="hamburger" id="hamburger" aria-label="Menü">
+                <i class="fas fa-bars"></i>
+            </button>
             
-            <ul class="nav-menu">
+            <ul class="nav-menu" id="nav-menu">
                 <li><a href="/" class="nav-link" data-nav="home">
                     <i class="fas fa-home"></i>
                     <span>Startseite</span>
                 </a></li>
                 
                 <li><a href="/lernenundwerte" class="nav-link" data-nav="lernenundwerte">
-                    <i class="fas fa-graduation-cap"></i>
+                    <i class="fas fa-book-open"></i> <!-- Geändert: Buch für Lernen & Werte -->
                     <span>Lernen & Werte</span>
                 </a></li>
                 
                 <li><a href="/juedischeralltag" class="nav-link" data-nav="juedischeralltag">
-                    <i class="fas fa-graduation-cap"></i>
+                    <i class="fas fa-menorah"></i> <!-- Geändert: Menora für Jüdischer Alltag -->
                     <span>Jüdischer Alltag</span>
                 </a></li>
                 
                 <li><a href="/einblicke" class="nav-link" data-nav="einblicke">
-                    <i class="fas fa-graduation-cap"></i>
+                    <i class="fas fa-eye"></i> <!-- Geändert: Auge für Einblicke & Erkenntnisse -->
                     <span>Einblicke & Erkenntnisse</span>
                 </a></li>
                 
                 <li><a href="/inspiration" class="nav-link" data-nav="inspiration">
-                    <i class="fas fa-graduation-cap"></i>
+                    <i class="fas fa-candle-holder"></i> <!-- Geändert: Kerze für Inspiration & Lehre -->
                     <span>Inspiration & Lehre</span>
                 </a></li>
             </ul>
@@ -461,6 +502,47 @@
             const subtitleText = document.querySelector('.page-subtitle')?.textContent?.trim();
             if (subtitleText && subtitleText.length > 0) {
                 subtitleEl.textContent = subtitleText;
+            }
+
+            // Hamburger-Menü Funktionalität
+            const hamburger = document.getElementById('hamburger');
+            const navMenu = document.getElementById('nav-menu');
+
+            if (hamburger && navMenu) {
+                hamburger.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    navMenu.classList.toggle('active');
+                    
+                    // Icon zwischen Bars und Times wechseln
+                    const icon = hamburger.querySelector('i');
+                    if (navMenu.classList.contains('active')) {
+                        icon.classList.remove('fa-bars');
+                        icon.classList.add('fa-times');
+                    } else {
+                        icon.classList.remove('fa-times');
+                        icon.classList.add('fa-bars');
+                    }
+                });
+
+                // Menü schließen, wenn ein Link angeklickt wird
+                navMenu.querySelectorAll('.nav-link').forEach(link => {
+                    link.addEventListener('click', function() {
+                        navMenu.classList.remove('active');
+                        const icon = hamburger.querySelector('i');
+                        icon.classList.remove('fa-times');
+                        icon.classList.add('fa-bars');
+                    });
+                });
+
+                // Menü schließen bei Klick außerhalb (optional)
+                document.addEventListener('click', function(event) {
+                    if (!navMenu.contains(event.target) && !hamburger.contains(event.target)) {
+                        navMenu.classList.remove('active');
+                        const icon = hamburger.querySelector('i');
+                        icon.classList.remove('fa-times');
+                        icon.classList.add('fa-bars');
+                    }
+                });
             }
         });
     </script>
