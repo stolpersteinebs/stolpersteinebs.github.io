@@ -60,7 +60,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            position: relative; /* Für absolute Positionierung des Hamburger-Menüs */
+            position: relative;
         }
 
         .nav-brand {
@@ -167,7 +167,7 @@
             font-size: 1.1rem;
         }
 
-        /* Hauptinhalt - Passend zum Container der Startseite */
+        /* Hauptinhalt */
         .main-content {
             flex: 1;
             width: 100%;
@@ -222,7 +222,7 @@
             font-weight: 300;
         }
 
-        /* Footer - Volle Breite, reduzierter Inhalt */
+        /* Footer */
         .site-footer {
             background-color: var(--primary-blue);
             color: var(--text-light);
@@ -290,19 +290,7 @@
         }
 
         /* Responsive Design */
-        @media (max-width: 1024px) {
-            .nav-menu {
-                gap: 10px;
-            }
-            
-            .nav-link {
-                padding: 0.6rem 1rem;
-                font-size: 0.9rem;
-            }
-        }
-
-        /* Hamburger-Menü ab 1024px */
-        @media (max-width: 1024px) {
+        @media (max-width: 1100px) { /* Hamburger erscheint früher */
             .hamburger {
                 display: block;
             }
@@ -338,9 +326,21 @@
             }
         }
 
+        @media (max-width: 1024px) {
+            /* Bestehende Anpassungen für kleinere Bildschirme */
+            .nav-menu {
+                gap: 10px;
+            }
+            
+            .nav-link {
+                padding: 0.6rem 1rem;
+                font-size: 0.9rem;
+            }
+        }
+
         @media (max-width: 768px) {
             .nav-container {
-                flex-direction: row; /* Beibehalten für Hamburger */
+                flex-direction: row;
                 padding: 0 15px;
             }
             
@@ -390,7 +390,7 @@
                 </div>
             </a>
 
-            <!-- Hamburger-Button (nur mobil sichtbar) -->
+            <!-- Hamburger-Button -->
             <button class="hamburger" id="hamburger" aria-label="Menü">
                 <i class="fas fa-bars"></i>
             </button>
@@ -402,22 +402,22 @@
                 </a></li>
                 
                 <li><a href="/lernenundwerte" class="nav-link" data-nav="lernenundwerte">
-                    <i class="fas fa-book-open"></i> <!-- Geändert: Buch für Lernen & Werte -->
+                    <i class="fas fa-book-open"></i>
                     <span>Lernen & Werte</span>
                 </a></li>
                 
                 <li><a href="/juedischeralltag" class="nav-link" data-nav="juedischeralltag">
-                    <i class="fas fa-menorah"></i> <!-- Geändert: Menora für Jüdischer Alltag -->
+                    <i class="fas fa-menorah"></i>
                     <span>Jüdischer Alltag</span>
                 </a></li>
                 
                 <li><a href="/einblicke" class="nav-link" data-nav="einblicke">
-                    <i class="fas fa-eye"></i> <!-- Geändert: Auge für Einblicke & Erkenntnisse -->
+                    <i class="fas fa-eye"></i>
                     <span>Einblicke & Erkenntnisse</span>
                 </a></li>
                 
                 <li><a href="/inspiration" class="nav-link" data-nav="inspiration">
-                    <i class="fas fa-candle-holder"></i> <!-- Geändert: Kerze für Inspiration & Lehre -->
+                    <i class="fas fa-torah"></i> <!-- Korrigiert: Torah-Rolle -->
                     <span>Inspiration & Lehre</span>
                 </a></li>
             </ul>
@@ -440,7 +440,7 @@
         </div>
     </main>
     
-    <!-- Footer - Vereinfacht -->
+    <!-- Footer -->
     <footer class="site-footer">
         <div class="footer-container">
             <div class="footer-info">
@@ -534,7 +534,7 @@
                     });
                 });
 
-                // Menü schließen bei Klick außerhalb (optional)
+                // Menü schließen bei Klick außerhalb
                 document.addEventListener('click', function(event) {
                     if (!navMenu.contains(event.target) && !hamburger.contains(event.target)) {
                         navMenu.classList.remove('active');
