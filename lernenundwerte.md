@@ -1,7 +1,7 @@
 ---
 layout: default
 title: "Lernen und Werte"
-permalink: /lernenundwerte
+permalink: /lernenundwerte/
 ---
 [Zurück zur Startseite](https://stolpersteinebs.github.io)
 # Lernen und Werte
