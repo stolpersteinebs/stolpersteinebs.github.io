@@ -1,19 +1,24 @@
 <!DOCTYPE html>
-<html>
+<html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <title>Koscher Spiel</title>
-  <link rel="icon" href="/Logo.jpeg" type="image/jpeg">
-  <link rel="shortcut icon" href="/Logo.jpeg" type="image/jpeg">
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <title>Koscher Spiel</title>
+    <link rel="stylesheet" href="skript.css">
 </head>
 <body>
 
+<h1>Koscher Sammelspiel</h1>
+<p>Punkte: <span id="score">0</span></p>
+
 <div id="game">
-  <div id="player"></div>
-  <div id="score">Score: 0</div>
+    <div id="player">🛒</div>
 </div>
 
-<script src="script.js"></script>
+<div id="gameOver" class="hidden">
+    <h2>Game Over!</h2>
+    <button onclick="restartGame()">Retry</button>
+</div>
+
+<script src="skript.js"></script>
 </body>
 </html>
