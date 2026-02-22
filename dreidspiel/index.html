@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Lernwelt Judentum</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<main class="page">
+    <header class="top">
+        <h1>3D Lernwelt Judentum</h1>
+        <p>Laufe durch die Welt, finde Stationen und beweise dein Wissen durch richtige Entscheidungen.</p>
+    </header>
+
+    <nav class="quick-links" aria-label="Spiele-Navigation">
+        <a href="/">Startseite</a>
+        <a href="/koscherspiel/">Koscher Sammelspiel</a>
+        <a href="/feiertagsquiz/">Feiertags-Quiz</a>
+    </nav>
+
+    <section id="startScreen" class="card start-screen" aria-live="polite">
+        <h2>Mission starten</h2>
+        <p>Steuerung: <strong>WASD</strong> zum Laufen, <strong>Pfeil links/rechts</strong> zum Drehen, <strong>E</strong> zum Interagieren.</p>
+        <p>Du hast 4 Minuten, um alle Wissens-Stationen zu finden.</p>
+        <p class="start-highscore">Bester Score: <span id="startHighscore">0</span></p>
+        <button id="startButton" type="button">Lernwelt starten</button>
+    </section>
+
+    <section id="gamePanel" class="hidden" aria-live="polite">
+        <section class="hud" aria-label="Spielstand">
+            <div class="hud-item">Zeit: <span id="timeLeft">240</span>s</div>
+            <div class="hud-item">Punkte: <span id="score">0</span></div>
+            <div class="hud-item">Serie: <span id="streak">0</span></div>
+            <div class="hud-item">Stationen: <span id="solved">0</span>/<span id="total">6</span></div>
+            <div class="hud-item">Highscore: <span id="highscore">0</span></div>
+        </section>
+
+        <section class="card scene-card" aria-label="3D-Lernwelt">
+            <div class="render-frame">
+                <canvas id="view" aria-label="3D Ansicht"></canvas>
+                <div id="nearbyPrompt" class="nearby hidden"></div>
+            </div>
+            <p class="controls-hint">Hinweis: Erkunde die Gange und suche die leuchtenden Stationen.</p>
+            <p id="feedbackBanner" class="feedback hidden" aria-live="polite"></p>
+        </section>
+    </section>
+
+    <section id="questionModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="questionTitle">
+        <div class="modal-card">
+            <h2 id="questionTitle">Station</h2>
+            <p id="questionText"></p>
+            <div id="answerButtons" class="answers"></div>
+            <button id="laterButton" type="button" class="later">Spater</button>
+        </div>
+    </section>
+
+    <section id="result" class="card result hidden">
+        <h2>Auswertung</h2>
+        <p id="resultMotto" class="result-motto"></p>
+        <p id="resultText"></p>
+        <button id="restartButton" type="button">Nochmal spielen</button>
+    </section>
+</main>
+
+<script src="script.js"></script>
+</body>
+</html>
