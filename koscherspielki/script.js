@@ -325,6 +325,47 @@ function bindButtonHold(button, direction) {
     button.addEventListener("pointerup", up);
     button.addEventListener("pointerleave", up);
     button.addEventListener("pointercancel", up);
+
+    button.addEventListener("touchstart", down, { passive: false });
+    button.addEventListener("touchend", up, { passive: false });
+    button.addEventListener("touchcancel", up, { passive: false });
+}
+
+function bindTouchFieldControl() {
+    const touchToDirection = (touchX) => {
+        const gameRect = game.getBoundingClientRect();
+        const relativeX = touchX - gameRect.left;
+        return relativeX < gameRect.width / 2 ? "left" : "right";
+    };
+
+    const onTouchStart = (event) => {
+        if (!state || !state.running) return;
+        if (event.target.closest("button")) return;
+
+        event.preventDefault();
+        const direction = touchToDirection(event.touches[0].clientX);
+        keys.left = direction === "left";
+        keys.right = direction === "right";
+    };
+
+    const onTouchMove = (event) => {
+        if (!state || !state.running) return;
+        event.preventDefault();
+
+        const direction = touchToDirection(event.touches[0].clientX);
+        keys.left = direction === "left";
+        keys.right = direction === "right";
+    };
+
+    const onTouchEnd = () => {
+        keys.left = false;
+        keys.right = false;
+    };
+
+    game.addEventListener("touchstart", onTouchStart, { passive: false });
+    game.addEventListener("touchmove", onTouchMove, { passive: false });
+    game.addEventListener("touchend", onTouchEnd);
+    game.addEventListener("touchcancel", onTouchEnd);
 }
 
 document.addEventListener("keydown", (event) => {
@@ -350,6 +391,7 @@ startButton.addEventListener("click", startGame);
 
 bindButtonHold(leftBtn, "left");
 bindButtonHold(rightBtn, "right");
+bindTouchFieldControl();
 
 window.addEventListener("resize", () => {
     if (!state) {

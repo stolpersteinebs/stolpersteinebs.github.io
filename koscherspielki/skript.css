@@ -87,6 +87,7 @@ h1 {
     overflow: hidden;
     background: linear-gradient(180deg, #ffffff 0%, #f7f5ec 46%, #eef6fb 100%);
     box-shadow: var(--shadow);
+    touch-action: none;
 }
 
 #player {
@@ -182,6 +183,7 @@ h1 {
     font-size: 1.4rem;
     font-weight: 700;
     padding: 10px;
+    touch-action: none;
 }
 
 .hidden {
