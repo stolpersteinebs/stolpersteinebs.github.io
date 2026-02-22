@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Koscher Spiel</title>
+    <link rel="stylesheet" href="skript.css">
+</head>
+<body>
+<main class="page">
+    <nav class="quick-links" aria-label="Spiele-Navigation">
+        <a href="/">Startseite</a>
+        <a href="/feiertagsquiz/">Feiertags-Quiz</a>
+        <a href="/dreidspiel/">3D Lernwelt</a>
+    </nav>
+
+    <h1>Koscher Sammelspiel</h1>
+    <p class="instructions">
+        Sammle koschere Lebensmittel und weiche nicht-koscheren aus.
+        Links/Rechts mit Pfeiltasten oder A/D.
+    </p>
+
+    <section class="hud" aria-label="Spielstand">
+        <div class="hud-item">Punkte: <span id="score">0</span></div>
+        <div class="hud-item">Leben: <span id="lives">3</span></div>
+        <div class="hud-item">Level: <span id="level">1</span></div>
+        <div class="hud-item">Highscore: <span id="highscore">0</span></div>
+    </section>
+
+    <section id="game" aria-label="Spielfeld">
+        <div id="startScreen" class="overlay" role="dialog" aria-modal="true" aria-labelledby="startTitle">
+            <h2 id="startTitle">Bereit zum Sammeln?</h2>
+            <p>Starte, sobald du bereit bist und sammle so viele koschere Lebensmittel wie möglich.</p>
+            <button id="startButton" type="button">Spiel starten</button>
+        </div>
+
+        <div id="player" aria-label="Spieler">🛒</div>
+        <div id="status" class="status hidden" role="status" aria-live="polite"></div>
+
+        <div id="gameOver" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="gameOverTitle">
+            <h2 id="gameOverTitle">Spiel beendet</h2>
+            <p id="resultText"></p>
+            <button id="restartButton" type="button">Neu starten</button>
+        </div>
+    </section>
+
+    <section class="mobile-controls" aria-label="Mobile Steuerung">
+        <button id="leftBtn" type="button" aria-label="Nach links">◀</button>
+        <button id="rightBtn" type="button" aria-label="Nach rechts">▶</button>
+    </section>
+</main>
+
+<script src="script.js"></script>
+</body>
+</html>
