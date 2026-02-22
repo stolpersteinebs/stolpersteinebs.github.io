@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feiertags-Quiz</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<main class="page">
+    <header class="top">
+        <h1>Feiertags-Quiz</h1>
+        <button id="soundToggle" class="sound-toggle" type="button" aria-pressed="true">Sound: An</button>
+        <p>
+            Teste dein Wissen zu jüdischen Feiertagen, Symbolen und Begriffen.
+        </p>
+        <p class="hint">
+            Hinweis: Einige Traditionen werden in Gemeinden unterschiedlich gelebt.
+        </p>
+    </header>
+
+    <nav class="quick-links" aria-label="Spiele-Navigation">
+        <a href="/">Startseite</a>
+        <a href="/koscherspiel/">Koscher Sammelspiel</a>
+        <a href="/dreidspiel/">3D Lernwelt</a>
+    </nav>
+
+    <section id="startScreen" class="start-screen">
+        <h2>Bereit für das Feiertags-Quiz?</h2>
+        <p>Du spielst auf Zeit, sammelst Punkte und baust Serien-Boni auf.</p>
+        <button id="startButton" type="button">Quiz starten</button>
+    </section>
+
+    <section class="status hidden" aria-label="Quiz-Status">
+        <div>Frage <span id="currentQuestion">1</span>/<span id="totalQuestions">10</span></div>
+        <div>Punkte: <span id="score">0</span></div>
+        <div>Serie: <span id="streak">0</span></div>
+        <div class="time-pill">Zeit: <span id="timeLeft">20</span>s</div>
+    </section>
+    <div class="time-track hidden" aria-hidden="true">
+        <div id="timeBar" class="time-bar"></div>
+    </div>
+
+    <section class="quiz-card hidden" aria-live="polite">
+        <h2 id="questionText">Frage wird geladen...</h2>
+        <p id="comboText" class="combo hidden"></p>
+        <div id="answers" class="answers"></div>
+        <p id="feedback" class="feedback hidden"></p>
+        <button id="nextButton" class="next hidden" type="button">Nächste Frage</button>
+        <p id="nudgeText" class="nudge hidden" aria-live="polite"></p>
+    </section>
+
+    <section id="result" class="result hidden">
+        <h2>Ergebnis</h2>
+        <div id="scoreWheel" class="score-wheel hidden" aria-live="polite">
+            <div id="scoreWheelValue" class="score-wheel-value">0</div>
+            <div class="score-wheel-label">Punkte</div>
+        </div>
+        <p id="scoreMotto" class="score-motto"></p>
+        <p id="resultText"></p>
+        <button id="restartButton" type="button">Neu starten</button>
+    </section>
+</main>
+
+<script src="script.js"></script>
+</body>
+</html>
