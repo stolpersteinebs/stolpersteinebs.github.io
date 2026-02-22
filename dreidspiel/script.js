@@ -136,6 +136,9 @@ const resultTextEl = document.getElementById("resultText");
 const canvas = document.getElementById("view");
 const ctx = canvas.getContext("2d");
 
+const touchButtons = Array.from(document.querySelectorAll("[data-touch-key]"));
+const touchInteractButton = document.getElementById("touchInteract");
+
 const keys = {
     KeyW: false,
     KeyA: false,
@@ -558,6 +561,36 @@ function movePlayer(delta) {
     }
 }
 
+
+function tryOpenNearbyStation() {
+    if (!state || !state.running || state.questionOpen) return;
+    const station = getStationById(state.nearbyStationId);
+    if (station && !station.solved) {
+        openQuestion(station);
+    }
+}
+
+function bindTouchKey(button, keyCode) {
+    if (!button || !(keyCode in keys)) return;
+
+    const activate = (event) => {
+        event.preventDefault();
+        keys[keyCode] = true;
+        button.classList.add("active");
+    };
+
+    const deactivate = (event) => {
+        event.preventDefault();
+        keys[keyCode] = false;
+        button.classList.remove("active");
+    };
+
+    button.addEventListener("pointerdown", activate);
+    button.addEventListener("pointerup", deactivate);
+    button.addEventListener("pointerleave", deactivate);
+    button.addEventListener("pointercancel", deactivate);
+}
+
 function getStationById(id) {
     return state.stations.find((station) => station.id === id) || null;
 }
@@ -770,12 +803,9 @@ window.addEventListener("keydown", (event) => {
         }
     }
 
-    if (event.code === "KeyE" && state && state.running && !state.questionOpen) {
-        const station = getStationById(state.nearbyStationId);
-        if (station && !station.solved) {
-            event.preventDefault();
-            openQuestion(station);
-        }
+    if (event.code === "KeyE") {
+        event.preventDefault();
+        tryOpenNearbyStation();
     }
 
     if (event.code === "Escape" && state && state.questionOpen) {
@@ -789,6 +819,17 @@ window.addEventListener("keyup", (event) => {
         keys[event.code] = false;
     }
 });
+
+
+touchButtons.forEach((button) => {
+    bindTouchKey(button, button.dataset.touchKey);
+});
+
+if (touchInteractButton) {
+    touchInteractButton.addEventListener("click", () => {
+        tryOpenNearbyStation();
+    });
+}
 
 window.addEventListener("blur", resetKeys);
 window.addEventListener("resize", () => {
