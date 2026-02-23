@@ -20,79 +20,97 @@ const MAP = [
 const STATION_DEFS = [
     {
         id: "schabbat",
-        name: "Station Schabbat",
-        tag: "SB",
+        name: "Schabbat-Tisch",
+        spriteType: "table",
+        interactionLabel: "Schabbat-Tisch",
         x: 2.5,
         y: 1.5,
-        question: "Wann beginnt der Schabbat traditionell?",
-        options: ["Freitagabend bei Sonnenuntergang", "Samstag um Mitternacht", "Sonntagmorgen", "Freitagmittag"],
+        question: "Du stehst vor einem gedeckten Schabbat-Tisch. Was ist jetzt die passende Handlung?",
+        options: ["Schabbat-Kerzen segnen und gemeinsam essen", "Schnell eine E-Mail schreiben", "Das Essen wegwerfen", "Den Tisch ignorieren"],
         correctIndex: 0,
-        fact: "Der Schabbat beginnt am Freitagabend bei Sonnenuntergang."
+        fact: "Am Schabbat werden Kerzen, Segen und gemeinsames Essen besonders wichtig.",
+        successAction: "Eine Figur spricht den Segen und beginnt ruhig mit der Mahlzeit.",
+        actionVisual: "🕯️🧍🍞"
     },
     {
         id: "pessach",
-        name: "Station Pessach",
-        tag: "PS",
+        name: "Seder-Tafel",
+        spriteType: "table",
+        interactionLabel: "Seder-Tafel",
         x: 13.5,
         y: 1.5,
-        question: "Woran erinnert Pessach?",
-        options: ["An ein Erntefest", "An den Auszug aus Agypten", "An das Neujahr", "An einen Fastentag"],
-        correctIndex: 1,
-        fact: "Pessach erinnert an den Auszug der Israeliten aus Agypten."
+        question: "Hier ist eine Pessach-Tafel aufgebaut. Was sollte man hier tun?",
+        options: ["Die Geschichte vom Auszug erzahlen und Matze essen", "Pizza mit Hefe backen", "Silvester feiern", "Alles stehen lassen"],
+        correctIndex: 0,
+        fact: "Am Pessach-Seder wird an den Auszug aus Agypten erinnert.",
+        successAction: "Die Figur zeigt auf die Sederplatte und erzahlt die Befreiungsgeschichte.",
+        actionVisual: "🧍📖🍽️"
     },
     {
         id: "kashrut",
-        name: "Station Kaschrut",
-        tag: "KS",
+        name: "Koschere Kuche",
+        spriteType: "kitchen",
+        interactionLabel: "koschere Kuche",
         x: 3.5,
         y: 5.5,
-        question: "Was bedeutet 'koscher' bei Lebensmitteln?",
+        question: "Du bist in einer koscheren Kuche. Welche Entscheidung passt?",
         options: [
-            "Nur vegetarisch",
-            "Fur Feiertage reserviert",
-            "Nach religiosen Speisegesetzen erlaubt",
-            "Aus regionalem Anbau"
+            "Milchiges und Fleischiges im selben Topf kochen",
+            "Nach den Speisegesetzen geeignete Lebensmittel nutzen",
+            "Nur Suigkeiten essen",
+            "Beliebig alles vermischen"
         ],
-        correctIndex: 2,
-        fact: "Koscher bedeutet erlaubt nach judischen Speisegesetzen."
+        correctIndex: 1,
+        fact: "Kaschrut bedeutet, Lebensmittel nach judischen Speisegesetzen zuzubereiten.",
+        successAction: "Die Figur sortiert ruhig die Zutaten und kocht regelkonform weiter.",
+        actionVisual: "🧍🥣✅"
     },
     {
         id: "synagoge",
-        name: "Station Synagoge",
-        tag: "SY",
+        name: "Synagoge",
+        spriteType: "synagogue",
+        interactionLabel: "Synagoge",
         x: 11.5,
         y: 7.5,
-        question: "Welche Beschreibung passt zur Synagoge?",
+        question: "Du betrittst eine Synagoge. Was mochtest du hier tun?",
         options: [
-            "Ein historisches Museum",
-            "Ein judisches Gotteshaus fur Gebet und Lernen",
-            "Eine religiose Fastenspeise",
-            "Ein Feiertag im Herbst"
+            "Beten und respektvoll lernen",
+            "Laut Rockmusik spielen",
+            "Mit dem Ball drinnen kicken",
+            "Die Stuhle umwerfen"
         ],
-        correctIndex: 1,
-        fact: "Die Synagoge ist ein Ort fur Gebet, Lernen und Gemeinschaft."
+        correctIndex: 0,
+        fact: "Die Synagoge ist ein Ort fur Gebet, Lernen und Gemeinschaft.",
+        successAction: "Die Figur setzt eine Kippa auf und beginnt ein ruhiges Gebet.",
+        actionVisual: "🧍🙏"
     },
     {
         id: "jomkippur",
-        name: "Station Jom Kippur",
-        tag: "JK",
+        name: "Jom-Kippur-Raum",
+        spriteType: "hall",
+        interactionLabel: "Jom-Kippur-Raum",
         x: 2.5,
         y: 13.5,
-        question: "Womit ist Jom Kippur besonders verbunden?",
-        options: ["Tanz und Musik", "Fasten und Versohnung", "Erntedank", "Kerzen fur Chanukka"],
+        question: "Hier wird Jom Kippur vorbereitet. Was passt zu diesem Tag?",
+        options: ["Laut feiern", "Fasten, nachdenken und um Verzeihung bitten", "Geschenke tauschen", "Einen Grillabend machen"],
         correctIndex: 1,
-        fact: "Jom Kippur gilt als wichtiger Versohnungs- und Fastentag."
+        fact: "Jom Kippur ist ein wichtiger Tag fur Fasten und Versohnung.",
+        successAction: "Die Figur wird still, reflektiert und spricht eine Entschuldigung aus.",
+        actionVisual: "🧍🤍"
     },
     {
         id: "hebraeisch",
-        name: "Station Tora",
-        tag: "TR",
+        name: "Tora-Raum",
+        spriteType: "torah",
+        interactionLabel: "Tora-Raum",
         x: 13.5,
         y: 13.5,
-        question: "In welcher Sprache ist die Tora traditionell geschrieben?",
-        options: ["Hebraisch", "Latein", "Griechisch", "Franzosisch"],
+        question: "Vor dir liegt eine Tora-Rolle. Welche Handlung passt hier?",
+        options: ["Respektvoll aus dem hebraischen Text lesen", "Mit Textmarkern hineinschreiben", "Als Deko benutzen", "Zufallig eine Seite zerknittern"],
         correctIndex: 0,
-        fact: "Die Tora ist traditionell in hebraischer Sprache verfasst."
+        fact: "Die Tora ist traditionell in hebraischer Sprache verfasst und wird respektvoll behandelt.",
+        successAction: "Die Figur zeigt mit einem Zeiger auf den Text und liest konzentriert.",
+        actionVisual: "🧍📜"
     }
 ];
 
@@ -129,6 +147,9 @@ const feedbackBannerEl = document.getElementById("feedbackBanner");
 const questionTitleEl = document.getElementById("questionTitle");
 const questionTextEl = document.getElementById("questionText");
 const answerButtonsEl = document.getElementById("answerButtons");
+const actionStageEl = document.getElementById("actionStage");
+const actionFigureEl = document.getElementById("actionFigure");
+const actionCaptionEl = document.getElementById("actionCaption");
 
 const resultMottoEl = document.getElementById("resultMotto");
 const resultTextEl = document.getElementById("resultText");
@@ -156,6 +177,7 @@ let timerId = null;
 let rafId = null;
 let lastFrame = 0;
 let feedbackTimeoutId = null;
+let resolveTimeoutId = null;
 
 const stickInput = {
     active: false,
@@ -188,6 +210,7 @@ function createInitialState() {
         maxStreak: 0,
         solved: 0,
         correct: 0,
+        answerLocked: false,
         highscore: Number(localStorage.getItem("dreid_lernwelt_highscore") || 0),
         nearbyStationId: null,
         activeStationId: null,
@@ -310,7 +333,7 @@ function updateNearbyPrompt() {
     }
 
     state.nearbyStationId = bestStation.id;
-    nearbyPromptEl.textContent = `E drucken fur ${bestStation.name}`;
+    nearbyPromptEl.textContent = `E drucken fur ${bestStation.interactionLabel}`;
     nearbyPromptEl.classList.remove("hidden");
 }
 
@@ -397,6 +420,77 @@ function drawRoundedRect(x, y, w, h, radius) {
     ctx.closePath();
 }
 
+function drawStationSprite(x, y, spriteWidth, spriteHeight, station) {
+    const solved = station.solved;
+    const base = solved ? "rgba(30, 163, 139, 0.84)" : "rgba(242, 184, 75, 0.92)";
+
+    drawRoundedRect(x, y, spriteWidth, spriteHeight, 10);
+    ctx.fillStyle = base;
+    ctx.fill();
+
+    const pad = Math.max(5, spriteWidth * 0.1);
+    const innerX = x + pad;
+    const innerY = y + pad;
+    const innerW = spriteWidth - pad * 2;
+    const innerH = spriteHeight - pad * 2;
+
+    drawRoundedRect(innerX, innerY, innerW, innerH, 8);
+    ctx.fillStyle = "rgba(17, 32, 60, 0.76)";
+    ctx.fill();
+
+    ctx.fillStyle = "rgba(235, 245, 255, 0.95)";
+
+    if (station.spriteType === "synagogue") {
+        const towerW = innerW * 0.22;
+        const towerH = innerH * 0.54;
+        ctx.fillRect(innerX + innerW * 0.12, innerY + innerH * 0.36, towerW, towerH);
+        ctx.fillRect(innerX + innerW * 0.66, innerY + innerH * 0.36, towerW, towerH);
+        ctx.fillRect(innerX + innerW * 0.27, innerY + innerH * 0.5, innerW * 0.46, innerH * 0.4);
+        ctx.beginPath();
+        ctx.moveTo(innerX + innerW * 0.5, innerY + innerH * 0.17);
+        ctx.lineTo(innerX + innerW * 0.27, innerY + innerH * 0.5);
+        ctx.lineTo(innerX + innerW * 0.73, innerY + innerH * 0.5);
+        ctx.closePath();
+        ctx.fill();
+    } else if (station.spriteType === "table") {
+        ctx.fillRect(innerX + innerW * 0.14, innerY + innerH * 0.56, innerW * 0.72, innerH * 0.14);
+        ctx.fillRect(innerX + innerW * 0.2, innerY + innerH * 0.68, innerW * 0.08, innerH * 0.2);
+        ctx.fillRect(innerX + innerW * 0.72, innerY + innerH * 0.68, innerW * 0.08, innerH * 0.2);
+        ctx.beginPath();
+        ctx.arc(innerX + innerW * 0.34, innerY + innerH * 0.49, innerW * 0.07, 0, Math.PI * 2);
+        ctx.arc(innerX + innerW * 0.5, innerY + innerH * 0.49, innerW * 0.07, 0, Math.PI * 2);
+        ctx.arc(innerX + innerW * 0.66, innerY + innerH * 0.49, innerW * 0.07, 0, Math.PI * 2);
+        ctx.fill();
+    } else if (station.spriteType === "kitchen") {
+        ctx.fillRect(innerX + innerW * 0.16, innerY + innerH * 0.6, innerW * 0.68, innerH * 0.26);
+        ctx.fillRect(innerX + innerW * 0.22, innerY + innerH * 0.4, innerW * 0.56, innerH * 0.18);
+        ctx.beginPath();
+        ctx.arc(innerX + innerW * 0.5, innerY + innerH * 0.5, innerW * 0.1, 0, Math.PI * 2);
+        ctx.fill();
+    } else if (station.spriteType === "hall") {
+        ctx.fillRect(innerX + innerW * 0.18, innerY + innerH * 0.32, innerW * 0.64, innerH * 0.54);
+        ctx.fillRect(innerX + innerW * 0.3, innerY + innerH * 0.18, innerW * 0.4, innerH * 0.12);
+        ctx.fillStyle = "rgba(17, 32, 60, 0.8)";
+        ctx.fillRect(innerX + innerW * 0.44, innerY + innerH * 0.53, innerW * 0.12, innerH * 0.33);
+    } else if (station.spriteType === "torah") {
+        ctx.beginPath();
+        ctx.arc(innerX + innerW * 0.35, innerY + innerH * 0.5, innerW * 0.14, 0, Math.PI * 2);
+        ctx.arc(innerX + innerW * 0.65, innerY + innerH * 0.5, innerW * 0.14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillRect(innerX + innerW * 0.35, innerY + innerH * 0.36, innerW * 0.3, innerH * 0.28);
+        ctx.fillStyle = "rgba(17, 32, 60, 0.8)";
+        ctx.fillRect(innerX + innerW * 0.49, innerY + innerH * 0.24, innerW * 0.02, innerH * 0.54);
+    }
+
+    if (solved) {
+        ctx.fillStyle = "#d9ffe8";
+        ctx.font = `${Math.max(11, spriteHeight * 0.16)}px Arial`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("OK", x + spriteWidth * 0.5, y + spriteHeight * 0.82);
+    }
+}
+
 function drawBackground(width, height) {
     const sky = ctx.createLinearGradient(0, 0, 0, height * 0.58);
     sky.addColorStop(0, "#2f6fcc");
@@ -463,25 +557,7 @@ function renderWorld() {
         const x = screenX - spriteWidth * 0.5;
         const y = height * 0.5 - spriteHeight * 0.5;
 
-        drawRoundedRect(x, y, spriteWidth, spriteHeight, 10);
-        ctx.fillStyle = station.solved ? "rgba(30, 163, 139, 0.76)" : "rgba(242, 184, 75, 0.88)";
-        ctx.fill();
-
-        drawRoundedRect(x + 4, y + 4, spriteWidth - 8, spriteHeight - 8, 8);
-        ctx.fillStyle = "rgba(17, 32, 60, 0.68)";
-        ctx.fill();
-
-        ctx.fillStyle = "#ffffff";
-        ctx.font = `${Math.max(13, spriteHeight * 0.18)}px Arial`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(station.tag, screenX, y + spriteHeight * 0.46);
-
-        if (station.solved) {
-            ctx.fillStyle = "#d9ffe8";
-            ctx.font = `${Math.max(11, spriteHeight * 0.16)}px Arial`;
-            ctx.fillText("OK", screenX, y + spriteHeight * 0.73);
-        }
+        drawStationSprite(x, y, spriteWidth, spriteHeight, station);
     });
 
     drawMinimap(width);
@@ -671,14 +747,19 @@ function getStationById(id) {
 }
 
 function openQuestion(station) {
-    if (!station || station.solved) return;
+    if (!station || station.solved || state.answerLocked) return;
 
     state.questionOpen = true;
+    state.answerLocked = false;
     state.activeStationId = station.id;
 
     questionTitleEl.textContent = station.name;
     questionTextEl.textContent = station.question;
     answerButtonsEl.innerHTML = "";
+    actionStageEl.classList.add("hidden");
+    actionFigureEl.classList.remove("perform");
+    actionFigureEl.textContent = "🧍";
+    actionCaptionEl.textContent = "";
 
     station.options.forEach((optionText, index) => {
         const button = document.createElement("button");
@@ -695,15 +776,22 @@ function openQuestion(station) {
 }
 
 function closeQuestion() {
+    if (resolveTimeoutId) {
+        window.clearTimeout(resolveTimeoutId);
+        resolveTimeoutId = null;
+    }
     state.questionOpen = false;
     state.activeStationId = null;
+    state.answerLocked = false;
     questionModalEl.classList.add("hidden");
     updateNearbyPrompt();
 }
 
 function answerStation(stationId, selectedIndex) {
     const station = getStationById(stationId);
-    if (!station || station.solved || !state.running) return;
+    if (!station || station.solved || !state.running || state.answerLocked) return;
+
+    state.answerLocked = true;
 
     const correct = selectedIndex === station.correctIndex;
     if (correct) {
@@ -721,20 +809,45 @@ function answerStation(stationId, selectedIndex) {
         state.score = Math.max(0, state.score - SCORE_WRONG_PENALTY);
         state.streak = 0;
 
-        showFeedback(
-            `Nicht korrekt: -${formatPoints(SCORE_WRONG_PENALTY)} Punkte. ${station.fact}`,
-            "bad"
-        );
+        showFeedback(`Nicht korrekt: -${formatPoints(SCORE_WRONG_PENALTY)} Punkte. ${station.fact}`, "bad");
     }
 
     station.solved = true;
     state.solved += 1;
     updateHud();
-    closeQuestion();
 
-    if (state.solved >= state.stations.length) {
-        endGame("Alle Stationen besucht.");
+    if (correct) {
+        questionTextEl.textContent = `${station.successAction} Aufgabe geloest.`;
+        actionStageEl.classList.remove("hidden");
+        actionFigureEl.textContent = station.actionVisual || "🧍✨";
+        actionFigureEl.classList.remove("perform");
+        void actionFigureEl.offsetWidth;
+        actionFigureEl.classList.add("perform");
+        actionCaptionEl.textContent = "Die Figur fuhrt die richtige Handlung aus.";
+    } else {
+        questionTextEl.textContent = `Die Aufgabe gilt trotzdem als besucht. ${station.fact}`;
+        actionStageEl.classList.add("hidden");
     }
+
+    answerButtonsEl.innerHTML = "";
+    const continueButton = document.createElement("button");
+    continueButton.type = "button";
+    continueButton.textContent = "Weiter";
+    continueButton.addEventListener("click", () => {
+        closeQuestion();
+        if (state.solved >= state.stations.length) {
+            endGame("Alle Orte im Labyrinth erkundet.");
+        }
+    });
+    answerButtonsEl.appendChild(continueButton);
+
+    resolveTimeoutId = window.setTimeout(() => {
+        if (!state || !state.running || !state.questionOpen) return;
+        closeQuestion();
+        if (state.solved >= state.stations.length) {
+            endGame("Alle Orte im Labyrinth erkundet.");
+        }
+    }, 2200);
 }
 
 function getResultMotto(score, correctCount, totalStations) {
