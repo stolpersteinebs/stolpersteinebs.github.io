@@ -146,11 +146,16 @@ body {
 }
 
 .touch-controls {
-    margin-top: 12px;
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
     display: none;
     gap: 12px;
-    align-items: center;
+    align-items: flex-end;
     justify-content: space-between;
+    pointer-events: none;
+    z-index: 3;
 }
 
 .touch-stick-wrap {
@@ -168,6 +173,10 @@ body {
     position: relative;
     touch-action: none;
     user-select: none;
+}
+
+.touch-controls > * {
+    pointer-events: auto;
 }
 
 .touch-stick-knob {
@@ -204,6 +213,39 @@ body {
 .touch-action {
     flex: 0 0 auto;
     min-width: 132px;
+}
+
+.fullscreen-btn {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 4;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 999px;
+    background: rgba(12, 20, 37, 0.62);
+    color: #fff;
+    padding: 7px 12px;
+    font-size: 0.92rem;
+    font-weight: 700;
+    cursor: pointer;
+    backdrop-filter: blur(2px);
+}
+
+.fullscreen-btn:hover {
+    background: rgba(12, 20, 37, 0.8);
+}
+
+.render-frame:fullscreen {
+    width: 100vw;
+    height: 100vh;
+    max-width: none;
+    aspect-ratio: auto;
+    border-radius: 0;
+}
+
+.render-frame:fullscreen .fullscreen-btn {
+    top: 16px;
+    left: 16px;
 }
 
 .nearby {

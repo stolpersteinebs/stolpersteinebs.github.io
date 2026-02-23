@@ -160,6 +160,8 @@ const ctx = canvas.getContext("2d");
 const touchStickEl = document.getElementById("touchStick");
 const touchStickKnobEl = document.getElementById("touchStickKnob");
 const touchInteractButton = document.getElementById("touchInteract");
+const fullscreenButton = document.getElementById("fullscreenButton");
+const renderFrameEl = document.querySelector(".render-frame");
 
 const keys = {
     KeyW: false,
@@ -578,7 +580,7 @@ function drawCrosshair(width, height) {
 }
 
 function drawMinimap(canvasWidth) {
-    const size = Math.min(150, canvasWidth * 0.28);
+    const size = Math.min(220, canvasWidth * 0.36);
     const x = canvasWidth - size - 12;
     const y = 12;
     const cell = size / mapWidth();
@@ -740,6 +742,30 @@ function setupTouchStick() {
     touchStickEl.addEventListener("pointerup", releaseStick);
     touchStickEl.addEventListener("pointercancel", releaseStick);
     touchStickEl.addEventListener("lostpointercapture", resetTouchStick);
+}
+
+
+function isFullscreenActive() {
+    return document.fullscreenElement === renderFrameEl;
+}
+
+function updateFullscreenButtonLabel() {
+    if (!fullscreenButton) return;
+    fullscreenButton.textContent = isFullscreenActive() ? "Vollbild verlassen" : "Vollbild";
+}
+
+async function toggleFullscreen() {
+    if (!renderFrameEl || !document.fullscreenEnabled) return;
+
+    try {
+        if (isFullscreenActive()) {
+            await document.exitFullscreen();
+        } else {
+            await renderFrameEl.requestFullscreen();
+        }
+    } catch (error) {
+        console.warn("Vollbildmodus konnte nicht gewechselt werden.", error);
+    }
 }
 
 function getStationById(id) {
@@ -1009,6 +1035,20 @@ window.addEventListener("keyup", (event) => {
 });
 
 
+
+if (fullscreenButton) {
+    fullscreenButton.addEventListener("click", () => {
+        toggleFullscreen();
+    });
+}
+
+document.addEventListener("fullscreenchange", () => {
+    updateFullscreenButtonLabel();
+    if (state && state.running) {
+        renderWorld();
+    }
+});
+
 setupTouchStick();
 
 if (touchInteractButton) {
@@ -1034,3 +1074,4 @@ window.addEventListener("resize", () => {
 
 totalEl.textContent = String(STATION_DEFS.length);
 showStartScreen();
+updateFullscreenButtonLabel();

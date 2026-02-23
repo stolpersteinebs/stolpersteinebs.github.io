@@ -41,14 +41,15 @@
             <div class="render-frame">
                 <canvas id="view" aria-label="3D Ansicht"></canvas>
                 <div id="nearbyPrompt" class="nearby hidden"></div>
-            </div>
-            <div class="touch-controls" aria-label="Touch-Steuerung">
-                <div class="touch-stick-wrap" aria-label="Virtueller Controller">
-                    <div id="touchStick" class="touch-stick" role="application" aria-label="Bewegungsstick">
-                        <div id="touchStickKnob" class="touch-stick-knob" aria-hidden="true"></div>
+                <button id="fullscreenButton" type="button" class="fullscreen-btn" aria-label="Vollbildmodus umschalten">Vollbild</button>
+                <div class="touch-controls" aria-label="Touch-Steuerung">
+                    <div class="touch-stick-wrap" aria-label="Virtueller Controller">
+                        <div id="touchStick" class="touch-stick" role="application" aria-label="Bewegungsstick">
+                            <div id="touchStickKnob" class="touch-stick-knob" aria-hidden="true"></div>
+                        </div>
                     </div>
+                    <button id="touchInteract" type="button" class="touch-btn touch-action">Interagieren</button>
                 </div>
-                <button id="touchInteract" type="button" class="touch-btn touch-action">Interagieren</button>
             </div>
             <p class="controls-hint">Hinweis: Erkunde die Gange und suche reale Orte und Gegenstande im Labyrinth.</p>
             <p id="feedbackBanner" class="feedback hidden" aria-live="polite"></p>
