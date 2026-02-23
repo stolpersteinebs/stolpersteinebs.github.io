@@ -325,3 +325,13 @@ body {
         display: flex;
     }
 }
+
+.touch-device .touch-controls {
+    display: flex;
+}
+
+@media (hover: none) and (pointer: coarse) {
+    .touch-controls {
+        display: flex;
+    }
+}
