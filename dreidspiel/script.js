@@ -166,6 +166,11 @@ const stickInput = {
 
 const STICK_DEADZONE = 0.16;
 const STICK_MAX_OFFSET = 42;
+const isTouchDevice = window.matchMedia("(hover: none) and (pointer: coarse)").matches || navigator.maxTouchPoints > 0;
+
+if (isTouchDevice) {
+    document.body.classList.add("touch-device");
+}
 
 function createInitialState() {
     return {
@@ -894,6 +899,11 @@ window.addEventListener("keyup", (event) => {
 setupTouchStick();
 
 if (touchInteractButton) {
+    touchInteractButton.addEventListener("pointerdown", (event) => {
+        event.preventDefault();
+        tryOpenNearbyStation();
+    });
+
     touchInteractButton.addEventListener("click", () => {
         tryOpenNearbyStation();
     });
