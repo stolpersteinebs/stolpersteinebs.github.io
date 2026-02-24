@@ -325,18 +325,18 @@ body.pseudo-fullscreen .render-frame .fullscreen-btn {
 }
 
 .modal {
-    position: fixed;
+    position: absolute;
     inset: 0;
     background: rgba(12, 20, 37, 0.55);
     display: grid;
     place-items: center;
     padding: 16px;
-    z-index: 40;
+    z-index: 50;
 }
 
 .modal-card {
     width: min(100%, 640px);
-    max-height: min(calc(100% - 32px), 640px);
+    max-height: min(calc(100% - 32px), 640px)
     overflow: auto;
     background: #fff;
     border-radius: 16px;
