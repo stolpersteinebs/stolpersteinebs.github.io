@@ -116,6 +116,8 @@ const STATION_DEFS = [
 
 const FOV = Math.PI / 3;
 const MOVE_SPEED = 2.8;
+const TOUCH_MOVE_FACTOR = 0.38;
+const TOUCH_TURN_FACTOR = 0.5;
 const TURN_SPEED = 2.3;
 const MAX_TIME = 240;
 const SCORE_BASE = 220;
@@ -622,7 +624,7 @@ function movePlayer(delta) {
     let forward = 0;
     if (keys.KeyW || keys.ArrowUp) forward += 1;
     if (keys.KeyS || keys.ArrowDown) forward -= 1;
-    forward += stickInput.forward;
+    forward += stickInput.forward * TOUCH_MOVE_FACTOR;
     forward = Math.max(-1, Math.min(1, forward));
 
     let strafe = 0;
@@ -632,7 +634,7 @@ function movePlayer(delta) {
     let turn = 0;
     if (keys.ArrowLeft) turn -= 1;
     if (keys.ArrowRight) turn += 1;
-    turn += stickInput.turn;
+    turn += stickInput.turn * TOUCH_TURN_FACTOR;
     turn = Math.max(-1, Math.min(1, turn));
 
     state.player.angle += turn * TURN_SPEED * delta;
@@ -749,22 +751,62 @@ function isFullscreenActive() {
     return document.fullscreenElement === renderFrameEl;
 }
 
+function isPseudoFullscreenActive() {
+    return document.body.classList.contains("pseudo-fullscreen");
+}
+
+function setPseudoFullscreen(active) {
+    document.body.classList.toggle("pseudo-fullscreen", active);
+}
+
 function updateFullscreenButtonLabel() {
     if (!fullscreenButton) return;
-    fullscreenButton.textContent = isFullscreenActive() ? "Vollbild verlassen" : "Vollbild";
+    fullscreenButton.textContent = (isFullscreenActive() || isPseudoFullscreenActive()) ? "Vollbild verlassen" : "Vollbild";
 }
 
 async function toggleFullscreen() {
-    if (!renderFrameEl || !document.fullscreenEnabled) return;
+    if (!renderFrameEl) return;
+
+    if (isFullscreenActive()) {
+        await document.exitFullscreen();
+        setPseudoFullscreen(false);
+        updateFullscreenButtonLabel();
+        if (state && state.running) {
+            renderWorld();
+        }
+        return;
+    }
+
+    if (isPseudoFullscreenActive()) {
+        setPseudoFullscreen(false);
+        updateFullscreenButtonLabel();
+        if (state && state.running) {
+            renderWorld();
+        }
+        return;
+    }
+
+    // Immer zuerst Fenster-Fullscreen aktivieren und dann versuchen,
+    // nativen Fullscreen daruberzulegen.
+    setPseudoFullscreen(true);
+    updateFullscreenButtonLabel();
+    if (state && state.running) {
+        renderWorld();
+    }
+
+    if (!renderFrameEl.requestFullscreen) {
+        return;
+    }
 
     try {
-        if (isFullscreenActive()) {
-            await document.exitFullscreen();
-        } else {
-            await renderFrameEl.requestFullscreen();
-        }
+        await renderFrameEl.requestFullscreen();
     } catch (error) {
-        console.warn("Vollbildmodus konnte nicht gewechselt werden.", error);
+        console.warn("Nativer Fullscreen fehlgeschlagen, Fenster-Fullscreen bleibt aktiv.", error);
+    } finally {
+        updateFullscreenButtonLabel();
+        if (state && state.running) {
+            renderWorld();
+        }
     }
 }
 
@@ -924,6 +966,8 @@ function endGame(reason) {
     startHighscoreEl.textContent = formatPoints(state.highscore);
 
     questionModalEl.classList.add("hidden");
+    setPseudoFullscreen(false);
+    updateFullscreenButtonLabel();
     gamePanelEl.classList.add("hidden");
     resultEl.classList.remove("hidden");
 }
@@ -979,6 +1023,8 @@ function startGame() {
 
     state = createInitialState();
     resetKeys();
+    setPseudoFullscreen(false);
+    updateFullscreenButtonLabel();
     lastFrame = 0;
 
     startScreenEl.classList.add("hidden");
