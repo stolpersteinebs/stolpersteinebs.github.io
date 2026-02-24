@@ -325,13 +325,13 @@ body.pseudo-fullscreen .render-frame .fullscreen-btn {
 }
 
 .modal {
-    position: absolute;
+    position: fixed;
     inset: 0;
     background: rgba(12, 20, 37, 0.55);
     display: grid;
     place-items: center;
     padding: 16px;
-    z-index: 50;
+    z-index: 40;
 }
 
 .modal-card {
