@@ -336,7 +336,7 @@ body.pseudo-fullscreen .render-frame .fullscreen-btn {
 
 .modal-card {
     width: min(100%, 640px);
-    max-height: min(88vh, 640px);
+    max-height: min(calc(100% - 32px), 640px);
     overflow: auto;
     background: #fff;
     border-radius: 16px;
