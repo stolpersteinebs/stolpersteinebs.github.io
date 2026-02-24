@@ -633,7 +633,7 @@ function movePlayer(delta) {
     let turn = 0;
     if (keys.ArrowLeft) turn -= 1;
     if (keys.ArrowRight) turn += 1;
-    turn += stickInput.turn * TOUCH_TURN_FACTOR;
+    turn += stickInput.turn;
     turn = Math.max(-1, Math.min(1, turn));
 
     state.player.angle += turn * TURN_SPEED * delta;
@@ -786,32 +786,6 @@ async function toggleFullscreen() {
         } else {
             setPseudoFullscreen(true);
         }
-        return;
-    }
-
-    if (isPseudoFullscreenActive()) {
-        setPseudoFullscreen(false);
-        updateFullscreenButtonLabel();
-        if (state && state.running) {
-            renderWorld();
-        }
-        return;
-    }
-
-    // Immer zuerst Fenster-Fullscreen aktivieren und dann versuchen,
-    // nativen Fullscreen daruberzulegen.
-    setPseudoFullscreen(true);
-    updateFullscreenButtonLabel();
-    if (state && state.running) {
-        renderWorld();
-    }
-
-    if (!renderFrameEl.requestFullscreen) {
-        return;
-    }
-
-    try {
-        await renderFrameEl.requestFullscreen();
     } catch (error) {
         setPseudoFullscreen(true);
         console.warn("Fullscreen-API nicht verfugbar, nutze Fenster-Fullscreen.", error);
