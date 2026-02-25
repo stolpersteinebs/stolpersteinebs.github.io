@@ -116,7 +116,8 @@ const STATION_DEFS = [
 
 const FOV = Math.PI / 3;
 const MOVE_SPEED = 2.8;
-const TOUCH_MOVE_FACTOR = 0.62;
+const TOUCH_MOVE_FACTOR = 0.38;
+const TOUCH_TURN_FACTOR = 0.5;
 const TURN_SPEED = 2.3;
 const MAX_TIME = 240;
 const SCORE_BASE = 220;
@@ -766,25 +767,12 @@ function updateFullscreenButtonLabel() {
 async function toggleFullscreen() {
     if (!renderFrameEl) return;
 
-    if (isPseudoFullscreenActive()) {
+    if (isFullscreenActive()) {
+        await document.exitFullscreen();
         setPseudoFullscreen(false);
         updateFullscreenButtonLabel();
         if (state && state.running) {
             renderWorld();
-        }
-        return;
-    }
-
-    try {
-        if (isFullscreenActive()) {
-            await document.exitFullscreen();
-            return;
-        }
-
-        if (document.fullscreenEnabled) {
-            await renderFrameEl.requestFullscreen();
-        } else {
-            setPseudoFullscreen(true);
         }
         return;
     }
@@ -813,8 +801,7 @@ async function toggleFullscreen() {
     try {
         await renderFrameEl.requestFullscreen();
     } catch (error) {
-        setPseudoFullscreen(true);
-        console.warn("Fullscreen-API nicht verfugbar, nutze Fenster-Fullscreen.", error);
+        console.warn("Nativer Fullscreen fehlgeschlagen, Fenster-Fullscreen bleibt aktiv.", error);
     } finally {
         updateFullscreenButtonLabel();
         if (state && state.running) {
