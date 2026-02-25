@@ -30,6 +30,46 @@ body {
     padding: 22px 14px;
 }
 
+body.pseudo-fullscreen {
+    display: block;
+    padding: 0;
+    overflow: hidden;
+}
+
+body.pseudo-fullscreen > .page {
+    width: 100%;
+    max-width: none;
+    min-height: 100vh;
+}
+
+body.pseudo-fullscreen .top,
+body.pseudo-fullscreen .quick-links,
+body.pseudo-fullscreen .hud,
+body.pseudo-fullscreen .controls-hint,
+body.pseudo-fullscreen .feedback {
+    display: none;
+}
+
+body.pseudo-fullscreen .scene-card {
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+}
+
+body.pseudo-fullscreen .render-frame {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    min-height: 100vh;
+    max-width: none;
+    aspect-ratio: auto;
+    border-radius: 0;
+    z-index: 30;
+}
+
 .page {
     width: min(100%, 1040px);
 }
@@ -130,6 +170,7 @@ body {
 
 .render-frame {
     position: relative;
+    isolation: isolate;
     border-radius: 14px;
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.24);
@@ -248,6 +289,11 @@ body {
     left: 16px;
 }
 
+body.pseudo-fullscreen .render-frame .fullscreen-btn {
+    top: 16px;
+    left: 16px;
+}
+
 .nearby {
     position: absolute;
     left: 50%;
@@ -281,17 +327,19 @@ body {
 }
 
 .modal {
-    position: fixed;
+    position: absolute;
     inset: 0;
     background: rgba(12, 20, 37, 0.55);
     display: grid;
     place-items: center;
     padding: 16px;
-    z-index: 40;
+    z-index: 50;
 }
 
 .modal-card {
     width: min(100%, 640px);
+    max-height: min(88vh, 640px);
+    overflow: auto;
     background: #fff;
     border-radius: 16px;
     border: 1px solid var(--line);
