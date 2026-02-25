@@ -22,7 +22,7 @@
     <section id="startScreen" class="card start-screen" aria-live="polite">
         <h2>Mission starten</h2>
         <p>Steuerung: <strong>WASD</strong> zum Laufen, <strong>Pfeil links/rechts</strong> zum Drehen, <strong>E</strong> zum Interagieren.</p>
-        <p>Auf Touch-Geraten nutzt du den virtuellen Controller unten links und den Interagieren-Button.</p>
+        <p>Auf Touch-Geraten nutzt du unten zwei Joysticks: links zum Bewegen, rechts zum Lenken, plus den Interagieren-Button.</p>
         <p>Du hast 4 Minuten, um alle Wissens-Stationen zu finden.</p>
         <p class="start-highscore">Bester Score: <span id="startHighscore">0</span></p>
         <button id="startButton" type="button">Lernwelt starten</button>
@@ -43,9 +43,16 @@
                 <div id="nearbyPrompt" class="nearby hidden"></div>
                 <button id="fullscreenButton" type="button" class="fullscreen-btn" aria-label="Vollbildmodus umschalten">Vollbild</button>
                 <div class="touch-controls" aria-label="Touch-Steuerung">
-                    <div class="touch-stick-wrap" aria-label="Virtueller Controller">
-                        <div id="touchStick" class="touch-stick" role="application" aria-label="Bewegungsstick">
-                            <div id="touchStickKnob" class="touch-stick-knob" aria-hidden="true"></div>
+                    <div class="touch-stick-group" aria-label="Bewegen">
+                        <span class="touch-stick-label">Bewegen</span>
+                        <div id="moveStick" class="touch-stick" role="application" aria-label="Bewegungsstick">
+                            <div id="moveStickKnob" class="touch-stick-knob" aria-hidden="true"></div>
+                        </div>
+                    </div>
+                    <div class="touch-stick-group" aria-label="Lenken">
+                        <span class="touch-stick-label">Lenken</span>
+                        <div id="turnStick" class="touch-stick" role="application" aria-label="Lenkstick">
+                            <div id="turnStickKnob" class="touch-stick-knob" aria-hidden="true"></div>
                         </div>
                     </div>
                     <button id="touchInteract" type="button" class="touch-btn touch-action">Interagieren</button>

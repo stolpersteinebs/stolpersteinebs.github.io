@@ -159,8 +159,10 @@ const resultTextEl = document.getElementById("resultText");
 const canvas = document.getElementById("view");
 const ctx = canvas.getContext("2d");
 
-const touchStickEl = document.getElementById("touchStick");
-const touchStickKnobEl = document.getElementById("touchStickKnob");
+const moveStickEl = document.getElementById("moveStick");
+const moveStickKnobEl = document.getElementById("moveStickKnob");
+const turnStickEl = document.getElementById("turnStick");
+const turnStickKnobEl = document.getElementById("turnStickKnob");
 const touchInteractButton = document.getElementById("touchInteract");
 const fullscreenButton = document.getElementById("fullscreenButton");
 const renderFrameEl = document.querySelector(".render-frame");
@@ -183,10 +185,16 @@ let lastFrame = 0;
 let feedbackTimeoutId = null;
 let resolveTimeoutId = null;
 
-const stickInput = {
+const moveStickInput = {
     active: false,
     pointerId: null,
     forward: 0,
+    strafe: 0
+};
+
+const turnStickInput = {
+    active: false,
+    pointerId: null,
     turn: 0
 };
 
@@ -624,17 +632,19 @@ function movePlayer(delta) {
     let forward = 0;
     if (keys.KeyW || keys.ArrowUp) forward += 1;
     if (keys.KeyS || keys.ArrowDown) forward -= 1;
-    forward += stickInput.forward * TOUCH_MOVE_FACTOR;
+    forward += moveStickInput.forward * TOUCH_MOVE_FACTOR;
     forward = Math.max(-1, Math.min(1, forward));
 
     let strafe = 0;
     if (keys.KeyD) strafe += 1;
     if (keys.KeyA) strafe -= 1;
+    strafe += moveStickInput.strafe * TOUCH_MOVE_FACTOR;
+    strafe = Math.max(-1, Math.min(1, strafe));
 
     let turn = 0;
     if (keys.ArrowLeft) turn -= 1;
     if (keys.ArrowRight) turn += 1;
-    turn += stickInput.turn * TOUCH_TURN_FACTOR;
+    turn += turnStickInput.turn * TOUCH_TURN_FACTOR;
     turn = Math.max(-1, Math.min(1, turn));
 
     state.player.angle += turn * TURN_SPEED * delta;
@@ -670,24 +680,31 @@ function tryOpenNearbyStation() {
     }
 }
 
-function resetTouchStick() {
-    stickInput.active = false;
-    stickInput.pointerId = null;
-    stickInput.forward = 0;
-    stickInput.turn = 0;
+function applyStickDeadzone(value) {
+    const magnitude = Math.abs(value);
+    if (magnitude < STICK_DEADZONE) return 0;
+    return Math.sign(value) * ((magnitude - STICK_DEADZONE) / (1 - STICK_DEADZONE));
+}
 
-    if (touchStickEl) {
-        touchStickEl.classList.remove("active");
+function resetStick(stickEl, knobEl, stickState, resets) {
+    stickState.active = false;
+    stickState.pointerId = null;
+    Object.keys(resets).forEach((key) => {
+        stickState[key] = resets[key];
+    });
+
+    if (stickEl) {
+        stickEl.classList.remove("active");
     }
-    if (touchStickKnobEl) {
-        touchStickKnobEl.style.transform = "translate(-50%, -50%)";
+    if (knobEl) {
+        knobEl.style.transform = "translate(-50%, -50%)";
     }
 }
 
-function updateTouchStick(pointerEvent) {
-    if (!touchStickEl || !touchStickKnobEl) return;
+function updateStickPosition(stickEl, knobEl, pointerEvent, onChange) {
+    if (!stickEl || !knobEl) return;
 
-    const rect = touchStickEl.getBoundingClientRect();
+    const rect = stickEl.getBoundingClientRect();
     const cx = rect.left + rect.width / 2;
     const cy = rect.top + rect.height / 2;
 
@@ -700,50 +717,75 @@ function updateTouchStick(pointerEvent) {
     const nx = distance > 0 ? (rawX / distance) * (clampedDistance / radius) : 0;
     const ny = distance > 0 ? (rawY / distance) * (clampedDistance / radius) : 0;
 
-    const applyDeadzone = (value) => {
-        const magnitude = Math.abs(value);
-        if (magnitude < STICK_DEADZONE) return 0;
-        return Math.sign(value) * ((magnitude - STICK_DEADZONE) / (1 - STICK_DEADZONE));
-    };
-
-    stickInput.turn = applyDeadzone(nx);
-    stickInput.forward = -applyDeadzone(ny);
-
     const knobX = nx * STICK_MAX_OFFSET;
     const knobY = ny * STICK_MAX_OFFSET;
-    touchStickKnobEl.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`;
+    knobEl.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`;
+
+    onChange(nx, ny);
 }
 
-function setupTouchStick() {
-    if (!touchStickEl || !touchStickKnobEl) return;
+function setupStickControl(stickEl, knobEl, stickState, onChange, onReset) {
+    if (!stickEl || !knobEl) return;
 
-    touchStickEl.addEventListener("pointerdown", (event) => {
-        event.preventDefault();
-        touchStickEl.setPointerCapture(event.pointerId);
-        stickInput.active = true;
-        stickInput.pointerId = event.pointerId;
-        touchStickEl.classList.add("active");
-        updateTouchStick(event);
-    });
-
-    touchStickEl.addEventListener("pointermove", (event) => {
-        if (!stickInput.active || event.pointerId !== stickInput.pointerId) return;
-        event.preventDefault();
-        updateTouchStick(event);
-    });
-
-    const releaseStick = (event) => {
-        if (!stickInput.active || event.pointerId !== stickInput.pointerId) return;
-        event.preventDefault();
-        if (touchStickEl.hasPointerCapture(event.pointerId)) {
-            touchStickEl.releasePointerCapture(event.pointerId);
-        }
-        resetTouchStick();
+    const update = (event) => {
+        updateStickPosition(stickEl, knobEl, event, onChange);
     };
 
-    touchStickEl.addEventListener("pointerup", releaseStick);
-    touchStickEl.addEventListener("pointercancel", releaseStick);
-    touchStickEl.addEventListener("lostpointercapture", resetTouchStick);
+    const release = (event) => {
+        if (!stickState.active || event.pointerId !== stickState.pointerId) return;
+        event.preventDefault();
+        if (stickEl.hasPointerCapture(event.pointerId)) {
+            stickEl.releasePointerCapture(event.pointerId);
+        }
+        onReset();
+    };
+
+    stickEl.addEventListener("pointerdown", (event) => {
+        event.preventDefault();
+        stickEl.setPointerCapture(event.pointerId);
+        stickState.active = true;
+        stickState.pointerId = event.pointerId;
+        stickEl.classList.add("active");
+        update(event);
+    });
+
+    stickEl.addEventListener("pointermove", (event) => {
+        if (!stickState.active || event.pointerId !== stickState.pointerId) return;
+        event.preventDefault();
+        update(event);
+    });
+
+    stickEl.addEventListener("pointerup", release);
+    stickEl.addEventListener("pointercancel", release);
+    stickEl.addEventListener("lostpointercapture", onReset);
+}
+
+function resetTouchSticks() {
+    resetStick(moveStickEl, moveStickKnobEl, moveStickInput, { forward: 0, strafe: 0 });
+    resetStick(turnStickEl, turnStickKnobEl, turnStickInput, { turn: 0 });
+}
+
+function setupTouchSticks() {
+    setupStickControl(
+        moveStickEl,
+        moveStickKnobEl,
+        moveStickInput,
+        (nx, ny) => {
+            moveStickInput.strafe = applyStickDeadzone(nx);
+            moveStickInput.forward = -applyStickDeadzone(ny);
+        },
+        () => resetStick(moveStickEl, moveStickKnobEl, moveStickInput, { forward: 0, strafe: 0 })
+    );
+
+    setupStickControl(
+        turnStickEl,
+        turnStickKnobEl,
+        turnStickInput,
+        (nx) => {
+            turnStickInput.turn = applyStickDeadzone(nx);
+        },
+        () => resetStick(turnStickEl, turnStickKnobEl, turnStickInput, { turn: 0 })
+    );
 }
 
 
@@ -1095,7 +1137,7 @@ document.addEventListener("fullscreenchange", () => {
     }
 });
 
-setupTouchStick();
+setupTouchSticks();
 
 if (touchInteractButton) {
     touchInteractButton.addEventListener("pointerdown", (event) => {
@@ -1110,7 +1152,7 @@ if (touchInteractButton) {
 
 window.addEventListener("blur", () => {
     resetKeys();
-    resetTouchStick();
+    resetTouchSticks();
 });
 window.addEventListener("resize", () => {
     if (state && state.running) {
