@@ -294,6 +294,26 @@ body.pseudo-fullscreen .render-frame {
     backdrop-filter: blur(2px);
 }
 
+.mobile-gate {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    gap: 10px;
+    padding: 18px;
+    background: rgba(10, 16, 30, 0.78);
+    color: #fff;
+    z-index: 4;
+}
+
+.mobile-gate p {
+    margin: 0;
+    max-width: 28ch;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
 .fullscreen-btn:hover {
     background: rgba(12, 20, 37, 0.8);
 }

@@ -165,6 +165,9 @@ const turnStickEl = document.getElementById("turnStick");
 const turnStickKnobEl = document.getElementById("turnStickKnob");
 const touchInteractButton = document.getElementById("touchInteract");
 const fullscreenButton = document.getElementById("fullscreenButton");
+const mobileFullscreenGateEl = document.getElementById("mobileFullscreenGate");
+const mobileFullscreenTextEl = document.getElementById("mobileFullscreenText");
+const mobileFullscreenButton = document.getElementById("mobileFullscreenButton");
 const renderFrameEl = document.querySelector(".render-frame");
 
 const keys = {
@@ -201,6 +204,12 @@ const turnStickInput = {
 const STICK_DEADZONE = 0.16;
 const STICK_MAX_OFFSET = 42;
 const isTouchDevice = window.matchMedia("(hover: none) and (pointer: coarse)").matches || navigator.maxTouchPoints > 0;
+const isMobilePhone = (() => {
+    const userAgent = navigator.userAgent || "";
+    const phoneLikeAgent = /Android.+Mobile|iPhone|iPod|Windows Phone|Opera Mini|IEMobile/i.test(userAgent);
+    const smallDeviceScreen = Math.min(window.screen.width, window.screen.height) <= 900;
+    return isTouchDevice && (phoneLikeAgent || smallDeviceScreen);
+})();
 
 if (isTouchDevice) {
     document.body.classList.add("touch-device");
@@ -797,17 +806,92 @@ function isPseudoFullscreenActive() {
     return document.body.classList.contains("pseudo-fullscreen");
 }
 
+function isAnyFullscreenModeActive() {
+    return isFullscreenActive() || isPseudoFullscreenActive();
+}
+
 function setPseudoFullscreen(active) {
     document.body.classList.toggle("pseudo-fullscreen", active);
 }
 
 function updateFullscreenButtonLabel() {
     if (!fullscreenButton) return;
-    fullscreenButton.textContent = (isFullscreenActive() || isPseudoFullscreenActive()) ? "Vollbild verlassen" : "Vollbild";
+    fullscreenButton.textContent = isAnyFullscreenModeActive() ? "Vollbild verlassen" : "Vollbild";
+}
+
+function updateMobileGateVisibility(active, message) {
+    if (!mobileFullscreenGateEl || !mobileFullscreenTextEl) return;
+    mobileFullscreenGateEl.classList.toggle("hidden", !active);
+    if (message) {
+        mobileFullscreenTextEl.textContent = message;
+    }
+}
+
+function isPortraitOrientation() {
+    return window.matchMedia("(orientation: portrait)").matches;
+}
+
+async function lockLandscapeOrientation() {
+    if (!isMobilePhone || !screen.orientation || !screen.orientation.lock) {
+        return;
+    }
+
+    try {
+        await screen.orientation.lock("landscape");
+    } catch (error) {
+        console.warn("Bildschirmdrehung konnte nicht gesperrt werden.", error);
+    }
+}
+
+async function ensureGameplayFullscreen() {
+    if (!renderFrameEl) return;
+
+    setPseudoFullscreen(true);
+
+    if (renderFrameEl.requestFullscreen && !isFullscreenActive()) {
+        try {
+            await renderFrameEl.requestFullscreen();
+        } catch (error) {
+            console.warn("Nativer Fullscreen fehlgeschlagen, Fenster-Fullscreen bleibt aktiv.", error);
+        }
+    }
+
+    if (isMobilePhone) {
+        await lockLandscapeOrientation();
+    }
+
+    updateFullscreenButtonLabel();
+    if (state && state.running) {
+        renderWorld();
+    }
+}
+
+function enforceMobileFullscreen() {
+    if (!isMobilePhone) {
+        updateMobileGateVisibility(false);
+        return;
+    }
+
+    if (isAnyFullscreenModeActive()) {
+        updateMobileGateVisibility(false);
+        return;
+    }
+
+    const message = isPortraitOrientation()
+        ? "Bitte ins Querformat drehen und Vollbild aktivieren, um weiterzuspielen."
+        : "Auf dem Smartphone ist dieses Spiel nur im Vollbild verfugbar.";
+
+    updateMobileGateVisibility(true, message);
 }
 
 async function toggleFullscreen() {
     if (!renderFrameEl) return;
+
+    if (isMobilePhone && state && state.running) {
+        await ensureGameplayFullscreen();
+        enforceMobileFullscreen();
+        return;
+    }
 
     if (isFullscreenActive()) {
         await document.exitFullscreen();
@@ -828,28 +912,7 @@ async function toggleFullscreen() {
         return;
     }
 
-    // Immer zuerst Fenster-Fullscreen aktivieren und dann versuchen,
-    // nativen Fullscreen daruberzulegen.
-    setPseudoFullscreen(true);
-    updateFullscreenButtonLabel();
-    if (state && state.running) {
-        renderWorld();
-    }
-
-    if (!renderFrameEl.requestFullscreen) {
-        return;
-    }
-
-    try {
-        await renderFrameEl.requestFullscreen();
-    } catch (error) {
-        console.warn("Nativer Fullscreen fehlgeschlagen, Fenster-Fullscreen bleibt aktiv.", error);
-    } finally {
-        updateFullscreenButtonLabel();
-        if (state && state.running) {
-            renderWorld();
-        }
-    }
+    await ensureGameplayFullscreen();
 }
 
 function getStationById(id) {
@@ -1042,7 +1105,8 @@ function loop(timestamp) {
     const delta = Math.min((timestamp - lastFrame) / 1000, 0.04);
     lastFrame = timestamp;
 
-    if (!state.questionOpen) {
+    const gateBlocksInput = mobileFullscreenGateEl && !mobileFullscreenGateEl.classList.contains("hidden");
+    if (!state.questionOpen && !gateBlocksInput) {
         movePlayer(delta);
         updateNearbyPrompt();
     }
@@ -1057,7 +1121,7 @@ function resetKeys() {
     });
 }
 
-function startGame() {
+async function startGame() {
     if (feedbackTimeoutId) {
         window.clearTimeout(feedbackTimeoutId);
         feedbackTimeoutId = null;
@@ -1069,6 +1133,10 @@ function startGame() {
     updateFullscreenButtonLabel();
     lastFrame = 0;
 
+    if (isMobilePhone) {
+        await ensureGameplayFullscreen();
+    }
+
     startScreenEl.classList.add("hidden");
     resultEl.classList.add("hidden");
     questionModalEl.classList.add("hidden");
@@ -1076,6 +1144,7 @@ function startGame() {
     nearbyPromptEl.classList.add("hidden");
     gamePanelEl.classList.remove("hidden");
 
+    enforceMobileFullscreen();
     updateHud();
     startTimer();
 
@@ -1130,8 +1199,16 @@ if (fullscreenButton) {
     });
 }
 
+if (mobileFullscreenButton) {
+    mobileFullscreenButton.addEventListener("click", async () => {
+        await ensureGameplayFullscreen();
+        enforceMobileFullscreen();
+    });
+}
+
 document.addEventListener("fullscreenchange", () => {
     updateFullscreenButtonLabel();
+    enforceMobileFullscreen();
     if (state && state.running) {
         renderWorld();
     }
@@ -1155,9 +1232,14 @@ window.addEventListener("blur", () => {
     resetTouchSticks();
 });
 window.addEventListener("resize", () => {
+    enforceMobileFullscreen();
     if (state && state.running) {
         renderWorld();
     }
+});
+
+window.addEventListener("orientationchange", () => {
+    enforceMobileFullscreen();
 });
 
 totalEl.textContent = String(STATION_DEFS.length);
