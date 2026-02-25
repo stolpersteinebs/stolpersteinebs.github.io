@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schabbat-Tisch Spiel</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<main class="page">
+    <header class="top">
+        <h1>Schabbat-Tisch richtig decken</h1>
+        <p>Bringe die Gegenstände in die richtige Reihenfolge, wie sie traditionell vor Beginn des Schabbats vorbereitet werden.</p>
+    </header>
+
+    <nav class="quick-links" aria-label="Spiele-Navigation">
+        <a href="/">Startseite</a>
+        <a href="/koscherspiel/">Koscher Sammelspiel</a>
+        <a href="/feiertagsquiz/">Feiertags-Quiz</a>
+        <a href="/dreidspiel/">3D Lernwelt</a>
+    </nav>
+
+    <section class="hud" aria-live="polite">
+        <div class="hud-item">Punkte: <span id="score">0</span></div>
+        <div class="hud-item">Schritte: <span id="step">1</span>/<span id="total">6</span></div>
+        <div class="hud-item">Fehler: <span id="mistakes">0</span></div>
+    </section>
+
+    <section class="board" aria-label="Schabbat-Tisch Spielbereich">
+        <article class="card instructions">
+            <h2>Anleitung</h2>
+            <ol>
+                <li>Klicke auf den Gegenstand, der als <strong>nächstes</strong> auf den Tisch gehört.</li>
+                <li>Bei richtiger Reihenfolge wächst dein gedeckter Tisch rechts.</li>
+                <li>Fehler sind erlaubt – du bekommst direkt einen Hinweis.</li>
+            </ol>
+            <p id="hint" class="hint">Tipp: Man beginnt mit der Grundlage des Tisches.</p>
+        </article>
+
+        <article class="card tray-wrap" aria-labelledby="trayTitle">
+            <h2 id="trayTitle">Verfügbare Gegenstände</h2>
+            <div id="tray" class="tray"></div>
+        </article>
+
+        <article class="card table-wrap" aria-labelledby="tableTitle">
+            <h2 id="tableTitle">Dein gedeckter Tisch</h2>
+            <div id="table" class="table"></div>
+            <p id="feedback" class="feedback" role="status" aria-live="polite"></p>
+            <button id="restartButton" class="restart" type="button">Neu starten</button>
+        </article>
+    </section>
+</main>
+
+<script src="script.js"></script>
+</body>
+</html>
