@@ -192,17 +192,28 @@ body.pseudo-fullscreen .render-frame {
     right: 12px;
     bottom: 12px;
     display: none;
-    gap: 12px;
+    gap: 10px;
     align-items: flex-end;
     justify-content: space-between;
     pointer-events: none;
     z-index: 3;
 }
 
-.touch-stick-wrap {
-    flex: 1;
+
+.touch-stick-group {
     display: flex;
+    flex-direction: column;
     align-items: center;
+    gap: 6px;
+}
+
+.touch-stick-label {
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.95);
+    text-shadow: 0 1px 2px rgba(8, 14, 28, 0.6);
 }
 
 .touch-stick {
@@ -253,7 +264,7 @@ body.pseudo-fullscreen .render-frame {
 
 .touch-action {
     flex: 0 0 auto;
-    min-width: 132px;
+    min-width: 120px;
 }
 
 .fullscreen-btn {
