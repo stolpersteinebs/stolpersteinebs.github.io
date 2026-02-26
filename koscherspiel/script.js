@@ -13,12 +13,21 @@ const restartButton = document.getElementById("restartButton");
 const leftBtn = document.getElementById("leftBtn");
 const rightBtn = document.getElementById("rightBtn");
 
-const kosherFoods = ["🍎", "🥕", "🍞", "🐟", "🫒", "🍇", "🥔"];
-const nonKosherFoods = ["🐷", "🍤", "🦐", "🦀", "🐙"];
+const kosherFoods = [
+    { name: "Apfel", image: "images/apple.png" },
+    { name: "Karotte", image: "images/carrot.png" }
+];
+const nonKosherFoods = [
+    "🐷",
+    "🍤",
+    "🦐",
+    "🦀",
+    "🐙"
+];
 
-const playerWidth = 44;
+const playerWidth = 52;
 const playerSpeed = 340; // px/s
-const itemWidth = 34;
+const itemWidth = 40;
 
 const keys = {
     left: false,
@@ -125,7 +134,17 @@ function spawnItem() {
     const x = Math.random() * (gameWidth() - itemWidth);
     const y = -40;
 
-    itemEl.textContent = foodList[Math.floor(Math.random() * foodList.length)];
+    const selectedFood = foodList[Math.floor(Math.random() * foodList.length)];
+
+    if (isKosher) {
+        const img = document.createElement("img");
+        img.src = selectedFood.image;
+        img.alt = selectedFood.name;
+        itemEl.appendChild(img);
+    } else {
+        itemEl.textContent = selectedFood;
+    }
+
     itemEl.dataset.kosher = isKosher ? "true" : "false";
     itemEl.style.transform = `translate(${x}px, ${y}px)`;
     game.appendChild(itemEl);
