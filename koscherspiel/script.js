@@ -29,6 +29,7 @@ let state = null;
 let loopId = null;
 let lastTime = 0;
 let statusTimeoutId = null;
+let activeTouchId = null;
 
 function getStoredHighscore() {
     return Number(localStorage.getItem("koscher_highscore") || 0);
@@ -192,6 +193,8 @@ function recalcLevel() {
 }
 
 function updatePlayer(deltaSeconds) {
+    if (activeTouchId !== null) return;
+
     const move = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
     if (move === 0) return;
 
@@ -259,6 +262,7 @@ function endGame(reason) {
     state.running = false;
     keys.left = false;
     keys.right = false;
+    activeTouchId = null;
 
     if (loopId) {
         window.cancelAnimationFrame(loopId);
@@ -298,6 +302,7 @@ function startGame() {
     startScreen.classList.add("hidden");
     gameOverScreen.classList.add("hidden");
     statusDisplay.classList.add("hidden");
+    activeTouchId = null;
 
     state.playerX = (gameWidth() - playerWidth) / 2;
     positionPlayer();
@@ -332,32 +337,51 @@ function bindButtonHold(button, direction) {
 }
 
 function bindTouchFieldControl() {
-    const touchToDirection = (touchX) => {
+    const movePlayerToTouchX = (touchX) => {
         const gameRect = game.getBoundingClientRect();
         const relativeX = touchX - gameRect.left;
-        return relativeX < gameRect.width / 2 ? "left" : "right";
+        state.playerX = clamp(relativeX - playerWidth / 2, 0, gameRect.width - playerWidth);
+        positionPlayer();
+    };
+
+    const findTouchById = (touches, id) => {
+        for (let i = 0; i < touches.length; i += 1) {
+            if (touches[i].identifier === id) return touches[i];
+        }
+        return null;
     };
 
     const onTouchStart = (event) => {
         if (!state || !state.running) return;
         if (event.target.closest("button")) return;
 
+        const touch = event.changedTouches[0];
+        if (!touch) return;
+
         event.preventDefault();
-        const direction = touchToDirection(event.touches[0].clientX);
-        keys.left = direction === "left";
-        keys.right = direction === "right";
+        activeTouchId = touch.identifier;
+        keys.left = false;
+        keys.right = false;
+        movePlayerToTouchX(touch.clientX);
     };
 
     const onTouchMove = (event) => {
-        if (!state || !state.running) return;
+        if (!state || !state.running || activeTouchId === null) return;
         event.preventDefault();
 
-        const direction = touchToDirection(event.touches[0].clientX);
-        keys.left = direction === "left";
-        keys.right = direction === "right";
+        const activeTouch = findTouchById(event.touches, activeTouchId);
+        if (!activeTouch) return;
+
+        movePlayerToTouchX(activeTouch.clientX);
     };
 
-    const onTouchEnd = () => {
+    const onTouchEnd = (event) => {
+        if (activeTouchId === null) return;
+
+        const endedTouch = findTouchById(event.changedTouches, activeTouchId);
+        if (!endedTouch) return;
+
+        activeTouchId = null;
         keys.left = false;
         keys.right = false;
     };
