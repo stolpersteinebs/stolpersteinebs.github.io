@@ -332,11 +332,300 @@ function bindButtonHold(button, direction) {
 }
 
 function bindTouchFieldControl() {
-    const touchToDirection = (touchX) => {
-        const gameRect = game.getBoundingClientRect();
-        const relativeX = touchX - gameRect.left;
-        return relativeX < gameRect.width / 2 ? "left" : "right";
-    };
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/koscherspiel/script.js b/koscherspiel/script.js
+index dc35c501a2f1196a416dd56451a186ab6b40dfa8..95a4c9ab7db5b03351a627c6e47c1a7d6824199f 100644
+--- a/koscherspiel/script.js
++++ b/koscherspiel/script.js
+@@ -7,50 +7,51 @@ const highscoreDisplay = document.getElementById("highscore");
+ const statusDisplay = document.getElementById("status");
+ const startScreen = document.getElementById("startScreen");
+ const startButton = document.getElementById("startButton");
+ const gameOverScreen = document.getElementById("gameOver");
+ const resultText = document.getElementById("resultText");
+ const restartButton = document.getElementById("restartButton");
+ const leftBtn = document.getElementById("leftBtn");
+ const rightBtn = document.getElementById("rightBtn");
+ 
+ const kosherFoods = ["🍎", "🥕", "🍞", "🐟", "🫒", "🍇", "🥔"];
+ const nonKosherFoods = ["🐷", "🍤", "🦐", "🦀", "🐙"];
+ 
+ const playerWidth = 44;
+ const playerSpeed = 340; // px/s
+ const itemWidth = 34;
+ 
+ const keys = {
+     left: false,
+     right: false
+ };
+ 
+ let state = null;
+ let loopId = null;
+ let lastTime = 0;
+ let statusTimeoutId = null;
++let activeTouchId = null;
+ 
+ function getStoredHighscore() {
+     return Number(localStorage.getItem("koscher_highscore") || 0);
+ }
+ 
+ function createInitialState() {
+     return {
+         running: true,
+         score: 0,
+         lives: 3,
+         level: 1,
+         playerX: 0,
+         spawnTimer: 0,
+         items: [],
+         highscore: getStoredHighscore()
+     };
+ }
+ 
+ function gameWidth() {
+     return game.clientWidth;
+ }
+ 
+ function gameHeight() {
+     return game.clientHeight;
+ }
+@@ -170,50 +171,52 @@ function handleMissed(item, index) {
+     if (item.isKosher) {
+         state.lives -= 1;
+         setStatus("Koscher verpasst!", "danger");
+         updateHUD();
+     }
+ 
+     removeItem(index);
+ 
+     if (state.lives <= 0) {
+         endGame("Zu viele koschere Lebensmittel verpasst.");
+     }
+ }
+ 
+ function removeItem(index) {
+     const [removed] = state.items.splice(index, 1);
+     if (removed) {
+         removed.el.remove();
+     }
+ }
+ 
+ function recalcLevel() {
+     state.level = Math.floor(state.score / 8) + 1;
+ }
+ 
+ function updatePlayer(deltaSeconds) {
++    if (activeTouchId !== null) return;
++
+     const move = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
+     if (move === 0) return;
+ 
+     state.playerX += move * playerSpeed * deltaSeconds;
+     state.playerX = clamp(state.playerX, 0, gameWidth() - playerWidth);
+     positionPlayer();
+ }
+ 
+ function updateItems(deltaSeconds) {
+     const playerRect = {
+         x: state.playerX,
+         y: gameHeight() - 14 - 36,
+         width: playerWidth,
+         height: 36
+     };
+ 
+     for (let i = state.items.length - 1; i >= 0; i -= 1) {
+         const item = state.items[i];
+         item.y += currentFallSpeed() * deltaSeconds;
+         item.el.style.transform = `translate(${item.x}px, ${item.y}px)`;
+ 
+         const itemRect = {
+             x: item.x,
+             y: item.y,
+             width: itemWidth,
+@@ -237,149 +240,170 @@ function updateSpawn(deltaSeconds) {
+ 
+     if (state.spawnTimer >= interval) {
+         state.spawnTimer = 0;
+         spawnItem();
+     }
+ }
+ 
+ function gameLoop(timestamp) {
+     if (!state.running) return;
+ 
+     if (!lastTime) lastTime = timestamp;
+     const deltaSeconds = Math.min((timestamp - lastTime) / 1000, 0.033);
+     lastTime = timestamp;
+ 
+     updatePlayer(deltaSeconds);
+     updateSpawn(deltaSeconds);
+     updateItems(deltaSeconds);
+ 
+     loopId = window.requestAnimationFrame(gameLoop);
+ }
+ 
+ function endGame(reason) {
+     state.running = false;
+     keys.left = false;
+     keys.right = false;
++    activeTouchId = null;
+ 
+     if (loopId) {
+         window.cancelAnimationFrame(loopId);
+         loopId = null;
+     }
+ 
+     if (statusTimeoutId) {
+         window.clearTimeout(statusTimeoutId);
+         statusTimeoutId = null;
+     }
+     statusDisplay.classList.add("hidden");
+ 
+     if (state.score > state.highscore) {
+         state.highscore = state.score;
+         localStorage.setItem("koscher_highscore", String(state.highscore));
+     }
+ 
+     updateHUD();
+     resultText.textContent = `${reason} Dein Ergebnis: ${state.score} Punkte.`;
+     gameOverScreen.classList.remove("hidden");
+ }
+ 
+ function startGame() {
+     if (loopId) {
+         window.cancelAnimationFrame(loopId);
+         loopId = null;
+     }
+     if (statusTimeoutId) {
+         window.clearTimeout(statusTimeoutId);
+         statusTimeoutId = null;
+     }
+ 
+     clearItems();
+     state = createInitialState();
+     updateHUD();
+ 
+     startScreen.classList.add("hidden");
+     gameOverScreen.classList.add("hidden");
+     statusDisplay.classList.add("hidden");
++    activeTouchId = null;
+ 
+     state.playerX = (gameWidth() - playerWidth) / 2;
+     positionPlayer();
+ 
+     lastTime = 0;
+     loopId = window.requestAnimationFrame(gameLoop);
+ }
+ 
+ function setDirection(direction, active) {
+     if (!state || !state.running) return;
+     keys[direction] = active;
+ }
+ 
+ function bindButtonHold(button, direction) {
+     const down = (event) => {
+         event.preventDefault();
+         setDirection(direction, true);
+     };
+     const up = (event) => {
+         event.preventDefault();
+         setDirection(direction, false);
+     };
+ 
+     button.addEventListener("pointerdown", down);
+     button.addEventListener("pointerup", up);
+     button.addEventListener("pointerleave", up);
+     button.addEventListener("pointercancel", up);
+ 
+     button.addEventListener("touchstart", down, { passive: false });
+     button.addEventListener("touchend", up, { passive: false });
+     button.addEventListener("touchcancel", up, { passive: false });
+ }
+ 
+ function bindTouchFieldControl() {
+-    const touchToDirection = (touchX) => {
++    const movePlayerToTouchX = (touchX) => {
+         const gameRect = game.getBoundingClientRect();
+         const relativeX = touchX - gameRect.left;
+-        return relativeX < gameRect.width / 2 ? "left" : "right";
++        state.playerX = clamp(relativeX - playerWidth / 2, 0, gameRect.width - playerWidth);
++        positionPlayer();
++    };
++
++    const findTouchById = (touches, id) => {
++        for (let i = 0; i < touches.length; i += 1) {
++            if (touches[i].identifier === id) return touches[i];
++        }
++        return null;
+     };
+ 
+     const onTouchStart = (event) => {
+         if (!state || !state.running) return;
+         if (event.target.closest("button")) return;
+ 
++        const touch = event.changedTouches[0];
++        if (!touch) return;
++
+         event.preventDefault();
+-        const direction = touchToDirection(event.touches[0].clientX);
+-        keys.left = direction === "left";
+-        keys.right = direction === "right";
++        activeTouchId = touch.identifier;
++        keys.left = false;
++        keys.right = false;
++        movePlayerToTouchX(touch.clientX);
+     };
+ 
+     const onTouchMove = (event) => {
+-        if (!state || !state.running) return;
++        if (!state || !state.running || activeTouchId === null) return;
+         event.preventDefault();
+ 
+-        const direction = touchToDirection(event.touches[0].clientX);
+-        keys.left = direction === "left";
+-        keys.right = direction === "right";
++        const activeTouch = findTouchById(event.touches, activeTouchId);
++        if (!activeTouch) return;
++
++        movePlayerToTouchX(activeTouch.clientX);
+     };
+ 
+-    const onTouchEnd = () => {
++    const onTouchEnd = (event) => {
++        if (activeTouchId === null) return;
++
++        const endedTouch = findTouchById(event.changedTouches, activeTouchId);
++        if (!endedTouch) return;
++
++        activeTouchId = null;
+         keys.left = false;
+         keys.right = false;
+     };
+ 
+     game.addEventListener("touchstart", onTouchStart, { passive: false });
+     game.addEventListener("touchmove", onTouchMove, { passive: false });
+     game.addEventListener("touchend", onTouchEnd);
+     game.addEventListener("touchcancel", onTouchEnd);
+ }
+ 
+ document.addEventListener("keydown", (event) => {
+     if (event.key === "ArrowLeft" || event.key.toLowerCase() === "a") {
+         setDirection("left", true);
+     }
+     if (event.key === "ArrowRight" || event.key.toLowerCase() === "d") {
+         setDirection("right", true);
+     }
+ });
+ 
+ document.addEventListener("keyup", (event) => {
+     if (event.key === "ArrowLeft" || event.key.toLowerCase() === "a") {
+         setDirection("left", false);
+     }
+     if (event.key === "ArrowRight" || event.key.toLowerCase() === "d") {
+         setDirection("right", false);
+ 
+EOF
+)
 
     const onTouchStart = (event) => {
         if (!state || !state.running) return;
