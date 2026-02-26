@@ -25,12 +25,12 @@ const STATION_DEFS = [
         interactionLabel: "Schabbat-Tisch",
         x: 2.5,
         y: 1.5,
-        question: "Du stehst vor einem gedeckten Schabbat-Tisch. Was ist jetzt die passende Handlung?",
-        options: ["Schabbat-Kerzen segnen und gemeinsam essen", "Schnell eine E-Mail schreiben", "Das Essen wegwerfen", "Den Tisch ignorieren"],
-        correctIndex: 0,
+        question: "Es ist kurz vor Sonnenuntergang am Freitag. Welche Handlung ist im Sinne des Schabbat am passendsten?",
+        options: ["Noch schnell einkaufen gehen", "Schabbat-Kerzen vor Sonnenuntergang entzunden und Kiddusch sprechen", "Die Kerzen nach dem Essen anzunden", "Den Schabbat mit Arbeit im Haushalt beginnen"],
+        correctIndex: 1,
         fact: "Am Schabbat werden Kerzen, Segen und gemeinsames Essen besonders wichtig.",
         successAction: "Eine Figur spricht den Segen und beginnt ruhig mit der Mahlzeit.",
-        actionVisual: "🕯️🧍🍞"
+        actionVisual: ""
     },
     {
         id: "pessach",
@@ -39,12 +39,12 @@ const STATION_DEFS = [
         interactionLabel: "Seder-Tafel",
         x: 13.5,
         y: 1.5,
-        question: "Hier ist eine Pessach-Tafel aufgebaut. Was sollte man hier tun?",
-        options: ["Die Geschichte vom Auszug erzahlen und Matze essen", "Pizza mit Hefe backen", "Silvester feiern", "Alles stehen lassen"],
-        correctIndex: 0,
+        question: "Beim Sederabend: Welche Handlung passt traditionell zum Erzahlen der Pessach-Geschichte?",
+        options: ["Chametz sammeln und sofort essen", "Die Haggada lesen, Fragen stellen und Matze essen", "Nur Sussigkeiten verteilen, ohne Geschichte", "Das Sedermahl durch Fasten ersetzen"],
+        correctIndex: 1,
         fact: "Am Pessach-Seder wird an den Auszug aus Agypten erinnert.",
         successAction: "Die Figur zeigt auf die Sederplatte und erzahlt die Befreiungsgeschichte.",
-        actionVisual: "🧍📖🍽️"
+        actionVisual: ""
     },
     {
         id: "kashrut",
@@ -53,7 +53,7 @@ const STATION_DEFS = [
         interactionLabel: "koschere Kuche",
         x: 3.5,
         y: 5.5,
-        question: "Du bist in einer koscheren Kuche. Welche Entscheidung passt?",
+        question: "Du planst ein koscheres Abendessen fur Gaste. Welche Entscheidung ist korrekt?",
         options: [
             "Milchiges und Fleischiges im selben Topf kochen",
             "Nach den Speisegesetzen geeignete Lebensmittel nutzen",
@@ -63,7 +63,7 @@ const STATION_DEFS = [
         correctIndex: 1,
         fact: "Kaschrut bedeutet, Lebensmittel nach judischen Speisegesetzen zuzubereiten.",
         successAction: "Die Figur sortiert ruhig die Zutaten und kocht regelkonform weiter.",
-        actionVisual: "🧍🥣✅"
+        actionVisual: ""
     },
     {
         id: "synagoge",
@@ -72,17 +72,17 @@ const STATION_DEFS = [
         interactionLabel: "Synagoge",
         x: 11.5,
         y: 7.5,
-        question: "Du betrittst eine Synagoge. Was mochtest du hier tun?",
+        question: "Du besuchst erstmals eine Synagoge wahrend eines Gottesdienstes. Was ist angemessen?",
         options: [
-            "Beten und respektvoll lernen",
-            "Laut Rockmusik spielen",
-            "Mit dem Ball drinnen kicken",
-            "Die Stuhle umwerfen"
+            "Ruhig verhalten, Kopfbedeckung beachten und respektvoll teilnehmen",
+            "Zwischen den Gebeten telefonieren",
+            "Im Mittelgang Fotos mit Blitz machen",
+            "Laut diskutieren, wahrend andere beten"
         ],
         correctIndex: 0,
         fact: "Die Synagoge ist ein Ort fur Gebet, Lernen und Gemeinschaft.",
         successAction: "Die Figur setzt eine Kippa auf und beginnt ein ruhiges Gebet.",
-        actionVisual: "🧍🙏"
+        actionVisual: ""
     },
     {
         id: "jomkippur",
@@ -91,12 +91,12 @@ const STATION_DEFS = [
         interactionLabel: "Jom-Kippur-Raum",
         x: 2.5,
         y: 13.5,
-        question: "Hier wird Jom Kippur vorbereitet. Was passt zu diesem Tag?",
-        options: ["Laut feiern", "Fasten, nachdenken und um Verzeihung bitten", "Geschenke tauschen", "Einen Grillabend machen"],
+        question: "Jom Kippur beginnt bald. Welche Vorbereitung entspricht dem Sinn dieses Tages am ehesten?",
+        options: ["Ein grosses Festmahl fur den Abend planen", "Fasten, beten und aktiv um Vergebung bitten", "Sportturnier organisieren", "Neue Jahresvorsatze auf einer Party feiern"],
         correctIndex: 1,
         fact: "Jom Kippur ist ein wichtiger Tag fur Fasten und Versohnung.",
         successAction: "Die Figur wird still, reflektiert und spricht eine Entschuldigung aus.",
-        actionVisual: "🧍🤍"
+        actionVisual: ""
     },
     {
         id: "hebraeisch",
@@ -105,12 +105,12 @@ const STATION_DEFS = [
         interactionLabel: "Tora-Raum",
         x: 13.5,
         y: 13.5,
-        question: "Vor dir liegt eine Tora-Rolle. Welche Handlung passt hier?",
-        options: ["Respektvoll aus dem hebraischen Text lesen", "Mit Textmarkern hineinschreiben", "Als Deko benutzen", "Zufallig eine Seite zerknittern"],
+        question: "Du sollst bei einer Tora-Lesung helfen. Welche Handlung ist respektvoll und richtig?",
+        options: ["Mit dem Jad dem Text folgen und die Rolle sorgfaltig behandeln", "Mit Kugelschreiber Randnotizen direkt in die Rolle schreiben", "Eine Seite herausreissen, um sie besser zu erklaren", "Die Rolle zum Spass zerknullen und wieder glatten"],
         correctIndex: 0,
         fact: "Die Tora ist traditionell in hebraischer Sprache verfasst und wird respektvoll behandelt.",
         successAction: "Die Figur zeigt mit einem Zeiger auf den Text und liest konzentriert.",
-        actionVisual: "🧍📜"
+        actionVisual: ""
     }
 ];
 
@@ -120,6 +120,7 @@ const TOUCH_MOVE_FACTOR = 0.38;
 const TOUCH_TURN_FACTOR = 0.5;
 const TURN_SPEED = 2.3;
 const MAX_TIME = 240;
+const MAX_LIVES = 3;
 const SCORE_BASE = 220;
 const SCORE_TIME_FACTOR = 2;
 const SCORE_STREAK_FACTOR = 45;
@@ -139,6 +140,7 @@ const startHighscoreEl = document.getElementById("startHighscore");
 const timeLeftEl = document.getElementById("timeLeft");
 const scoreEl = document.getElementById("score");
 const streakEl = document.getElementById("streak");
+const livesEl = document.getElementById("lives");
 const solvedEl = document.getElementById("solved");
 const totalEl = document.getElementById("total");
 const highscoreEl = document.getElementById("highscore");
@@ -149,12 +151,10 @@ const feedbackBannerEl = document.getElementById("feedbackBanner");
 const questionTitleEl = document.getElementById("questionTitle");
 const questionTextEl = document.getElementById("questionText");
 const answerButtonsEl = document.getElementById("answerButtons");
-const actionStageEl = document.getElementById("actionStage");
-const actionFigureEl = document.getElementById("actionFigure");
-const actionCaptionEl = document.getElementById("actionCaption");
-
 const resultMottoEl = document.getElementById("resultMotto");
 const resultTextEl = document.getElementById("resultText");
+const resultMetaEl = document.getElementById("resultMeta");
+const scoreWheelValueEl = document.getElementById("scoreWheelValue");
 
 const canvas = document.getElementById("view");
 const ctx = canvas.getContext("2d");
@@ -205,10 +205,19 @@ const STICK_DEADZONE = 0.16;
 const STICK_MAX_OFFSET = 42;
 const isTouchDevice = window.matchMedia("(hover: none) and (pointer: coarse)").matches || navigator.maxTouchPoints > 0;
 const isMobilePhone = (() => {
+    const uaDataMobile = navigator.userAgentData && typeof navigator.userAgentData.mobile === "boolean"
+        ? navigator.userAgentData.mobile
+        : null;
     const userAgent = navigator.userAgent || "";
-    const phoneLikeAgent = /Android.+Mobile|iPhone|iPod|Windows Phone|Opera Mini|IEMobile/i.test(userAgent);
-    const smallDeviceScreen = Math.min(window.screen.width, window.screen.height) <= 900;
-    return isTouchDevice && (phoneLikeAgent || smallDeviceScreen);
+    const phoneLikeAgent = /Android.+Mobile|iPhone|iPod|Windows Phone|Opera Mini|IEMobile|Mobile Safari/i.test(userAgent);
+    const tabletLikeAgent = /iPad|Tablet|Silk|PlayBook|Kindle|Nexus 7|Nexus 10|SM-T|Tab/i.test(userAgent);
+    const shortEdge = Math.min(window.screen.width, window.screen.height);
+    const longEdge = Math.max(window.screen.width, window.screen.height);
+    const phoneLikeScreen = shortEdge <= 540 && longEdge <= 1000;
+
+    if (!isTouchDevice || tabletLikeAgent) return false;
+    if (uaDataMobile !== null) return uaDataMobile;
+    return phoneLikeAgent || phoneLikeScreen;
 })();
 
 if (isTouchDevice) {
@@ -224,10 +233,11 @@ function createInitialState() {
             y: 1.8,
             angle: 0.28
         },
-        stations: STATION_DEFS.map((station) => ({ ...station, solved: false })),
+        stations: STATION_DEFS.map((station) => ({ ...station, solved: false, failed: false })),
         timeLeft: MAX_TIME,
         score: 0,
         streak: 0,
+        lives: MAX_LIVES,
         maxStreak: 0,
         solved: 0,
         correct: 0,
@@ -298,6 +308,7 @@ function updateHud() {
     timeLeftEl.textContent = String(state.timeLeft);
     scoreEl.textContent = formatPoints(state.score);
     streakEl.textContent = String(state.streak);
+    livesEl.textContent = String(state.lives);
     solvedEl.textContent = String(state.solved);
     totalEl.textContent = String(state.stations.length);
     highscoreEl.textContent = formatPoints(state.highscore);
@@ -443,7 +454,9 @@ function drawRoundedRect(x, y, w, h, radius) {
 
 function drawStationSprite(x, y, spriteWidth, spriteHeight, station) {
     const solved = station.solved;
-    const base = solved ? "rgba(30, 163, 139, 0.84)" : "rgba(242, 184, 75, 0.92)";
+    const base = station.failed
+        ? "rgba(201, 58, 73, 0.9)"
+        : (solved ? "rgba(30, 163, 139, 0.84)" : "rgba(242, 184, 75, 0.92)");
 
     drawRoundedRect(x, y, spriteWidth, spriteHeight, 10);
     ctx.fillStyle = base;
@@ -504,11 +517,11 @@ function drawStationSprite(x, y, spriteWidth, spriteHeight, station) {
     }
 
     if (solved) {
-        ctx.fillStyle = "#d9ffe8";
+        ctx.fillStyle = station.failed ? "#ffe1e7" : "#d9ffe8";
         ctx.font = `${Math.max(11, spriteHeight * 0.16)}px Arial`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText("OK", x + spriteWidth * 0.5, y + spriteHeight * 0.82);
+        ctx.fillText(station.failed ? "X" : "OK", x + spriteWidth * 0.5, y + spriteHeight * 0.82);
     }
 }
 
@@ -615,7 +628,7 @@ function drawMinimap(canvasWidth) {
     }
 
     state.stations.forEach((station) => {
-        ctx.fillStyle = station.solved ? "#1ea38b" : "#f2b84b";
+        ctx.fillStyle = station.failed ? "#c93a49" : (station.solved ? "#1ea38b" : "#f2b84b");
         ctx.beginPath();
         ctx.arc(x + station.x * cell, y + station.y * cell, Math.max(2.5, cell * 0.24), 0, Math.PI * 2);
         ctx.fill();
@@ -882,19 +895,13 @@ function enforceMobileFullscreen() {
 
     const message = portraitOrientation
         ? "Bitte ins Querformat drehen und Vollbild aktivieren, um weiterzuspielen."
-        : "Auf dem Smartphone ist dieses Spiel nur im Vollbild verfugbar.";
+        : "Zum Spielen auf Smartphones ist Vollbild erforderlich. Du kannst es oben links jederzeit verlassen.";
 
     updateMobileGateVisibility(true, message);
 }
 
 async function toggleFullscreen() {
     if (!renderFrameEl) return;
-
-    if (isMobilePhone && state && state.running) {
-        await ensureGameplayFullscreen();
-        enforceMobileFullscreen();
-        return;
-    }
 
     if (isFullscreenActive()) {
         await document.exitFullscreen();
@@ -932,10 +939,6 @@ function openQuestion(station) {
     questionTitleEl.textContent = station.name;
     questionTextEl.textContent = station.question;
     answerButtonsEl.innerHTML = "";
-    actionStageEl.classList.add("hidden");
-    actionFigureEl.classList.remove("perform");
-    actionFigureEl.textContent = "🧍";
-    actionCaptionEl.textContent = "";
 
     station.options.forEach((optionText, index) => {
         const button = document.createElement("button");
@@ -980,30 +983,23 @@ function answerStation(stationId, selectedIndex) {
         state.maxStreak = Math.max(state.maxStreak, state.streak);
         state.correct += 1;
 
-        showFeedback(`Richtig: +${formatPoints(gained)} Punkte. ${station.fact}`, "ok");
+        showFeedback(`Richtig. +${formatPoints(gained)} Punkte. ${station.fact}`, "ok");
     } else {
         state.score = Math.max(0, state.score - SCORE_WRONG_PENALTY);
         state.streak = 0;
+        state.lives = Math.max(0, state.lives - 1);
+        station.failed = true;
 
-        showFeedback(`Nicht korrekt: -${formatPoints(SCORE_WRONG_PENALTY)} Punkte. ${station.fact}`, "bad");
+        showFeedback(`Falsch. -${formatPoints(SCORE_WRONG_PENALTY)} Punkte. Richtige Losung: ${station.options[station.correctIndex]}.`, "bad");
     }
 
     station.solved = true;
     state.solved += 1;
     updateHud();
 
-    if (correct) {
-        questionTextEl.textContent = `${station.successAction} Aufgabe geloest.`;
-        actionStageEl.classList.remove("hidden");
-        actionFigureEl.textContent = station.actionVisual || "🧍✨";
-        actionFigureEl.classList.remove("perform");
-        void actionFigureEl.offsetWidth;
-        actionFigureEl.classList.add("perform");
-        actionCaptionEl.textContent = "Die Figur fuhrt die richtige Handlung aus.";
-    } else {
-        questionTextEl.textContent = `Die Aufgabe gilt trotzdem als besucht. ${station.fact}`;
-        actionStageEl.classList.add("hidden");
-    }
+    questionTextEl.textContent = correct
+        ? `Richtig beantwortet. ${station.successAction}`
+        : `Falsch beantwortet. Richtige Losung: ${station.options[station.correctIndex]}. ${station.fact}`;
 
     answerButtonsEl.innerHTML = "";
     const continueButton = document.createElement("button");
@@ -1011,6 +1007,10 @@ function answerStation(stationId, selectedIndex) {
     continueButton.textContent = "Weiter";
     continueButton.addEventListener("click", () => {
         closeQuestion();
+        if (state.lives <= 0) {
+            endGame("Keine Leben mehr.");
+            return;
+        }
         if (state.solved >= state.stations.length) {
             endGame("Alle Orte im Labyrinth erkundet.");
         }
@@ -1020,6 +1020,10 @@ function answerStation(stationId, selectedIndex) {
     resolveTimeoutId = window.setTimeout(() => {
         if (!state || !state.running || !state.questionOpen) return;
         closeQuestion();
+        if (state.lives <= 0) {
+            endGame("Keine Leben mehr.");
+            return;
+        }
         if (state.solved >= state.stations.length) {
             endGame("Alle Orte im Labyrinth erkundet.");
         }
@@ -1066,6 +1070,8 @@ function endGame(reason) {
     const total = state.stations.length;
     const percent = Math.round((state.correct / total) * 100);
     resultMottoEl.textContent = getResultMotto(state.score, state.correct, total);
+    scoreWheelValueEl.textContent = formatPoints(state.score);
+    resultMetaEl.textContent = `Richtige Antworten: ${state.correct}/${total} · Verbleibende Leben: ${state.lives}/${MAX_LIVES}`;
     resultTextEl.textContent =
         `${state.finishReason} Score: ${formatPoints(state.score)}. ` +
         `Richtige Antworten: ${state.correct}/${total} (${percent}%). ` +
