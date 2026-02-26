@@ -872,12 +872,15 @@ function enforceMobileFullscreen() {
         return;
     }
 
-    if (isAnyFullscreenModeActive()) {
+    const fullscreenActive = isAnyFullscreenModeActive();
+    const portraitOrientation = isPortraitOrientation();
+
+    if (fullscreenActive && !portraitOrientation) {
         updateMobileGateVisibility(false);
         return;
     }
 
-    const message = isPortraitOrientation()
+    const message = portraitOrientation
         ? "Bitte ins Querformat drehen und Vollbild aktivieren, um weiterzuspielen."
         : "Auf dem Smartphone ist dieses Spiel nur im Vollbild verfugbar.";
 
