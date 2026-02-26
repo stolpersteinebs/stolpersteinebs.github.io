@@ -31,17 +31,17 @@
     </section>
 
     <section id="gamePanel" class="hidden" aria-live="polite">
-        <section class="hud" aria-label="Spielstand">
-            <div class="hud-item">Zeit: <span id="timeLeft">240</span>s</div>
-            <div class="hud-item">Punkte: <span id="score">0</span></div>
-            <div class="hud-item">Serie: <span id="streak">0</span></div>
-            <div class="hud-item">Stationen: <span id="solved">0</span>/<span id="total">6</span></div>
-            <div class="hud-item">Highscore: <span id="highscore">0</span></div>
-        </section>
-
         <section class="card scene-card" aria-label="3D-Lernwelt">
             <div class="render-frame">
                 <canvas id="view" aria-label="3D Ansicht"></canvas>
+                <section class="hud hud-inside" aria-label="Spielstand im Spiel">
+                    <div class="hud-item">Zeit: <span id="timeLeft">240</span>s</div>
+                    <div class="hud-item">Punkte: <span id="score">0</span></div>
+                    <div class="hud-item">Leben: <span id="lives">3</span></div>
+                    <div class="hud-item">Serie: <span id="streak">0</span></div>
+                    <div class="hud-item">Stationen: <span id="solved">0</span>/<span id="total">6</span></div>
+                    <div class="hud-item">Highscore: <span id="highscore">0</span></div>
+                </section>
                 <div id="nearbyPrompt" class="nearby hidden"></div>
                 <div id="mobileFullscreenGate" class="mobile-gate hidden" aria-live="assertive">
                     <p id="mobileFullscreenText">Auf dem Smartphone ist dieses Spiel nur im Vollbild verfugbar.</p>
@@ -67,10 +67,6 @@
                     <div class="modal-card">
                         <h2 id="questionTitle">Station</h2>
                         <p id="questionText"></p>
-                        <div id="actionStage" class="action-stage hidden" aria-live="polite">
-                            <div id="actionFigure" class="action-figure" aria-hidden="true">🧍</div>
-                            <p id="actionCaption" class="action-caption"></p>
-                        </div>
                         <div id="answerButtons" class="answers"></div>
                         <button id="laterButton" type="button" class="later">Spater</button>
                     </div>
@@ -83,7 +79,12 @@
 
     <section id="result" class="card result hidden">
         <h2>Auswertung</h2>
+        <div class="score-wheel" aria-live="polite">
+            <div id="scoreWheelValue" class="score-wheel-value">0</div>
+            <div class="score-wheel-label">Punkte</div>
+        </div>
         <p id="resultMotto" class="result-motto"></p>
+        <p id="resultMeta" class="result-meta"></p>
         <p id="resultText"></p>
         <button id="restartButton" type="button">Nochmal spielen</button>
     </section>

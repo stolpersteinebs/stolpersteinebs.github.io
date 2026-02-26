@@ -44,7 +44,6 @@ body.pseudo-fullscreen > .page {
 
 body.pseudo-fullscreen .top,
 body.pseudo-fullscreen .quick-links,
-body.pseudo-fullscreen .hud,
 body.pseudo-fullscreen .controls-hint,
 body.pseudo-fullscreen .feedback {
     display: none;
@@ -149,14 +148,24 @@ body.pseudo-fullscreen .render-frame {
 
 .hud {
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 10px;
     margin-bottom: 12px;
 }
 
+.hud-inside {
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    top: 10px;
+    z-index: 3;
+    margin-bottom: 0;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
 .hud-item {
-    background: var(--paper);
-    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.88);
+    border: 1px solid rgba(47, 111, 204, 0.2);
     border-radius: 12px;
     padding: 10px 8px;
     text-align: center;
@@ -467,6 +476,37 @@ body.pseudo-fullscreen .render-frame .fullscreen-btn {
     padding: 22px;
 }
 
+.score-wheel {
+    width: min(180px, 56vw);
+    aspect-ratio: 1;
+    margin: 6px auto 14px;
+    border-radius: 50%;
+    border: 8px solid rgba(47, 111, 204, 0.18);
+    background: radial-gradient(circle at 30% 25%, #ffffff 0%, #f5f9ff 62%, #e8eef9 100%);
+    display: grid;
+    place-items: center;
+    box-shadow: inset 0 0 0 1px rgba(47, 111, 204, 0.12), 0 10px 22px rgba(19, 30, 58, 0.16);
+}
+
+.score-wheel-value {
+    font-size: clamp(1.6rem, 5vw, 2.4rem);
+    font-weight: 900;
+    color: var(--ink);
+    line-height: 1;
+}
+
+.score-wheel-label {
+    margin-top: 4px;
+    font-weight: 700;
+    color: var(--ink-soft);
+}
+
+.result-meta {
+    margin-top: 0;
+    color: var(--ink-soft);
+    font-weight: 700;
+}
+
 .result h2 {
     margin-top: 0;
     margin-bottom: 10px;
@@ -484,7 +524,11 @@ body.pseudo-fullscreen .render-frame .fullscreen-btn {
 
 @media (max-width: 900px) {
     .hud {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .hud-inside {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
     .render-frame {
