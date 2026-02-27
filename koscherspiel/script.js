@@ -18,7 +18,8 @@ const rightBtn = document.getElementById("rightBtn");
 const fallbackFoods = {
     kosherFoods: [
         { name: "Apfel", image: "images/koschere/apple.png" },
-        { name: "Karotte", image: "images/koschere/carrot.png" }
+        { name: "Karotte", image: "images/koschere/carrot.png" },
+        { name: "Brokkoli", image: "images/koschere/Brokkoli.png" },
     ],
     nonKosherFoods: [
         { name: "Schweinesteak", image: "images/nicht-koschere/Schweinesteak.png" }
