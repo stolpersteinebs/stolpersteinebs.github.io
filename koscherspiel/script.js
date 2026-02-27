@@ -72,7 +72,7 @@ const itemWidth = 40;
 const powerupDurationMs = 6000;
 const leaderboardSize = 5;
 const maxLevel = 10;
-const defaultLeaderboardApiPath = "/api/koscher-leaderboard";
+const defaultLeaderboardApiPath = "/api/koscher-leaderboard.php";
 
 const keys = {
     left: false,
@@ -221,28 +221,65 @@ function getLeaderboardApiUrl() {
     return defaultLeaderboardApiPath;
 }
 
-async function requestLeaderboard({ method, body }) {
-    const apiUrl = getLeaderboardApiUrl();
-
-    try {
-        const response = await fetch(apiUrl, {
-            method,
-            headers: {
-                "Accept": "application/json",
-                ...(body ? { "Content-Type": "application/json" } : {})
-            },
-            ...(body ? { body: JSON.stringify(body) } : {})
-        });
-
-        if (!response.ok) {
-            return { ok: false, payload: null, url: apiUrl };
-        }
-
-        const payload = await parseJsonSafely(response);
-        return { ok: true, payload, url: apiUrl };
-    } catch {
-        return { ok: false, payload: null, url: apiUrl };
+function normalizeApiUrl(rawUrl) {
+    if (typeof rawUrl !== "string") {
+        return "";
     }
+
+    const trimmed = rawUrl.trim();
+
+    if (!trimmed) {
+        return "";
+    }
+
+    if (trimmed.startsWith("lapi/")) {
+        return `/${trimmed.slice(1)}`;
+    }
+
+    if (trimmed.startsWith("api/")) {
+        return `/${trimmed}`;
+    }
+
+    return trimmed;
+}
+
+function getLeaderboardApiCandidates() {
+    const configured = normalizeApiUrl(getLeaderboardApiUrl());
+    const fallbacks = [
+        defaultLeaderboardApiPath,
+        "/api/koscher-leaderboard.php",
+        "../api/koscher-leaderboard.php"
+    ].map(normalizeApiUrl);
+
+    return [configured, ...fallbacks].filter((url, index, all) => url && all.indexOf(url) === index);
+}
+
+async function requestLeaderboard({ method, body }) {
+    const candidates = getLeaderboardApiCandidates();
+
+    for (const apiUrl of candidates) {
+        try {
+            const response = await fetch(apiUrl, {
+                method,
+                headers: {
+                    "Accept": "application/json",
+                    ...(body ? { "Content-Type": "application/json" } : {})
+                },
+                ...(body ? { body: JSON.stringify(body) } : {})
+            });
+
+            if (!response.ok) {
+                continue;
+            }
+
+            const payload = await parseJsonSafely(response);
+            return { ok: true, payload, url: apiUrl };
+        } catch {
+            // Nächste URL probieren.
+        }
+    }
+
+    return { ok: false, payload: null, url: candidates[0] || defaultLeaderboardApiPath };
 }
 
 async function loadLeaderboard() {
