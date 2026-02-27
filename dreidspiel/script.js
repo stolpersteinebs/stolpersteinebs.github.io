@@ -154,7 +154,7 @@ const solvedEl = document.getElementById("solved");
 const totalEl = document.getElementById("total");
 const highscoreEl = document.getElementById("highscore");
 
-const nearbyPromptEl = document.getElementById("nearbyPrompt");
+const interactButton = document.getElementById("interactButton");
 const feedbackBannerEl = document.getElementById("feedbackBanner");
 
 const questionTitleEl = document.getElementById("questionTitle");
@@ -172,7 +172,6 @@ const moveStickEl = document.getElementById("moveStick");
 const moveStickKnobEl = document.getElementById("moveStickKnob");
 const turnStickEl = document.getElementById("turnStick");
 const turnStickKnobEl = document.getElementById("turnStickKnob");
-const touchInteractButton = document.getElementById("touchInteract");
 const fullscreenButton = document.getElementById("fullscreenButton");
 const mobileFullscreenGateEl = document.getElementById("mobileFullscreenGate");
 const mobileFullscreenTextEl = document.getElementById("mobileFullscreenText");
@@ -372,6 +371,22 @@ function updateHud() {
     highscoreEl.textContent = formatPoints(state.highscore);
 }
 
+
+function setInteractButtonState(isNearby, stationLabel = "") {
+    if (!interactButton) return;
+
+    interactButton.classList.toggle("is-nearby", isNearby);
+    interactButton.disabled = !isNearby;
+
+    if (isNearby && stationLabel) {
+        interactButton.dataset.stationName = stationLabel;
+        interactButton.setAttribute("aria-label", `Interagieren mit ${stationLabel}`);
+    } else {
+        interactButton.removeAttribute("data-station-name");
+        interactButton.setAttribute("aria-label", "Interagieren");
+    }
+}
+
 function showFeedback(text, type = "ok") {
     feedbackBannerEl.textContent = text;
     feedbackBannerEl.classList.remove("hidden", "bad");
@@ -389,7 +404,7 @@ function showFeedback(text, type = "ok") {
 
 function updateNearbyPrompt() {
     if (!state || !state.running || state.questionOpen) {
-        nearbyPromptEl.classList.add("hidden");
+        setInteractButtonState(false);
         state.nearbyStationId = null;
         return;
     }
@@ -417,14 +432,13 @@ function updateNearbyPrompt() {
     });
 
     if (!bestStation) {
-        nearbyPromptEl.classList.add("hidden");
+        setInteractButtonState(false);
         state.nearbyStationId = null;
         return;
     }
 
     state.nearbyStationId = bestStation.id;
-    nearbyPromptEl.textContent = `E drucken fur ${bestStation.interactionLabel}`;
-    nearbyPromptEl.classList.remove("hidden");
+    setInteractButtonState(true, bestStation.interactionLabel);
 }
 
 function castRay(rayAngle) {
@@ -1112,7 +1126,7 @@ function openQuestion(station) {
     });
 
     questionModalEl.classList.remove("hidden");
-    nearbyPromptEl.classList.add("hidden");
+    setInteractButtonState(false);
 }
 
 function closeQuestion() {
@@ -1313,7 +1327,7 @@ async function startGame() {
     resultEl.classList.add("hidden");
     questionModalEl.classList.add("hidden");
     feedbackBannerEl.classList.add("hidden");
-    nearbyPromptEl.classList.add("hidden");
+    setInteractButtonState(false);
     gamePanelEl.classList.remove("hidden");
 
     enforceMobileFullscreen();
@@ -1388,13 +1402,13 @@ document.addEventListener("fullscreenchange", () => {
 
 setupTouchSticks();
 
-if (touchInteractButton) {
-    touchInteractButton.addEventListener("pointerdown", (event) => {
+if (interactButton) {
+    interactButton.addEventListener("pointerdown", (event) => {
         event.preventDefault();
         tryOpenNearbyStation();
     });
 
-    touchInteractButton.addEventListener("click", () => {
+    interactButton.addEventListener("click", () => {
         tryOpenNearbyStation();
     });
 }
