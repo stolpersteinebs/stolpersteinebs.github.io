@@ -77,6 +77,10 @@ h1 {
     box-shadow: var(--shadow);
 }
 
+.hud-item-wide {
+    grid-column: span 4;
+}
+
 #game {
     width: min(100%, 520px);
     height: 560px;
@@ -96,9 +100,17 @@ h1 {
     left: 0;
     width: 52px;
     height: 52px;
-    background: url("images/koschere/apple.png") center/contain no-repeat;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.2rem;
     will-change: transform;
     z-index: 3;
+}
+
+#player::before {
+    content: "🛒";
+    filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.16));
 }
 
 .item {
@@ -122,6 +134,24 @@ h1 {
     height: 100%;
     object-fit: contain;
     pointer-events: none;
+}
+
+.powerup {
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.9);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+}
+
+.powerup-shield {
+    background: #6ab1ff;
+}
+
+.powerup-slow {
+    background: #73d8c4;
+}
+
+.powerup-double {
+    background: #f0c44d;
 }
 
 .overlay {
@@ -178,6 +208,33 @@ h1 {
     background: rgba(201, 58, 73, 0.94);
 }
 
+.leaderboard {
+    width: min(100%, 520px);
+    margin: 14px auto 0;
+    background: var(--card);
+    border: 1px solid rgba(47, 111, 204, 0.16);
+    border-radius: 12px;
+    padding: 10px 14px;
+    box-shadow: var(--shadow);
+    text-align: left;
+}
+
+.leaderboard h2 {
+    margin: 0 0 8px;
+    text-align: center;
+    font-size: 1.1rem;
+}
+
+.leaderboard ol {
+    margin: 0;
+    padding-left: 22px;
+}
+
+.leaderboard li {
+    margin: 4px 0;
+    font-weight: 600;
+}
+
 .mobile-controls {
     margin: 16px auto 0;
     width: min(100%, 520px);
@@ -204,6 +261,10 @@ h1 {
 @media (max-width: 760px) {
     .hud {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .hud-item-wide {
+        grid-column: span 2;
     }
 
     #game {
