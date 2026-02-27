@@ -105,7 +105,7 @@ function normalizeLeaderboard(rawEntries) {
         return [];
     }
 
-    return rawEntries
+    const normalizedEntries = rawEntries
         .map((entry) => {
             if (typeof entry === "number") {
                 return { name: "Anonym", score: entry };
@@ -126,9 +126,61 @@ function normalizeLeaderboard(rawEntries) {
                 score
             };
         })
-        .filter(Boolean)
+        .filter(Boolean);
+
+    const bestScoresByName = new Map();
+
+    normalizedEntries.forEach((entry) => {
+        const key = entry.name.toLocaleLowerCase("de-DE");
+        const existing = bestScoresByName.get(key);
+
+        if (!existing || entry.score > existing.score) {
+            bestScoresByName.set(key, entry);
+        }
+    });
+
+    return Array.from(bestScoresByName.values())
         .sort((a, b) => b.score - a.score)
         .slice(0, leaderboardSize);
+}
+
+
+function getEntriesFromPayload(payload) {
+    if (Array.isArray(payload)) {
+        return payload;
+    }
+
+    if (!payload || typeof payload !== "object") {
+        return null;
+    }
+
+    if (Array.isArray(payload.entries)) {
+        return payload.entries;
+    }
+
+    if (Array.isArray(payload.leaderboard)) {
+        return payload.leaderboard;
+    }
+
+    if (Array.isArray(payload.scores)) {
+        return payload.scores;
+    }
+
+    return null;
+}
+
+async function parseJsonSafely(response) {
+    const raw = await response.text();
+
+    if (!raw || !raw.trim()) {
+        return null;
+    }
+
+    try {
+        return JSON.parse(raw);
+    } catch {
+        return null;
+    }
 }
 
 function getStoredLeaderboard() {
@@ -159,8 +211,8 @@ async function loadLeaderboard() {
             throw new Error("Leaderboard konnte nicht geladen werden.");
         }
 
-        const payload = await response.json();
-        const serverEntries = Array.isArray(payload) ? payload : payload.entries;
+        const payload = await parseJsonSafely(response);
+        const serverEntries = getEntriesFromPayload(payload);
         const normalized = normalizeLeaderboard(serverEntries);
 
         if (normalized.length > 0) {
@@ -193,8 +245,8 @@ async function saveLeaderboard(name, score) {
             throw new Error("Server-Speicherung fehlgeschlagen");
         }
 
-        const payload = await response.json();
-        const serverEntries = Array.isArray(payload) ? payload : payload.entries;
+        const payload = await parseJsonSafely(response);
+        const serverEntries = getEntriesFromPayload(payload);
         const normalized = normalizeLeaderboard(serverEntries);
 
         if (normalized.length > 0) {
@@ -202,13 +254,14 @@ async function saveLeaderboard(name, score) {
             renderLeaderboard(normalized);
             return { savedOnServer: true };
         }
+
+        renderLeaderboard(topScores);
+        return { savedOnServer: true };
     } catch {
         renderLeaderboard(topScores);
         return { savedOnServer: false };
     }
 
-    renderLeaderboard(topScores);
-    return { savedOnServer: false };
 }
 
 function renderLeaderboard(scores = getStoredLeaderboard()) {
@@ -729,7 +782,7 @@ saveLeaderboardButton.addEventListener("click", async () => {
         return;
     }
 
-    setStatus("Server nicht erreichbar – lokal eingetragen.", "danger");
+    setStatus("Lokal in die Bestenliste eingetragen.");
 });
 
 skipLeaderboardButton.addEventListener("click", () => {
