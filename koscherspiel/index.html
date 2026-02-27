@@ -17,7 +17,7 @@
 
     <h1>Koscher Sammelspiel</h1>
     <p class="instructions">
-        Sammle koschere Lebensmittel und weiche nicht-koscheren aus.
+        Sammle koschere Lebensmittel mit dem Einkaufswagen und weiche nicht-koscheren aus.
         Links/Rechts mit Pfeiltasten oder A/D.
     </p>
 
@@ -26,6 +26,7 @@
         <div class="hud-item">Leben: <span id="lives">3</span></div>
         <div class="hud-item">Level: <span id="level">1</span></div>
         <div class="hud-item">Highscore: <span id="highscore">0</span></div>
+        <div class="hud-item hud-item-wide">Power-Up: <span id="powerupState">Keins</span></div>
     </section>
 
     <section id="game" aria-label="Spielfeld">
@@ -43,6 +44,11 @@
             <p id="resultText"></p>
             <button id="restartButton" type="button">Neu starten</button>
         </div>
+    </section>
+
+    <section class="leaderboard" aria-label="Bestenliste">
+        <h2>Bestenliste</h2>
+        <ol id="leaderboardList"></ol>
     </section>
 
     <section class="mobile-controls" aria-label="Mobile Steuerung">
