@@ -72,6 +72,7 @@ const itemWidth = 40;
 const powerupDurationMs = 6000;
 const leaderboardSize = 5;
 const maxLevel = 10;
+const leaderboardApiUrl = "/api/koscher-leaderboard";
 
 const keys = {
     left: false,
@@ -99,53 +100,115 @@ function persistHighscore(value) {
     }
 }
 
+function normalizeLeaderboard(rawEntries) {
+    if (!Array.isArray(rawEntries)) {
+        return [];
+    }
+
+    return rawEntries
+        .map((entry) => {
+            if (typeof entry === "number") {
+                return { name: "Anonym", score: entry };
+            }
+
+            if (!entry || typeof entry !== "object") {
+                return null;
+            }
+
+            const score = Number(entry.score);
+            if (!Number.isFinite(score)) {
+                return null;
+            }
+
+            const trimmedName = typeof entry.name === "string" ? entry.name.trim() : "";
+            return {
+                name: trimmedName || "Anonym",
+                score
+            };
+        })
+        .filter(Boolean)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, leaderboardSize);
+}
+
 function getStoredLeaderboard() {
     try {
         const parsed = JSON.parse(localStorage.getItem("koscher_leaderboard") || "[]");
-        if (!Array.isArray(parsed)) {
-            return [];
-        }
-
-        return parsed
-            .map((entry) => {
-                if (typeof entry === "number") {
-                    return { name: "Anonym", score: entry };
-                }
-
-                if (!entry || typeof entry !== "object") {
-                    return null;
-                }
-
-                const score = Number(entry.score);
-                if (!Number.isFinite(score)) {
-                    return null;
-                }
-
-                const trimmedName = typeof entry.name === "string" ? entry.name.trim() : "";
-                return {
-                    name: trimmedName || "Anonym",
-                    score
-                };
-            })
-            .filter(Boolean);
+        return normalizeLeaderboard(parsed);
     } catch {
         return [];
     }
 }
 
-function saveLeaderboard(name, score) {
+function persistLeaderboardLocally(scores) {
+    try {
+        localStorage.setItem("koscher_leaderboard", JSON.stringify(scores));
+    } catch {
+        // Ignorieren: Bestenliste bleibt dann nur temporär sichtbar.
+    }
+}
+
+async function loadLeaderboard() {
+    try {
+        const response = await fetch(leaderboardApiUrl, {
+            method: "GET",
+            headers: { "Accept": "application/json" }
+        });
+
+        if (!response.ok) {
+            throw new Error("Leaderboard konnte nicht geladen werden.");
+        }
+
+        const payload = await response.json();
+        const serverEntries = Array.isArray(payload) ? payload : payload.entries;
+        const normalized = normalizeLeaderboard(serverEntries);
+
+        if (normalized.length > 0) {
+            persistLeaderboardLocally(normalized);
+            renderLeaderboard(normalized);
+            return;
+        }
+    } catch {
+        // Fallback unten: lokal gespeicherte Werte verwenden.
+    }
+
+    renderLeaderboard(getStoredLeaderboard());
+}
+
+async function saveLeaderboard(name, score) {
     const leaderboard = getStoredLeaderboard();
     leaderboard.push({ name: (name || "Anonym").trim() || "Anonym", score });
-    leaderboard.sort((a, b) => b.score - a.score);
+    const topScores = normalizeLeaderboard(leaderboard);
 
-    const topScores = leaderboard.slice(0, leaderboardSize);
+    persistLeaderboardLocally(topScores);
+
     try {
-        localStorage.setItem("koscher_leaderboard", JSON.stringify(topScores));
+        const response = await fetch(leaderboardApiUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: (name || "Anonym").trim() || "Anonym", score })
+        });
+
+        if (!response.ok) {
+            throw new Error("Server-Speicherung fehlgeschlagen");
+        }
+
+        const payload = await response.json();
+        const serverEntries = Array.isArray(payload) ? payload : payload.entries;
+        const normalized = normalizeLeaderboard(serverEntries);
+
+        if (normalized.length > 0) {
+            persistLeaderboardLocally(normalized);
+            renderLeaderboard(normalized);
+            return { savedOnServer: true };
+        }
     } catch {
-        // Ignorieren: Bestenliste bleibt dann nur für die Sitzung sichtbar.
+        renderLeaderboard(topScores);
+        return { savedOnServer: false };
     }
 
     renderLeaderboard(topScores);
+    return { savedOnServer: false };
 }
 
 function renderLeaderboard(scores = getStoredLeaderboard()) {
@@ -168,6 +231,7 @@ function renderLeaderboard(scores = getStoredLeaderboard()) {
 function createInitialState() {
     return {
         running: true,
+        leaderboardSubmitted: false,
         score: 0,
         lives: 3,
         level: 1,
@@ -281,7 +345,7 @@ function spawnPowerup() {
 }
 
 function spawnFood() {
-    const isKosher = Math.random() < 0.65;
+    const isKosher = Math.random() < 0.82;
     const foodList = isKosher ? kosherFoods : nonKosherFoods;
     const selectedFood = foodList[Math.floor(Math.random() * foodList.length)];
 
@@ -524,13 +588,10 @@ function endGame(reason) {
         persistHighscore(state.highscore);
     }
 
-    const completedGame = state.level >= maxLevel;
-
-    if (completedGame) {
+    if (state.score > 0) {
         leaderboardOptIn.classList.remove("hidden");
     } else {
         leaderboardOptIn.classList.add("hidden");
-        saveLeaderboard("Anonym", state.score);
     }
 
     updateHUD();
@@ -556,6 +617,9 @@ function startGame() {
     gameOverScreen.classList.add("hidden");
     leaderboardOptIn.classList.add("hidden");
     playerNameInput.value = "";
+    playerNameInput.disabled = false;
+    saveLeaderboardButton.disabled = false;
+    skipLeaderboardButton.disabled = false;
     statusDisplay.classList.add("hidden");
 
     state.playerX = (gameWidth() - playerWidth) / 2;
@@ -648,16 +712,33 @@ document.addEventListener("keyup", (event) => {
 restartButton.addEventListener("click", startGame);
 startButton.addEventListener("click", startGame);
 
-saveLeaderboardButton.addEventListener("click", () => {
+saveLeaderboardButton.addEventListener("click", async () => {
     if (!state) return;
+    if (state.leaderboardSubmitted) return;
 
+    state.leaderboardSubmitted = true;
+    saveLeaderboardButton.disabled = true;
+    skipLeaderboardButton.disabled = true;
+    playerNameInput.disabled = true;
     const playerName = playerNameInput.value.trim();
-    saveLeaderboard(playerName || "Anonym", state.score);
+    const result = await saveLeaderboard(playerName || "Anonym", state.score);
     leaderboardOptIn.classList.add("hidden");
-    setStatus("In die Bestenliste eingetragen!");
+
+    if (result.savedOnServer) {
+        setStatus("In die Server-Bestenliste eingetragen!");
+        return;
+    }
+
+    setStatus("Server nicht erreichbar – lokal eingetragen.", "danger");
 });
 
 skipLeaderboardButton.addEventListener("click", () => {
+    if (!state || state.leaderboardSubmitted) return;
+
+    state.leaderboardSubmitted = true;
+    saveLeaderboardButton.disabled = true;
+    skipLeaderboardButton.disabled = true;
+    playerNameInput.disabled = true;
     leaderboardOptIn.classList.add("hidden");
 });
 
@@ -675,5 +756,5 @@ window.addEventListener("resize", () => {
 });
 
 renderIdleHUD();
-renderLeaderboard();
+loadLeaderboard();
 centerPlayerIdle();
