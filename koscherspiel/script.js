@@ -307,8 +307,6 @@ async function saveLeaderboard(name, score) {
         return { savedOnServer: true };
     }
 
-    renderLeaderboard(topScores);
-    return { savedOnServer: false };
 }
 
 function renderLeaderboard(scores = getStoredLeaderboard()) {
