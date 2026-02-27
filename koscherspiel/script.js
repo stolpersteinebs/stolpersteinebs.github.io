@@ -34,7 +34,19 @@ let lastTime = 0;
 let statusTimeoutId = null;
 
 function getStoredHighscore() {
-    return Number(localStorage.getItem("koscher_highscore") || 0);
+    try {
+        return Number(localStorage.getItem("koscher_highscore") || 0);
+    } catch {
+        return 0;
+    }
+}
+
+function persistHighscore(value) {
+    try {
+        localStorage.setItem("koscher_highscore", String(value));
+    } catch {
+        // Ignorieren: Spiel soll auch ohne localStorage funktionieren.
+    }
 }
 
 function createInitialState() {
@@ -284,7 +296,7 @@ function endGame(reason) {
 
     if (state.score > state.highscore) {
         state.highscore = state.score;
-        localStorage.setItem("koscher_highscore", String(state.highscore));
+        persistHighscore(state.highscore);
     }
 
     updateHUD();
