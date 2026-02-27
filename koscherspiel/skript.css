@@ -96,7 +96,7 @@ h1 {
     left: 0;
     width: 52px;
     height: 52px;
-    background: url("images/apple.png") center/contain no-repeat;
+    background: url("images/koschere/apple.png") center/contain no-repeat;
     will-change: transform;
     z-index: 3;
 }
