@@ -17,7 +17,9 @@ const kosherFoods = [
     { name: "Apfel", image: "images/apple.png" },
     { name: "Karotte", image: "images/carrot.png" }
 ];
-const nonKosherFoods = ["🐷", "🍤", "🦐", "🦀", "🐙"];
+const nonKosherFoods = ["🐷", "🍤", "🦐", "🦀", "🐙"   
+    { name: "Schweinesteak", image: "images/Schweinesteak.png" },
+];
 
 const playerWidth = 52;
 const playerSpeed = 340; // px/s
