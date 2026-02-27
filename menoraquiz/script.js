@@ -1,91 +1,83 @@
 const quizData = [
     {
-        question: "Wofür steht die Menora in vielen jüdischen Traditionen?",
-        answers: [
-            "Nur für ein bestimmtes Fest",
-            "Für Licht, Weisheit und die Verbindung zu Gott",
-            "Für die vier Jahreszeiten",
-            "Für militärische Stärke"
-        ],
-        correctIndex: 1,
-        explanation: "Die Menora gilt als Symbol für Licht, göttliche Gegenwart und geistige Orientierung."
+        question: "Wie viele Arme hat die klassische Menora?",
+        answers: ["5", "6", "7", "9"],
+        correctIndex: 2,
+        explanation: "Die klassische Menora wird mit sieben Armen dargestellt."
     },
     {
-        question: "Was ist der Unterschied zwischen Menora und Chanukkia?",
-        answers: [
-            "Es gibt keinen Unterschied",
-            "Die Menora hat 7 Arme, die Chanukkia 9 Lichter",
-            "Die Menora wird nur zu Purim genutzt",
-            "Die Chanukkia steht nur in Synagogen"
-        ],
-        correctIndex: 1,
-        explanation: "Die klassische Menora hat sieben Arme; die Chanukkia besitzt acht plus Schamasch, also neun Lichter."
+        question: "Wo stand die Menora im Tempeldienst?",
+        answers: ["In Jerusalem", "In Alexandria", "In Babylon", "In Rom"],
+        correctIndex: 0,
+        explanation: "Die Menora ist als Tempelsymbol aus Jerusalem bekannt."
     },
     {
-        question: "Was symbolisiert der Davidstern (Magen David) heute häufig?",
-        answers: [
-            "Nur ein Ornament ohne Bedeutung",
-            "Jüdische Identität und Gemeinschaft",
-            "Ein Erntesymbol",
-            "Ein Fastengebot"
-        ],
-        correctIndex: 1,
-        explanation: "Der Davidstern ist ein verbreitetes Zeichen jüdischer Identität und Zugehörigkeit."
+        question: "Wofür steht die Menora in vielen Deutungen?",
+        answers: ["Für Licht und Orientierung", "Für Handel", "Für Militär", "Für Sport"],
+        correctIndex: 0,
+        explanation: "Die Menora wird oft als Zeichen für Licht und geistige Orientierung verstanden."
     },
     {
-        question: "Wozu dient eine Mesusa an der Tür?",
-        answers: [
-            "Zur Dekoration ohne religiösen Bezug",
-            "Als Erinnerung an Gebote und Schutzsymbol am Haus",
-            "Als Kerzenhalter",
-            "Als Kalender"
-        ],
-        correctIndex: 1,
-        explanation: "In der Mesusa befindet sich ein Textabschnitt aus der Tora; sie erinnert an Glauben und Gebote."
+        question: "Welche Darstellung zeigt die Menora in der Antike?",
+        answers: ["Der Titusbogen", "Das Kolosseum", "Der Parthenon", "Stonehenge"],
+        correctIndex: 0,
+        explanation: "Auf dem Titusbogen ist die Menora als Teil der Tempelbeute dargestellt."
     },
     {
-        question: "Was ist ein Schofar?",
-        answers: [
-            "Ein Gebetsbuch",
-            "Ein Widderhorn, das zu bestimmten Anlässen geblasen wird",
-            "Ein Speisegesetz",
-            "Ein Leuchter mit sieben Armen"
-        ],
-        correctIndex: 1,
-        explanation: "Der Schofar ist ein traditionelles Horninstrument, besonders zu Rosch ha-Schana und Jom Kippur."
+        question: "Was zeigt das Wappen des Staates Israel?",
+        answers: ["Eine siebenarmige Menora", "Eine neunarmige Chanukkia", "Einen Davidstern", "Eine Tora-Rolle"],
+        correctIndex: 0,
+        explanation: "Das Staatswappen Israels zeigt eine siebenarmige Menora mit Olivenzweigen."
     },
     {
-        question: "Welche Aussage passt zur Tora-Rolle?",
+        question: "Was ist der Hauptunterschied zwischen Menora und Chanukkia?",
         answers: [
-            "Sie enthält zentrale Texte des Judentums",
-            "Sie ist nur ein modernes Schulbuch",
-            "Sie wird nur außerhalb von Synagogen gelesen",
-            "Sie ersetzt alle Feiertage"
+            "Kein Unterschied",
+            "Menora 7, Chanukkia 9 Lichter",
+            "Menora 9, Chanukkia 7 Lichter",
+            "Nur die Menora hat Kerzen"
+        ],
+        correctIndex: 1,
+        explanation: "Die Menora hat sieben Arme, die Chanukkia neun Lichter (acht plus Schamasch)."
+    },
+    {
+        question: "Welche Aussage trifft auf die Menora heute zu?",
+        answers: [
+            "Sie ist nur Deko",
+            "Sie ist nur ein Museumsexponat",
+            "Sie ist ein wichtiges jüdisches Symbol",
+            "Sie wird nicht mehr verwendet"
+        ],
+        correctIndex: 2,
+        explanation: "Die Menora steht bis heute für jüdische Geschichte, Glauben und Identität."
+    },
+    {
+        question: "In welchem Kontext wird die Menora oft erwähnt?",
+        answers: ["Tempel und jüdische Symbolik", "Nur Küche", "Nur Musik", "Nur Kleidung"],
+        correctIndex: 0,
+        explanation: "Die Menora ist eng mit Tempeltradition und jüdischer Symbolik verbunden."
+    },
+    {
+        question: "Welche Form beschreibt die Menora korrekt?",
+        answers: [
+            "Siebenarmiger Leuchter",
+            "Dreieckiges Zeichen",
+            "Rundes Amulett",
+            "Buchrolle"
         ],
         correctIndex: 0,
-        explanation: "Die Tora ist zentral für Glauben, Lehre und Gottesdienst."
+        explanation: "Die Menora ist ein siebenarmiger Leuchter."
     },
     {
-        question: "Warum hat die Chanukkia ein zusätzliches Licht (Schamasch)?",
+        question: "Welche Aussage ist richtig?",
         answers: [
-            "Es zählt nicht als Licht",
-            "Damit entzündet man die anderen Lichter",
-            "Für die Dekoration",
-            "Als Zeichen für die 12 Stämme"
+            "Die Menora ist nur ein Festsymbol für Chanukka",
+            "Die Menora gehört zu den zentralen jüdischen Symbolen",
+            "Die Menora hat immer neun Lichter",
+            "Die Menora stammt aus dem Mittelalter"
         ],
         correctIndex: 1,
-        explanation: "Der Schamasch dient als Dienerlicht, mit dem die anderen Kerzen angezündet werden."
-    },
-    {
-        question: "Was beschreibt am besten die Bedeutung religiöser Symbole?",
-        answers: [
-            "Sie sind unwichtig im Alltag",
-            "Sie verbinden Geschichte, Glauben und Gemeinschaft",
-            "Sie gelten nur für Kinder",
-            "Sie haben nur musealen Wert"
-        ],
-        correctIndex: 1,
-        explanation: "Religiöse Symbole können Identität stiften und Traditionen über Generationen weitergeben."
+        explanation: "Die Menora ist ein zentrales jüdisches Symbol mit antiken Wurzeln."
     }
 ];
 
@@ -188,11 +180,11 @@ function showResult() {
     let message = "Starker Anfang!";
 
     if (score === maxScore) {
-        message = "Perfekt! Du kennst die Bedeutung der Symbole richtig gut.";
+        message = "Perfekt! Du kennst die Menora richtig gut.";
     } else if (score >= Math.ceil(maxScore * 0.75)) {
-        message = "Sehr gut! Du hast ein solides Wissen über die Symbole.";
+        message = "Sehr gut! Du hast ein solides Wissen über die Menora.";
     } else if (score >= Math.ceil(maxScore * 0.5)) {
-        message = "Gut gemacht! Mit etwas Übung schaffst du noch mehr.";
+        message = "Gut gemacht! Mit etwas Übung weißt du noch mehr über die Menora.";
     }
 
     resultTextEl.textContent = `Du hast ${score} von ${maxScore} Punkten. ${message}`;
