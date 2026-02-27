@@ -237,6 +237,13 @@ async function requestLeaderboard({ method, body }) {
         if (!response.ok) {
             return { ok: false, payload: null, url: apiUrl };
         }
+    }
+
+    return { ok: false, payload: null, url: null };
+}
+
+async function loadLeaderboard() {
+    const result = await requestLeaderboard({ method: "GET" });
 
         const payload = await parseJsonSafely(response);
         return { ok: true, payload, url: apiUrl };
@@ -289,8 +296,6 @@ async function saveLeaderboard(name, score) {
         return { savedOnServer: true };
     }
 
-    renderLeaderboard(topScores);
-    return { savedOnServer: false };
 }
 
 function renderLeaderboard(scores = getStoredLeaderboard()) {

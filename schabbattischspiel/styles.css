@@ -99,12 +99,40 @@ body {
     border: 1px solid #f4dca0;
 }
 
+
+.table-visual {
+    margin: 0;
+    border: 1px solid #d7deea;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #f6f8fc;
+}
+
+.table-visual img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+}
+
+.table-visual figcaption {
+    padding: 8px 10px;
+    font-size: 0.95rem;
+    border-top: 1px solid #d7deea;
+    background: #fff;
+}
+
 .tray,
 .table {
     min-height: 320px;
     display: flex;
     flex-direction: column;
     gap: 10px;
+}
+
+.table {
+    margin-top: 12px;
 }
 
 .item {
@@ -116,6 +144,10 @@ body {
     text-align: left;
     cursor: pointer;
     transition: transform 0.15s ease, box-shadow 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
 }
 
 .item:hover,
@@ -164,4 +196,18 @@ body {
     .table {
         min-height: 0;
     }
+}
+
+
+.item-label {
+    flex: 1;
+}
+
+.item-preview {
+    width: 84px;
+    height: 56px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 1px solid #cad3e4;
+    background: #fff;
 }
