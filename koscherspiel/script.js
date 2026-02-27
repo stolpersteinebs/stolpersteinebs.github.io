@@ -12,6 +12,10 @@ const startButton = document.getElementById("startButton");
 const gameOverScreen = document.getElementById("gameOver");
 const resultText = document.getElementById("resultText");
 const restartButton = document.getElementById("restartButton");
+const leaderboardOptIn = document.getElementById("leaderboardOptIn");
+const playerNameInput = document.getElementById("playerName");
+const saveLeaderboardButton = document.getElementById("saveLeaderboardButton");
+const skipLeaderboardButton = document.getElementById("skipLeaderboardButton");
 const leftBtn = document.getElementById("leftBtn");
 const rightBtn = document.getElementById("rightBtn");
 
@@ -29,7 +33,8 @@ const fallbackFoods = {
 const powerupTypes = [
     { key: "shield", label: "Schutz", icon: "🛡️", colorClass: "powerup-shield" },
     { key: "slow", label: "Zeitlupe", icon: "⏱️", colorClass: "powerup-slow" },
-    { key: "double", label: "Doppel-Punkte", icon: "✨", colorClass: "powerup-double" }
+    { key: "double", label: "Doppel-Punkte", icon: "✨", colorClass: "powerup-double" },
+    { key: "life", label: "Extra-Leben", icon: "❤️", colorClass: "powerup-life" }
 ];
 
 function readFoodData() {
@@ -66,6 +71,7 @@ const playerSpeed = 340;
 const itemWidth = 40;
 const powerupDurationMs = 6000;
 const leaderboardSize = 5;
+const maxLevel = 10;
 
 const keys = {
     left: false,
@@ -96,18 +102,41 @@ function persistHighscore(value) {
 function getStoredLeaderboard() {
     try {
         const parsed = JSON.parse(localStorage.getItem("koscher_leaderboard") || "[]");
-        return Array.isArray(parsed)
-            ? parsed.map((score) => Number(score)).filter((score) => Number.isFinite(score))
-            : [];
+        if (!Array.isArray(parsed)) {
+            return [];
+        }
+
+        return parsed
+            .map((entry) => {
+                if (typeof entry === "number") {
+                    return { name: "Anonym", score: entry };
+                }
+
+                if (!entry || typeof entry !== "object") {
+                    return null;
+                }
+
+                const score = Number(entry.score);
+                if (!Number.isFinite(score)) {
+                    return null;
+                }
+
+                const trimmedName = typeof entry.name === "string" ? entry.name.trim() : "";
+                return {
+                    name: trimmedName || "Anonym",
+                    score
+                };
+            })
+            .filter(Boolean);
     } catch {
         return [];
     }
 }
 
-function saveLeaderboard(score) {
+function saveLeaderboard(name, score) {
     const leaderboard = getStoredLeaderboard();
-    leaderboard.push(score);
-    leaderboard.sort((a, b) => b - a);
+    leaderboard.push({ name: (name || "Anonym").trim() || "Anonym", score });
+    leaderboard.sort((a, b) => b.score - a.score);
 
     const topScores = leaderboard.slice(0, leaderboardSize);
     try {
@@ -129,9 +158,9 @@ function renderLeaderboard(scores = getStoredLeaderboard()) {
         return;
     }
 
-    scores.slice(0, leaderboardSize).forEach((score, index) => {
+    scores.slice(0, leaderboardSize).forEach((entry, index) => {
         const item = document.createElement("li");
-        item.textContent = `${index + 1}. Platz: ${score} Punkte`;
+        item.textContent = `${index + 1}. ${entry.name}: ${entry.score} Punkte`;
         leaderboardList.appendChild(item);
     });
 }
@@ -326,7 +355,13 @@ function consumeShieldIfActive() {
 
 function handleCatch(item, index) {
     if (item.isPowerup) {
-        activatePowerup(item.powerupType);
+        if (item.powerupType === "life") {
+            state.lives += 1;
+            setStatus("+1 Leben durch Power-Up!");
+            updateHUD();
+        } else {
+            activatePowerup(item.powerupType);
+        }
         removeItem(index);
         return;
     }
@@ -343,6 +378,12 @@ function handleCatch(item, index) {
 
     removeItem(index);
     recalcLevel();
+
+    if (state.level >= maxLevel) {
+        endGame("Geschafft! Du hast alle Level gemeistert.");
+        return;
+    }
+
     updateHUD();
 
     if (state.lives <= 0) {
@@ -375,11 +416,17 @@ function recalcLevel() {
     state.level = Math.floor(state.score / 8) + 1;
 }
 
+function currentPlayerSpeed() {
+    if (!state) return playerSpeed;
+    if (state.level < 5) return playerSpeed;
+    return playerSpeed + (state.level - 4) * 28;
+}
+
 function updatePlayer(deltaSeconds) {
     const move = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
     if (move === 0) return;
 
-    state.playerX += move * playerSpeed * deltaSeconds;
+    state.playerX += move * currentPlayerSpeed() * deltaSeconds;
     state.playerX = clamp(state.playerX, 0, gameWidth() - playerWidth);
     positionPlayer();
 }
@@ -477,7 +524,15 @@ function endGame(reason) {
         persistHighscore(state.highscore);
     }
 
-    saveLeaderboard(state.score);
+    const completedGame = state.level >= maxLevel;
+
+    if (completedGame) {
+        leaderboardOptIn.classList.remove("hidden");
+    } else {
+        leaderboardOptIn.classList.add("hidden");
+        saveLeaderboard("Anonym", state.score);
+    }
+
     updateHUD();
     resultText.textContent = `${reason} Dein Ergebnis: ${state.score} Punkte.`;
     gameOverScreen.classList.remove("hidden");
@@ -499,6 +554,8 @@ function startGame() {
 
     startScreen.classList.add("hidden");
     gameOverScreen.classList.add("hidden");
+    leaderboardOptIn.classList.add("hidden");
+    playerNameInput.value = "";
     statusDisplay.classList.add("hidden");
 
     state.playerX = (gameWidth() - playerWidth) / 2;
@@ -590,6 +647,19 @@ document.addEventListener("keyup", (event) => {
 
 restartButton.addEventListener("click", startGame);
 startButton.addEventListener("click", startGame);
+
+saveLeaderboardButton.addEventListener("click", () => {
+    if (!state) return;
+
+    const playerName = playerNameInput.value.trim();
+    saveLeaderboard(playerName || "Anonym", state.score);
+    leaderboardOptIn.classList.add("hidden");
+    setStatus("In die Bestenliste eingetragen!");
+});
+
+skipLeaderboardButton.addEventListener("click", () => {
+    leaderboardOptIn.classList.add("hidden");
+});
 
 bindButtonHold(leftBtn, "left");
 bindButtonHold(rightBtn, "right");

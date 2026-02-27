@@ -42,6 +42,17 @@
         <div id="gameOver" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="gameOverTitle">
             <h2 id="gameOverTitle">Spiel beendet</h2>
             <p id="resultText"></p>
+
+            <div id="leaderboardOptIn" class="leaderboard-optin hidden">
+                <p>Du hast das Spiel abgeschlossen! Möchtest du in die sichtbare Bestenliste?</p>
+                <label for="playerName">Dein Name</label>
+                <input id="playerName" type="text" maxlength="20" placeholder="Name eingeben" autocomplete="nickname">
+                <div class="optin-actions">
+                    <button id="saveLeaderboardButton" type="button">Ja, eintragen</button>
+                    <button id="skipLeaderboardButton" type="button" class="secondary">Nein danke</button>
+                </div>
+            </div>
+
             <button id="restartButton" type="button">Neu starten</button>
         </div>
     </section>
