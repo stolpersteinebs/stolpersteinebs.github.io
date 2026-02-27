@@ -10,41 +10,56 @@
 <main class="page">
     <header class="top">
         <h1>Menora-Quiz</h1>
-        <p>Teste dein Wissen rund um die Menora.</p>
-        <p class="hint">Hinweis: Einige Darstellungen und Deutungen werden je nach Tradition unterschiedlich erklärt.</p>
+        <button id="soundToggle" class="sound-toggle" type="button" aria-pressed="true">Sound: An</button>
+        <p>
+            Teste dein Wissen über die Menora, ihre Geschichte und Bedeutung.
+        </p>
+        <p class="hint">
+            Hinweis: Einige Darstellungen und Deutungen werden je nach Tradition unterschiedlich erklärt.
+        </p>
     </header>
 
     <nav class="quick-links" aria-label="Spiele-Navigation">
         <a href="/">Startseite</a>
         <a href="/feiertagsquiz/">Feiertags-Quiz</a>
+        <a href="/koscherspiel/">Koscher Sammelspiel</a>
         <a href="/schabbattischspiel/">Schabbat-Tisch</a>
-        <a href="/dreidspiel/">3D Lernwelt</a>
     </nav>
 
     <section id="startScreen" class="start-screen">
         <h2>Bereit für das Menora-Quiz?</h2>
-        <p>Du bekommst 10 Fragen und sammelst pro richtiger Antwort einen Punkt.</p>
-        <button id="startBtn" type="button">Quiz starten</button>
+        <p>Du spielst auf Zeit, sammelst Punkte und baust Serien-Boni auf.</p>
+        <button id="startButton" type="button">Quiz starten</button>
     </section>
 
-    <section id="quizScreen" class="hidden">
-        <div class="status card">
-            <span>Frage <strong id="currentQuestion">1</strong>/<strong id="totalQuestions">10</strong></span>
-            <span>Punkte: <strong id="score">0</strong></span>
-        </div>
+    <section class="status hidden" aria-label="Quiz-Status">
+        <div>Frage <span id="currentQuestion">1</span>/<span id="totalQuestions">10</span></div>
+        <div>Punkte: <span id="score">0</span></div>
+        <div>Serie: <span id="streak">0</span></div>
+        <div class="time-pill">Zeit: <span id="timeLeft">20</span>s</div>
+    </section>
+    <div class="time-track hidden" aria-hidden="true">
+        <div id="timeBar" class="time-bar"></div>
+    </div>
 
-        <article class="quiz-card">
-            <h2 id="questionText">Frage</h2>
-            <div id="answers" class="answers"></div>
-            <p id="feedback" class="feedback hidden" aria-live="polite"></p>
-            <button id="nextBtn" class="hidden" type="button">Nächste Frage</button>
-        </article>
+    <section class="quiz-card hidden" aria-live="polite">
+        <h2 id="questionText">Frage wird geladen...</h2>
+        <p id="comboText" class="combo hidden"></p>
+        <div id="answers" class="answers"></div>
+        <p id="feedback" class="feedback hidden"></p>
+        <button id="nextButton" class="next hidden" type="button">Nächste Frage</button>
+        <p id="nudgeText" class="nudge hidden" aria-live="polite"></p>
     </section>
 
-    <section id="resultScreen" class="result hidden">
+    <section id="result" class="result hidden">
         <h2>Ergebnis</h2>
+        <div id="scoreWheel" class="score-wheel hidden" aria-live="polite">
+            <div id="scoreWheelValue" class="score-wheel-value">0</div>
+            <div class="score-wheel-label">Punkte</div>
+        </div>
+        <p id="scoreMotto" class="score-motto"></p>
         <p id="resultText"></p>
-        <button id="restartBtn" type="button">Nochmal spielen</button>
+        <button id="restartButton" type="button">Neu starten</button>
     </section>
 </main>
 
