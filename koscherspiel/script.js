@@ -13,13 +13,44 @@ const restartButton = document.getElementById("restartButton");
 const leftBtn = document.getElementById("leftBtn");
 const rightBtn = document.getElementById("rightBtn");
 
-const kosherFoods = [
-    { name: "Apfel", image: "images/apple.png" },
-    { name: "Karotte", image: "images/carrot.png" }
-];
-const nonKosherFoods = ["🐷", "🍤", "🦐", "🦀", "🐙"   
-    { name: "Schweinesteak", image: "images/Schweinesteak.png" },
-];
+const fallbackFoods = {
+    kosherFoods: [
+        { name: "Apfel", image: "images/koschere/apple.png" },
+        { name: "Karotte", image: "images/koschere/carrot.png" }
+    ],
+    nonKosherFoods: [
+        { name: "Schweinesteak", image: "images/nicht-koschere/Schweinesteak.png" }
+    ]
+};
+
+function readFoodData() {
+    const foodDataElement = document.getElementById("foodData");
+
+    if (!foodDataElement) {
+        return fallbackFoods;
+    }
+
+    try {
+        const parsed = JSON.parse(foodDataElement.textContent);
+
+        if (!Array.isArray(parsed.kosherFoods) || !Array.isArray(parsed.nonKosherFoods)) {
+            return fallbackFoods;
+        }
+
+        const kosherFoods = parsed.kosherFoods.filter((food) => food && food.image);
+        const nonKosherFoods = parsed.nonKosherFoods.filter((food) => food && food.image);
+
+        if (kosherFoods.length === 0 || nonKosherFoods.length === 0) {
+            return fallbackFoods;
+        }
+
+        return { kosherFoods, nonKosherFoods };
+    } catch {
+        return fallbackFoods;
+    }
+}
+
+const { kosherFoods, nonKosherFoods } = readFoodData();
 
 const playerWidth = 52;
 const playerSpeed = 340; // px/s
@@ -142,15 +173,10 @@ function spawnItem() {
     const y = -40;
 
     const selectedFood = foodList[Math.floor(Math.random() * foodList.length)];
-
-    if (isKosher) {
-        const img = document.createElement("img");
-        img.src = selectedFood.image;
-        img.alt = selectedFood.name;
-        itemEl.appendChild(img);
-    } else {
-        itemEl.textContent = selectedFood;
-    }
+    const img = document.createElement("img");
+    img.src = selectedFood.image;
+    img.alt = selectedFood.name;
+    itemEl.appendChild(img);
 
     itemEl.style.transform = `translate(${x}px, ${y}px)`;
     game.appendChild(itemEl);
