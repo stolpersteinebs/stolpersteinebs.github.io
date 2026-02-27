@@ -72,7 +72,7 @@ const itemWidth = 40;
 const powerupDurationMs = 6000;
 const leaderboardSize = 5;
 const maxLevel = 10;
-const leaderboardApiUrl = "/api/koscher-leaderboard";
+const defaultLeaderboardApiPath = "/api/koscher-leaderboard";
 
 const keys = {
     left: false,
@@ -105,7 +105,7 @@ function normalizeLeaderboard(rawEntries) {
         return [];
     }
 
-    return rawEntries
+    const normalizedEntries = rawEntries
         .map((entry) => {
             if (typeof entry === "number") {
                 return { name: "Anonym", score: entry };
@@ -126,9 +126,61 @@ function normalizeLeaderboard(rawEntries) {
                 score
             };
         })
-        .filter(Boolean)
+        .filter(Boolean);
+
+    const bestScoresByName = new Map();
+
+    normalizedEntries.forEach((entry) => {
+        const key = entry.name.toLocaleLowerCase("de-DE");
+        const existing = bestScoresByName.get(key);
+
+        if (!existing || entry.score > existing.score) {
+            bestScoresByName.set(key, entry);
+        }
+    });
+
+    return Array.from(bestScoresByName.values())
         .sort((a, b) => b.score - a.score)
         .slice(0, leaderboardSize);
+}
+
+
+function getEntriesFromPayload(payload) {
+    if (Array.isArray(payload)) {
+        return payload;
+    }
+
+    if (!payload || typeof payload !== "object") {
+        return null;
+    }
+
+    if (Array.isArray(payload.entries)) {
+        return payload.entries;
+    }
+
+    if (Array.isArray(payload.leaderboard)) {
+        return payload.leaderboard;
+    }
+
+    if (Array.isArray(payload.scores)) {
+        return payload.scores;
+    }
+
+    return null;
+}
+
+async function parseJsonSafely(response) {
+    const raw = await response.text();
+
+    if (!raw || !raw.trim()) {
+        return null;
+    }
+
+    try {
+        return JSON.parse(raw);
+    } catch {
+        return null;
+    }
 }
 
 function getStoredLeaderboard() {
@@ -148,19 +200,56 @@ function persistLeaderboardLocally(scores) {
     }
 }
 
-async function loadLeaderboard() {
+function getLeaderboardApiUrl() {
+    const metaApiUrl = document
+        .querySelector('meta[name="koscher-leaderboard-api"]')
+        ?.getAttribute("content")
+        ?.trim();
+
+    if (metaApiUrl) {
+        return metaApiUrl;
+    }
+
+    const fromWindow = typeof window.KOSCHER_LEADERBOARD_API_URL === "string"
+        ? window.KOSCHER_LEADERBOARD_API_URL.trim()
+        : "";
+
+    if (fromWindow) {
+        return fromWindow;
+    }
+
+    return defaultLeaderboardApiPath;
+}
+
+async function requestLeaderboard({ method, body }) {
+    const apiUrl = getLeaderboardApiUrl();
+
     try {
-        const response = await fetch(leaderboardApiUrl, {
-            method: "GET",
-            headers: { "Accept": "application/json" }
+        const response = await fetch(apiUrl, {
+            method,
+            headers: {
+                "Accept": "application/json",
+                ...(body ? { "Content-Type": "application/json" } : {})
+            },
+            ...(body ? { body: JSON.stringify(body) } : {})
         });
 
         if (!response.ok) {
-            throw new Error("Leaderboard konnte nicht geladen werden.");
+            return { ok: false, payload: null, url: apiUrl };
         }
 
-        const payload = await response.json();
-        const serverEntries = Array.isArray(payload) ? payload : payload.entries;
+        const payload = await parseJsonSafely(response);
+        return { ok: true, payload, url: apiUrl };
+    } catch {
+        return { ok: false, payload: null, url: apiUrl };
+    }
+}
+
+async function loadLeaderboard() {
+    const result = await requestLeaderboard({ method: "GET" });
+
+    if (result.ok) {
+        const serverEntries = getEntriesFromPayload(result.payload);
         const normalized = normalizeLeaderboard(serverEntries);
 
         if (normalized.length > 0) {
@@ -168,43 +257,36 @@ async function loadLeaderboard() {
             renderLeaderboard(normalized);
             return;
         }
-    } catch {
-        // Fallback unten: lokal gespeicherte Werte verwenden.
     }
 
     renderLeaderboard(getStoredLeaderboard());
 }
 
 async function saveLeaderboard(name, score) {
+    const cleanedName = (name || "Anonym").trim() || "Anonym";
     const leaderboard = getStoredLeaderboard();
-    leaderboard.push({ name: (name || "Anonym").trim() || "Anonym", score });
+    leaderboard.push({ name: cleanedName, score });
     const topScores = normalizeLeaderboard(leaderboard);
 
     persistLeaderboardLocally(topScores);
 
-    try {
-        const response = await fetch(leaderboardApiUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name: (name || "Anonym").trim() || "Anonym", score })
-        });
+    const result = await requestLeaderboard({
+        method: "POST",
+        body: { name: cleanedName, score }
+    });
 
-        if (!response.ok) {
-            throw new Error("Server-Speicherung fehlgeschlagen");
-        }
-
-        const payload = await response.json();
-        const serverEntries = Array.isArray(payload) ? payload : payload.entries;
+    if (result.ok) {
+        const serverEntries = getEntriesFromPayload(result.payload);
         const normalized = normalizeLeaderboard(serverEntries);
 
         if (normalized.length > 0) {
             persistLeaderboardLocally(normalized);
             renderLeaderboard(normalized);
-            return { savedOnServer: true };
+        } else {
+            renderLeaderboard(topScores);
         }
-    } catch {
-        renderLeaderboard(topScores);
-        return { savedOnServer: false };
+
+        return { savedOnServer: true };
     }
 
     renderLeaderboard(topScores);
@@ -729,7 +811,8 @@ saveLeaderboardButton.addEventListener("click", async () => {
         return;
     }
 
-    setStatus("Server nicht erreichbar – lokal eingetragen.", "danger");
+    const apiUrl = getLeaderboardApiUrl();
+    setStatus(`Server nicht erreicht (${apiUrl}) – lokal eingetragen.`, "danger");
 });
 
 skipLeaderboardButton.addEventListener("click", () => {
