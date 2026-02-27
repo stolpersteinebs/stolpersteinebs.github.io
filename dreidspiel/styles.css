@@ -147,30 +147,47 @@ body.pseudo-fullscreen .render-frame {
 }
 
 .hud {
-    display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
     margin-bottom: 12px;
 }
 
 .hud-inside {
     position: absolute;
-    left: 10px;
-    right: 10px;
-    top: 10px;
+    left: 12px;
+    top: 12px;
     z-index: 3;
     margin-bottom: 0;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
-.hud-item {
-    background: rgba(255, 255, 255, 0.88);
-    border: 1px solid rgba(47, 111, 204, 0.2);
-    border-radius: 12px;
-    padding: 10px 8px;
-    text-align: center;
-    font-weight: 700;
-    box-shadow: 0 8px 18px rgba(19, 30, 58, 0.1);
+.hud-lives {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #fff;
+    font-size: 1.15rem;
+    font-weight: 900;
+    text-shadow: 0 2px 5px rgba(8, 14, 28, 0.75);
+}
+
+.hud-heart {
+    font-size: 1.25em;
+}
+
+.hud-score {
+    color: #ffd780;
+    font-weight: 800;
+    font-size: 1rem;
+    text-shadow: 0 2px 4px rgba(8, 14, 28, 0.72);
+}
+
+.hud-meta {
+    color: rgba(234, 243, 255, 0.9);
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-shadow: 0 1px 3px rgba(8, 14, 28, 0.72);
 }
 
 .scene-card {
@@ -290,7 +307,7 @@ body.pseudo-fullscreen .render-frame {
 .fullscreen-btn {
     position: absolute;
     top: 12px;
-    left: 12px;
+    right: 12px;
     z-index: 4;
     border: 1px solid rgba(255, 255, 255, 0.4);
     border-radius: 999px;
@@ -337,12 +354,12 @@ body.pseudo-fullscreen .render-frame {
 
 .render-frame:fullscreen .fullscreen-btn {
     top: 16px;
-    left: 16px;
+    right: 16px;
 }
 
 body.pseudo-fullscreen .render-frame .fullscreen-btn {
     top: 16px;
-    left: 16px;
+    right: 16px;
 }
 
 .nearby {
@@ -523,12 +540,8 @@ body.pseudo-fullscreen .render-frame .fullscreen-btn {
 }
 
 @media (max-width: 900px) {
-    .hud {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    .hud-inside {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+    .hud-meta {
+        max-width: min(88vw, 460px);
     }
 
     .render-frame {
