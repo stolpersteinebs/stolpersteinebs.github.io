@@ -2,32 +2,38 @@ const order = [
     {
         id: "tischdecke",
         label: "🕊️ Tischdecke",
-        hint: "Zuerst wird der Tisch vorbereitet: Eine saubere Tischdecke bildet die Grundlage."
+        hint: "Zuerst wird der Tisch vorbereitet: Eine saubere Tischdecke bildet die Grundlage.",
+        image: "Images/Bild1.png"
     },
     {
         id: "kerzenstaender",
         label: "🕯️ Kerzen und Kerzenständer",
-        hint: "Vor Sonnenuntergang stehen die Schabbatkerzen bereit."
+        hint: "Vor Sonnenuntergang stehen die Schabbatkerzen bereit.",
+        image: "Images/Bild2.png"
     },
     {
         id: "kidduschbecher",
         label: "🍷 Kidduschbecher",
-        hint: "Der Becher für den Kiddusch wird als Nächstes bereitgestellt."
+        hint: "Der Becher für den Kiddusch wird als Nächstes bereitgestellt.",
+        image: "Images/Bild3.png"
     },
     {
         id: "wein",
         label: "🍇 Wein oder Traubensaft",
-        hint: "Nun kommt das Getränk für den Kiddusch dazu."
+        hint: "Nun kommt das Getränk für den Kiddusch dazu.",
+        image: "Images/Bild4.png"
     },
     {
         id: "challa",
         label: "🍞 Zwei Challot mit Tuch",
-        hint: "Die beiden Challot werden bedeckt auf den Tisch gelegt."
+        hint: "Die beiden Challot werden bedeckt auf den Tisch gelegt.",
+        image: "Images/Bild5.png"
     },
     {
         id: "familienbuch",
         label: "📖 Siddur oder Liederheft",
-        hint: "Zum Abschluss sind Gebetbuch oder Liederheft griffbereit."
+        hint: "Zum Abschluss sind Gebetbuch oder Liederheft griffbereit.",
+        image: "Images/Bild6.png"
     }
 ];
 
@@ -35,6 +41,8 @@ const tray = document.getElementById("tray");
 const table = document.getElementById("table");
 const feedback = document.getElementById("feedback");
 const hint = document.getElementById("hint");
+const tableImage = document.getElementById("tableImage");
+const tableCaption = document.getElementById("tableCaption");
 const scoreEl = document.getElementById("score");
 const stepEl = document.getElementById("step");
 const totalEl = document.getElementById("total");
@@ -77,7 +85,10 @@ function renderTray() {
         const button = document.createElement("button");
         button.type = "button";
         button.className = "item";
-        button.textContent = item.label;
+        button.innerHTML = `
+            <span class="item-label">${item.label}</span>
+            <img src="${item.image}" alt="Vorschau für ${item.label}" class="item-preview" loading="lazy" />
+        `;
         button.setAttribute("aria-label", `${item.label} auswählen`);
         button.addEventListener("click", () => chooseItem(item.id));
         tray.appendChild(button);
@@ -101,6 +112,9 @@ function chooseItem(id) {
         placed.textContent = `${placedCount}. ${expected.label}`;
         table.appendChild(placed);
 
+        tableImage.src = expected.image;
+        tableCaption.textContent = `Schritt ${placedCount}: ${expected.label}`;
+
         hint.textContent = expected.hint;
         setFeedback("Richtig! Der Gegenstand passt in die Reihenfolge.", "ok");
 
@@ -108,6 +122,7 @@ function chooseItem(id) {
             stepEl.textContent = String(order.length);
             hint.textContent = "Fertig! Dein Schabbat-Tisch ist vorbereitet. Schabbat Schalom!";
             setFeedback("🎉 Geschafft! Du hast alle Gegenstände in die richtige Reihenfolge gebracht.", "ok");
+            tableCaption.textContent = "Fertig gedeckter Schabbat-Tisch. Schabbat Schalom!";
         }
     } else {
         mistakes += 1;
@@ -126,6 +141,8 @@ function resetGame() {
     available = shuffle(order);
 
     table.innerHTML = "";
+    tableImage.src = "Images/Bild0.png";
+    tableCaption.textContent = "Leerer Tisch – jetzt wird Schritt für Schritt gedeckt.";
     hint.textContent = "Tipp: Man beginnt mit der Grundlage des Tisches.";
     setFeedback("Wähle den ersten Gegenstand.", "");
 
