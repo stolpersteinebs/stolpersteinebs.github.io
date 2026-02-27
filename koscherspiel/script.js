@@ -221,6 +221,71 @@ function getLeaderboardApiUrl() {
     return defaultLeaderboardApiPath;
 }
 
+function getSupabaseConfig() {
+    const url = document
+        .querySelector('meta[name="koscher-supabase-url"]')
+        ?.getAttribute("content")
+        ?.trim();
+    const key = document
+        .querySelector('meta[name="koscher-supabase-key"]')
+        ?.getAttribute("content")
+        ?.trim();
+    const table = document
+        .querySelector('meta[name="koscher-supabase-table"]')
+        ?.getAttribute("content")
+        ?.trim() || "leaderboard";
+
+    if (!url || !key) {
+        return null;
+    }
+
+    return {
+        url: url.replace(/\/+$/, ""),
+        key,
+        table
+    };
+}
+
+async function loadLeaderboardFromSupabase(config) {
+    const endpoint = `${config.url}/rest/v1/${encodeURIComponent(config.table)}?select=name,score`;
+
+    const response = await fetch(endpoint, {
+        method: "GET",
+        headers: {
+            apikey: config.key,
+            Authorization: `Bearer ${config.key}`,
+            Accept: "application/json"
+        }
+    });
+
+    if (!response.ok) {
+        throw new Error("Supabase GET fehlgeschlagen");
+    }
+
+    const payload = await parseJsonSafely(response);
+    return normalizeLeaderboard(getEntriesFromPayload(payload) || payload);
+}
+
+async function saveLeaderboardToSupabase(config, name, score) {
+    const endpoint = `${config.url}/rest/v1/${encodeURIComponent(config.table)}`;
+    const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+            apikey: config.key,
+            Authorization: `Bearer ${config.key}`,
+            "Content-Type": "application/json",
+            Prefer: "return=minimal"
+        },
+        body: JSON.stringify([{ name, score }])
+    });
+
+    if (!response.ok) {
+        throw new Error("Supabase POST fehlgeschlagen");
+    }
+
+    return loadLeaderboardFromSupabase(config);
+}
+
 function normalizeApiUrl(rawUrl) {
     if (typeof rawUrl !== "string") {
         return "";
@@ -283,6 +348,22 @@ async function requestLeaderboard({ method, body }) {
 }
 
 async function loadLeaderboard() {
+    const supabaseConfig = getSupabaseConfig();
+
+    if (supabaseConfig) {
+        try {
+            const supabaseEntries = await loadLeaderboardFromSupabase(supabaseConfig);
+
+            if (supabaseEntries.length > 0) {
+                persistLeaderboardLocally(supabaseEntries);
+                renderLeaderboard(supabaseEntries);
+                return;
+            }
+        } catch {
+            // Fallback auf bestehende API-/localStorage-Strategie.
+        }
+    }
+
     const result = await requestLeaderboard({ method: "GET" });
 
     if (result.ok) {
@@ -306,6 +387,24 @@ async function saveLeaderboard(name, score) {
     const topScores = normalizeLeaderboard(leaderboard);
 
     persistLeaderboardLocally(topScores);
+
+    const supabaseConfig = getSupabaseConfig();
+    if (supabaseConfig) {
+        try {
+            const supabaseEntries = await saveLeaderboardToSupabase(supabaseConfig, cleanedName, score);
+
+            if (supabaseEntries.length > 0) {
+                persistLeaderboardLocally(supabaseEntries);
+                renderLeaderboard(supabaseEntries);
+            } else {
+                renderLeaderboard(topScores);
+            }
+
+            return { savedOnServer: true };
+        } catch {
+            // Fallback auf bisherige API
+        }
+    }
 
     const result = await requestLeaderboard({
         method: "POST",
