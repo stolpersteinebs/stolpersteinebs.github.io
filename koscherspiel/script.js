@@ -242,9 +242,6 @@ async function requestLeaderboard({ method, body }) {
     return { ok: false, payload: null, url: null };
 }
 
-async function loadLeaderboard() {
-    const result = await requestLeaderboard({ method: "GET" });
-
         const payload = await parseJsonSafely(response);
         return { ok: true, payload, url: apiUrl };
     } catch {
@@ -299,6 +296,8 @@ async function saveLeaderboard(name, score) {
 }
 
 function renderLeaderboard(scores = getStoredLeaderboard()) {
+    if (!leaderboardList) return;
+
     leaderboardList.innerHTML = "";
 
     if (scores.length === 0) {
@@ -375,6 +374,8 @@ function renderIdleHUD() {
 }
 
 function setStatus(text, type = "normal") {
+    if (!statusDisplay) return;
+
     statusDisplay.textContent = text;
     statusDisplay.classList.remove("hidden", "danger");
 
@@ -668,22 +669,24 @@ function endGame(reason) {
         window.clearTimeout(statusTimeoutId);
         statusTimeoutId = null;
     }
-    statusDisplay.classList.add("hidden");
+    if (statusDisplay) statusDisplay.classList.add("hidden");
 
     if (state.score > state.highscore) {
         state.highscore = state.score;
         persistHighscore(state.highscore);
     }
 
-    if (state.score > 0) {
-        leaderboardOptIn.classList.remove("hidden");
-    } else {
-        leaderboardOptIn.classList.add("hidden");
+    if (leaderboardOptIn) {
+        if (state.score > 0) {
+            leaderboardOptIn.classList.remove("hidden");
+        } else {
+            leaderboardOptIn.classList.add("hidden");
+        }
     }
 
     updateHUD();
-    resultText.textContent = `${reason} Dein Ergebnis: ${state.score} Punkte.`;
-    gameOverScreen.classList.remove("hidden");
+    if (resultText) resultText.textContent = `${reason} Dein Ergebnis: ${state.score} Punkte.`;
+    if (gameOverScreen) gameOverScreen.classList.remove("hidden");
 }
 
 function startGame() {
@@ -700,14 +703,16 @@ function startGame() {
     state = createInitialState();
     updateHUD();
 
-    startScreen.classList.add("hidden");
-    gameOverScreen.classList.add("hidden");
-    leaderboardOptIn.classList.add("hidden");
-    playerNameInput.value = "";
-    playerNameInput.disabled = false;
-    saveLeaderboardButton.disabled = false;
-    skipLeaderboardButton.disabled = false;
-    statusDisplay.classList.add("hidden");
+    if (startScreen) startScreen.classList.add("hidden");
+    if (gameOverScreen) gameOverScreen.classList.add("hidden");
+    if (leaderboardOptIn) leaderboardOptIn.classList.add("hidden");
+    if (playerNameInput) {
+        playerNameInput.value = "";
+        playerNameInput.disabled = false;
+    }
+    if (saveLeaderboardButton) saveLeaderboardButton.disabled = false;
+    if (skipLeaderboardButton) skipLeaderboardButton.disabled = false;
+    if (statusDisplay) statusDisplay.classList.add("hidden");
 
     state.playerX = (gameWidth() - playerWidth) / 2;
     positionPlayer();
@@ -796,43 +801,55 @@ document.addEventListener("keyup", (event) => {
     }
 });
 
-restartButton.addEventListener("click", startGame);
-startButton.addEventListener("click", startGame);
+if (restartButton) {
+    restartButton.addEventListener("click", startGame);
+}
+if (startButton) {
+    startButton.addEventListener("click", startGame);
+}
 
-saveLeaderboardButton.addEventListener("click", async () => {
-    if (!state) return;
-    if (state.leaderboardSubmitted) return;
+if (saveLeaderboardButton && skipLeaderboardButton && playerNameInput && leaderboardOptIn) {
+    saveLeaderboardButton.addEventListener("click", async () => {
+        if (!state) return;
+        if (state.leaderboardSubmitted) return;
 
-    state.leaderboardSubmitted = true;
-    saveLeaderboardButton.disabled = true;
-    skipLeaderboardButton.disabled = true;
-    playerNameInput.disabled = true;
-    const playerName = playerNameInput.value.trim();
-    const result = await saveLeaderboard(playerName || "Anonym", state.score);
-    leaderboardOptIn.classList.add("hidden");
+        state.leaderboardSubmitted = true;
+        saveLeaderboardButton.disabled = true;
+        skipLeaderboardButton.disabled = true;
+        playerNameInput.disabled = true;
+        const playerName = playerNameInput.value.trim();
+        const result = await saveLeaderboard(playerName || "Anonym", state.score);
+        leaderboardOptIn.classList.add("hidden");
 
-    if (result.savedOnServer) {
-        setStatus("In die Server-Bestenliste eingetragen!");
-        return;
-    }
+        if (result.savedOnServer) {
+            setStatus("In die Server-Bestenliste eingetragen!");
+            return;
+        }
 
-    const apiUrl = getLeaderboardApiUrl();
-    setStatus(`Server nicht erreicht (${apiUrl}) – lokal eingetragen.`, "danger");
-});
+        const apiUrl = getLeaderboardApiUrl();
+        setStatus(`Server nicht erreicht (${apiUrl}) – lokal eingetragen.`, "danger");
+    });
 
-skipLeaderboardButton.addEventListener("click", () => {
-    if (!state || state.leaderboardSubmitted) return;
+    skipLeaderboardButton.addEventListener("click", () => {
+        if (!state || state.leaderboardSubmitted) return;
 
-    state.leaderboardSubmitted = true;
-    saveLeaderboardButton.disabled = true;
-    skipLeaderboardButton.disabled = true;
-    playerNameInput.disabled = true;
-    leaderboardOptIn.classList.add("hidden");
-});
+        state.leaderboardSubmitted = true;
+        saveLeaderboardButton.disabled = true;
+        skipLeaderboardButton.disabled = true;
+        playerNameInput.disabled = true;
+        leaderboardOptIn.classList.add("hidden");
+    });
+}
 
-bindButtonHold(leftBtn, "left");
-bindButtonHold(rightBtn, "right");
-bindTouchFieldControl();
+if (leftBtn) {
+    bindButtonHold(leftBtn, "left");
+}
+if (rightBtn) {
+    bindButtonHold(rightBtn, "right");
+}
+if (game) {
+    bindTouchFieldControl();
+}
 
 window.addEventListener("resize", () => {
     if (!state) {
