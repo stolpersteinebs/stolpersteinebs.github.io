@@ -126,6 +126,15 @@ const SCORE_TIME_FACTOR = 2;
 const SCORE_STREAK_FACTOR = 45;
 const SCORE_WRONG_PENALTY = 90;
 const PLAYER_RADIUS = 0.2;
+const POWERUP_COUNT = 4;
+const POWERUP_RESPAWN_MS = 5200;
+const POWERUP_MOVE_SPEED = 1.2;
+
+const POWERUP_TYPES = [
+    { id: "life", icon: "❤️", color: "#ff7b8b", points: 0, life: 1, time: 0, message: "+1 Leben" },
+    { id: "score", icon: "✨", color: "#ffd76f", points: 260, life: 0, time: 0, message: "+260 Punkte" },
+    { id: "time", icon: "⏳", color: "#85d2ff", points: 0, life: 0, time: 20, message: "+20 Sekunden" }
+];
 
 const startScreenEl = document.getElementById("startScreen");
 const gamePanelEl = document.getElementById("gamePanel");
@@ -245,6 +254,7 @@ function createInitialState() {
         highscore: Number(localStorage.getItem("dreid_lernwelt_highscore") || 0),
         nearbyStationId: null,
         activeStationId: null,
+        powerups: [],
         finishReason: ""
     };
 }
@@ -258,6 +268,54 @@ function normalizeAngle(angle) {
 
 function formatPoints(value) {
     return new Intl.NumberFormat("de-DE").format(Math.max(0, Math.round(value)));
+}
+
+function randomBetween(min, max) {
+    return min + Math.random() * (max - min);
+}
+
+function pickRandomPowerupType() {
+    return POWERUP_TYPES[Math.floor(Math.random() * POWERUP_TYPES.length)];
+}
+
+function getRandomOpenPosition(minDistance = 1.6) {
+    for (let attempt = 0; attempt < 120; attempt += 1) {
+        const x = randomBetween(1.3, mapWidth() - 1.3);
+        const y = randomBetween(1.3, mapHeight() - 1.3);
+
+        if (isWallCell(Math.floor(x), Math.floor(y)) || isBlocked(x, y)) continue;
+
+        const nearStation = STATION_DEFS.some((station) => Math.hypot(station.x - x, station.y - y) < 0.9);
+        if (nearStation) continue;
+
+        if (state && Math.hypot(state.player.x - x, state.player.y - y) < minDistance) continue;
+
+        return { x, y };
+    }
+
+    return { x: 1.8, y: 1.8 };
+}
+
+function createPowerup() {
+    const type = pickRandomPowerupType();
+    const start = getRandomOpenPosition(2);
+    const angle = randomBetween(0, Math.PI * 2);
+
+    return {
+        typeId: type.id,
+        icon: type.icon,
+        color: type.color,
+        x: start.x,
+        y: start.y,
+        vx: Math.cos(angle) * POWERUP_MOVE_SPEED,
+        vy: Math.sin(angle) * POWERUP_MOVE_SPEED,
+        respawnAt: 0,
+        active: true
+    };
+}
+
+function spawnPowerups() {
+    state.powerups = Array.from({ length: POWERUP_COUNT }, () => createPowerup());
 }
 
 function mapWidth() {
@@ -594,6 +652,7 @@ function renderWorld() {
         drawStationSprite(x, y, spriteWidth, spriteHeight, station);
     });
 
+    drawPowerupsInWorld(depth, stripWidth, width, height);
     drawMinimap(width);
     drawCrosshair(width, height);
 }
@@ -609,6 +668,40 @@ function drawCrosshair(width, height) {
     ctx.moveTo(x, y - 8);
     ctx.lineTo(x, y + 8);
     ctx.stroke();
+}
+
+function drawPowerupsInWorld(depth, stripWidth, width, height) {
+    state.powerups.forEach((powerup) => {
+        if (!powerup.active) return;
+
+        const dx = powerup.x - state.player.x;
+        const dy = powerup.y - state.player.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 0.15) return;
+
+        const relAngle = normalizeAngle(Math.atan2(dy, dx) - state.player.angle);
+        if (Math.abs(relAngle) > FOV * 0.66) return;
+
+        const screenX = (0.5 + relAngle / FOV) * width;
+        const spriteHeight = Math.max(14, Math.min(height * 0.42, (height / dist) * 0.36));
+        const spriteWidth = spriteHeight * 0.76;
+        const rayIndex = Math.floor(screenX / stripWidth);
+        if (rayIndex < 0 || rayIndex >= depth.length) return;
+        if (dist > depth[rayIndex] + 0.08) return;
+
+        const x = screenX - spriteWidth * 0.5;
+        const y = height * 0.5 - spriteHeight * 0.5;
+
+        drawRoundedRect(x, y, spriteWidth, spriteHeight, 8);
+        ctx.fillStyle = powerup.color;
+        ctx.fill();
+
+        ctx.fillStyle = "rgba(8, 14, 28, 0.38)";
+        ctx.font = `${Math.max(12, spriteHeight * 0.54)}px Arial`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(powerup.icon, x + spriteWidth * 0.5, y + spriteHeight * 0.55);
+    });
 }
 
 function drawMinimap(canvasWidth) {
@@ -634,6 +727,14 @@ function drawMinimap(canvasWidth) {
         ctx.fill();
     });
 
+    state.powerups.forEach((powerup) => {
+        if (!powerup.active) return;
+        ctx.fillStyle = powerup.color;
+        ctx.beginPath();
+        ctx.arc(x + powerup.x * cell, y + powerup.y * cell, Math.max(2.4, cell * 0.2), 0, Math.PI * 2);
+        ctx.fill();
+    });
+
     const px = x + state.player.x * cell;
     const py = y + state.player.y * cell;
 
@@ -648,6 +749,66 @@ function drawMinimap(canvasWidth) {
     ctx.moveTo(px, py);
     ctx.lineTo(px + Math.cos(state.player.angle) * 10, py + Math.sin(state.player.angle) * 10);
     ctx.stroke();
+}
+
+function applyPowerup(powerup) {
+    const type = POWERUP_TYPES.find((entry) => entry.id === powerup.typeId);
+    if (!type) return;
+
+    if (type.life > 0) {
+        state.lives += type.life;
+    }
+    if (type.points > 0) {
+        state.score += type.points;
+    }
+    if (type.time > 0) {
+        state.timeLeft = Math.min(MAX_TIME, state.timeLeft + type.time);
+    }
+
+    showFeedback(`Power-up gefunden: ${type.message}.`, "ok");
+    updateHud();
+
+    powerup.active = false;
+    powerup.respawnAt = Date.now() + POWERUP_RESPAWN_MS + Math.floor(Math.random() * 2500);
+}
+
+function updatePowerups(delta) {
+    state.powerups.forEach((powerup) => {
+        if (!powerup.active) {
+            if (Date.now() >= powerup.respawnAt) {
+                const fresh = createPowerup();
+                Object.assign(powerup, fresh);
+            }
+            return;
+        }
+
+        let nextX = powerup.x + powerup.vx * delta;
+        let nextY = powerup.y + powerup.vy * delta;
+
+        if (isBlocked(nextX, powerup.y)) {
+            powerup.vx *= -1;
+            nextX = powerup.x + powerup.vx * delta;
+        }
+        if (isBlocked(powerup.x, nextY)) {
+            powerup.vy *= -1;
+            nextY = powerup.y + powerup.vy * delta;
+        }
+
+        powerup.x = nextX;
+        powerup.y = nextY;
+
+        if (Math.random() < 0.012) {
+            const steer = randomBetween(-0.35, 0.35);
+            const angle = Math.atan2(powerup.vy, powerup.vx) + steer;
+            powerup.vx = Math.cos(angle) * POWERUP_MOVE_SPEED;
+            powerup.vy = Math.sin(angle) * POWERUP_MOVE_SPEED;
+        }
+
+        const dist = Math.hypot(powerup.x - state.player.x, powerup.y - state.player.y);
+        if (dist < 0.45) {
+            applyPowerup(powerup);
+        }
+    });
 }
 
 function movePlayer(delta) {
@@ -1117,6 +1278,7 @@ function loop(timestamp) {
     const gateBlocksInput = mobileFullscreenGateEl && !mobileFullscreenGateEl.classList.contains("hidden");
     if (!state.questionOpen && !gateBlocksInput) {
         movePlayer(delta);
+        updatePowerups(delta);
         updateNearbyPrompt();
     }
 
@@ -1137,6 +1299,7 @@ async function startGame() {
     }
 
     state = createInitialState();
+    spawnPowerups();
     resetKeys();
     setPseudoFullscreen(false);
     updateFullscreenButtonLabel();

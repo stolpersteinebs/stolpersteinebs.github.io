@@ -35,12 +35,9 @@
             <div class="render-frame">
                 <canvas id="view" aria-label="3D Ansicht"></canvas>
                 <section class="hud hud-inside" aria-label="Spielstand im Spiel">
-                    <div class="hud-item">Zeit: <span id="timeLeft">240</span>s</div>
-                    <div class="hud-item">Punkte: <span id="score">0</span></div>
-                    <div class="hud-item">Leben: <span id="lives">3</span></div>
-                    <div class="hud-item">Serie: <span id="streak">0</span></div>
-                    <div class="hud-item">Stationen: <span id="solved">0</span>/<span id="total">6</span></div>
-                    <div class="hud-item">Highscore: <span id="highscore">0</span></div>
+                    <div class="hud-lives" aria-label="Leben"><span class="hud-heart" aria-hidden="true">❤️</span><span id="lives">3</span></div>
+                    <div class="hud-score">Punkte: <span id="score">0</span></div>
+                    <div class="hud-meta">Zeit: <span id="timeLeft">240</span>s · Serie: <span id="streak">0</span> · Stationen: <span id="solved">0</span>/<span id="total">6</span> · Highscore: <span id="highscore">0</span></div>
                 </section>
                 <div id="nearbyPrompt" class="nearby hidden"></div>
                 <div id="mobileFullscreenGate" class="mobile-gate hidden" aria-live="assertive">
