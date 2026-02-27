@@ -73,7 +73,6 @@ const powerupDurationMs = 6000;
 const leaderboardSize = 5;
 const maxLevel = 10;
 const defaultLeaderboardApiPath = "/api/koscher-leaderboard";
-let preferredLeaderboardApiUrl = null;
 
 const keys = {
     left: false,
@@ -201,20 +200,14 @@ function persistLeaderboardLocally(scores) {
     }
 }
 
-function collectLeaderboardApiCandidates() {
-    const candidates = [];
-
-    if (preferredLeaderboardApiUrl) {
-        candidates.push(preferredLeaderboardApiUrl);
-    }
-
+function getLeaderboardApiUrl() {
     const metaApiUrl = document
         .querySelector('meta[name="koscher-leaderboard-api"]')
         ?.getAttribute("content")
         ?.trim();
 
     if (metaApiUrl) {
-        candidates.push(metaApiUrl);
+        return metaApiUrl;
     }
 
     const fromWindow = typeof window.KOSCHER_LEADERBOARD_API_URL === "string"
@@ -222,45 +215,41 @@ function collectLeaderboardApiCandidates() {
         : "";
 
     if (fromWindow) {
-        candidates.push(fromWindow);
+        return fromWindow;
     }
 
-    candidates.push(defaultLeaderboardApiPath);
-    candidates.push("api/koscher-leaderboard");
-
-    const currentDirectoryApiUrl = new URL("api/koscher-leaderboard", window.location.href).toString();
-    candidates.push(currentDirectoryApiUrl);
-
-    return Array.from(new Set(candidates.filter(Boolean)));
+    return defaultLeaderboardApiPath;
 }
 
 async function requestLeaderboard({ method, body }) {
-    const urls = collectLeaderboardApiCandidates();
+    const apiUrl = getLeaderboardApiUrl();
 
-    for (const url of urls) {
-        try {
-            const response = await fetch(url, {
-                method,
-                headers: {
-                    "Accept": "application/json",
-                    ...(body ? { "Content-Type": "application/json" } : {})
-                },
-                ...(body ? { body: JSON.stringify(body) } : {})
-            });
+    try {
+        const response = await fetch(apiUrl, {
+            method,
+            headers: {
+                "Accept": "application/json",
+                ...(body ? { "Content-Type": "application/json" } : {})
+            },
+            ...(body ? { body: JSON.stringify(body) } : {})
+        });
 
-            if (!response.ok) {
-                continue;
-            }
-
-            preferredLeaderboardApiUrl = url;
-            const payload = await parseJsonSafely(response);
-            return { ok: true, payload, url };
-        } catch {
-            // Nächste URL testen.
+        if (!response.ok) {
+            return { ok: false, payload: null, url: apiUrl };
         }
     }
 
     return { ok: false, payload: null, url: null };
+}
+
+async function loadLeaderboard() {
+    const result = await requestLeaderboard({ method: "GET" });
+
+        const payload = await parseJsonSafely(response);
+        return { ok: true, payload, url: apiUrl };
+    } catch {
+        return { ok: false, payload: null, url: apiUrl };
+    }
 }
 
 async function loadLeaderboard() {
@@ -827,7 +816,8 @@ saveLeaderboardButton.addEventListener("click", async () => {
         return;
     }
 
-    setStatus("Lokal in die Bestenliste eingetragen.");
+    const apiUrl = getLeaderboardApiUrl();
+    setStatus(`Server nicht erreicht (${apiUrl}) – lokal eingetragen.`, "danger");
 });
 
 skipLeaderboardButton.addEventListener("click", () => {
