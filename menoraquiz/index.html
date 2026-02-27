@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Symbol-Quiz: Menora & mehr</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<main class="quiz-app">
+    <header>
+        <h1>Symbol-Quiz: Menora &amp; mehr</h1>
+        <p>
+            Teste dein Wissen über die Bedeutung jüdischer Symbole wie Menora, Davidstern,
+            Schofar, Mesusa und Chanukkia.
+        </p>
+    </header>
+
+    <nav class="quick-links" aria-label="Spiele-Navigation">
+        <a href="/">Startseite</a>
+        <a href="/feiertagsquiz/">Feiertags-Quiz</a>
+        <a href="/schabbattischspiel/">Schabbat-Tisch</a>
+        <a href="/dreidspiel/">3D Lernwelt</a>
+    </nav>
+
+    <section id="startScreen" class="card start-screen">
+        <h2>Bist du bereit?</h2>
+        <p>Du bekommst 8 Fragen. Für jede richtige Antwort gibt es Punkte.</p>
+        <button id="startBtn" type="button">Quiz starten</button>
+    </section>
+
+    <section id="quizScreen" class="hidden">
+        <div class="status-bar card">
+            <span>Frage <strong id="currentQuestion">1</strong>/<strong id="totalQuestions">8</strong></span>
+            <span>Punkte: <strong id="score">0</strong></span>
+        </div>
+
+        <article class="card">
+            <h2 id="questionText">Frage</h2>
+            <div id="answers" class="answers"></div>
+            <p id="feedback" class="feedback hidden" aria-live="polite"></p>
+            <button id="nextBtn" class="hidden" type="button">Nächste Frage</button>
+        </article>
+    </section>
+
+    <section id="resultScreen" class="card hidden">
+        <h2>Ergebnis</h2>
+        <p id="resultText"></p>
+        <button id="restartBtn" type="button">Nochmal spielen</button>
+    </section>
+</main>
+
+<script src="script.js"></script>
+</body>
+</html>
