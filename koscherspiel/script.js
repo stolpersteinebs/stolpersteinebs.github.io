@@ -72,7 +72,7 @@ const itemWidth = 40;
 const powerupDurationMs = 6000;
 const leaderboardSize = 5;
 const maxLevel = 10;
-const defaultLeaderboardApiPath = "/api/koscher-leaderboard";
+const defaultLeaderboardApiPath = "/api/koscher-leaderboard.php";
 
 const keys = {
     left: false,
