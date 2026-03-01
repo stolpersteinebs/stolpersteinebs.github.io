@@ -5,7 +5,7 @@ permalink: /en/spiele/
 ---
 Here you can find all interactive exhibition games at a glance.
 
-- [Dreidel Game](/dreidspiel/)
+- [3D Lernwelt](/dreidspiel/)
 - [Kosher Game](/koscherspiel/)
 - [Shabbat Table Game](/schabbattischspiel/)
 - [Holiday Quiz](/feiertagsquiz/)
