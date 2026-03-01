@@ -1,21 +1,9 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script>
-        (function () {
-            const path = window.location.pathname;
-            const isRootPath = path === '/' || path === '/index.html';
-            if (!isRootPath) return;
-
-            const preferredLanguage = ((navigator.languages && navigator.languages[0]) || navigator.language || '').toLowerCase();
-            if (preferredLanguage && !preferredLanguage.startsWith('de')) {
-                window.location.replace('/en/');
-            }
-        })();
-    </script>
-    <title>CJD Braunschweig: „Mit eigener Stimme…“ und unseren Augen betrachtet</title>
+    <title>CJD Braunschweig: “In Our Own Voice…” Seen Through Our Eyes</title>
     <link rel="icon" href="/Logo.jpeg" type="image/jpeg">
     <link rel="shortcut icon" href="/Logo.jpeg" type="image/jpeg">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -763,43 +751,43 @@
     <!-- NEUE NAVIGATION mit Hamburger-Menü -->
     <nav class="main-nav">
         <div class="nav-inner">
-            <a href="/" class="nav-brand">
+            <a href="/en/" class="nav-brand">
                 <i class="fas fa-landmark nav-icon"></i>
                 <div>
                     <div class="nav-title">CJD Braunschweig</div>
-                    <div class="nav-subtitle">„Mit eigener Stimme…“ und unseren Augen betrachtet</div>
+                    <div class="nav-subtitle">“In Our Own Voice…” Seen Through Our Eyes</div>
                 </div>
             </a>
 
             <!-- Hamburger-Button -->
-            <button class="hamburger" id="hamburger" aria-label="Menü">
+            <button class="hamburger" id="hamburger" aria-label="Menu">
                 <i class="fas fa-bars"></i>
             </button>
             
             <ul class="nav-menu" id="nav-menu">
-                <li><a href="/" class="nav-link active">
+                <li><a href="/en/" class="nav-link active">
                     <i class="fas fa-home"></i>
-                    <span>Startseite</span>
+                    <span>Home</span>
                 </a></li>
-                <li><a href="/spiele" class="nav-link">
+                <li><a href="/en/spiele" class="nav-link">
                     <i class="fas fa-gamepad"></i>
-                    <span>Alle Spiele</span>
+                    <span>All Games</span>
                 </a></li>
-                <li><a href="/lernenundwerte" class="nav-link">
+                <li><a href="/en/lernenundwerte" class="nav-link">
                     <i class="fas fa-book-open"></i> <!-- Geändert -->
-                    <span>Lernen & Werte</span>
+                    <span>Learning & Values</span>
                 </a></li>
-                <li><a href="/juedischeralltag" class="nav-link">
+                <li><a href="/en/juedischeralltag" class="nav-link">
                     <i class="fas fa-menorah"></i> <!-- Geändert -->
-                    <span>Jüdischer Alltag</span>
+                    <span>Jewish Everyday Life</span>
                 </a></li>
-                <li><a href="/einblicke" class="nav-link">
+                <li><a href="/en/einblicke" class="nav-link">
                     <i class="fas fa-eye"></i> <!-- Bleibt -->
-                    <span>Einblicke & Erkenntnisse</span>
+                    <span>Insights & Discoveries</span>
                 </a></li>
-                <li><a href="/inspiration" class="nav-link">
+                <li><a href="/en/inspiration" class="nav-link">
                     <i class="fas fa-torah"></i> <!-- Geändert -->
-                    <span>Inspiration & Lehre</span>
+                    <span>Inspiration & Teachings</span>
                 </a></li>
             </ul>
         </div>
@@ -807,82 +795,82 @@
 
     <div class="container">
         <header class="header">
-            <p class="kicker">Interaktive Bildungsausstellung</p>
-            <h1 class="hero-title" aria-label="CJD Braunschweig präsentiert: „Mit eigener Stimme…“ und unseren Augen betrachtet">
-                <span class="title-lead">CJD Braunschweig präsentiert:</span>
+            <p class="kicker">Interactive Educational Exhibition</p>
+            <h1 class="hero-title" aria-label="CJD Braunschweig präsentiert: “In Our Own Voice…” Seen Through Our Eyes">
+                <span class="title-lead">CJD Braunschweig presents:</span>
                 <span class="title-drop" aria-hidden="true">
-                    <span class="stone-word" style="--drop-delay: 0.95s;">"Mit</span>
-                    <span class="stone-word" style="--drop-delay: 1.08s;">eigener</span>
-                    <span class="stone-word" style="--drop-delay: 1.21s;">Stimme…"</span>
-                    <span class="stone-word" style="--drop-delay: 1.34s;">und</span>
-                    <span class="stone-word" style="--drop-delay: 1.47s;">unseren</span>
-                    <span class="stone-word" style="--drop-delay: 1.60s;">Augen</span>
-                    <span class="stone-word" style="--drop-delay: 1.72s;">betrachtet</span>
+                    <span class="stone-word" style="--drop-delay: 0.95s;">"In</span>
+                    <span class="stone-word" style="--drop-delay: 1.08s;">Our</span>
+                    <span class="stone-word" style="--drop-delay: 1.21s;">Own Voice…"</span>
+                    <span class="stone-word" style="--drop-delay: 1.34s;">Seen</span>
+                    <span class="stone-word" style="--drop-delay: 1.47s;">Through</span>
+                    <span class="stone-word" style="--drop-delay: 1.60s;">Our</span>
+                    <span class="stone-word" style="--drop-delay: 1.72s;">Eyes</span>
                 </span>
             </h1>
-            <p class="subtitle">Eine immersive Ausstellung über jüdische Geschichte, Kultur und Traditionen</p>
+            <p class="subtitle">An immersive exhibition about Jewish history, culture, and traditions</p>
             <div class="feature-pills" aria-label="Highlights">
-                <span class="feature-pill">Eintritt frei</span>
-                <span class="feature-pill">4 Themenbereiche</span>
-                <span class="feature-pill">Interaktive Spiele</span>
+                <span class="feature-pill">Free admission</span>
+                <span class="feature-pill">4 focus areas</span>
+                <span class="feature-pill">Interactive games</span>
             </div>
         </header>
 
         <div class="content">
             <div class="text-section">
-                <p>Willkommen zur Ausstellung <span class="highlight">„Mit eigener Stimme…“ und unseren Augen betrachtet</span>, die vom CJD Braunschweig kuratiert wurde. Diese einzigartige Erfahrung lädt Sie ein, die reiche und vielfältige Welt des Judentums durch interaktive Installationen, historische Artefakte und persönliche Geschichten zu entdecken.</p>
+                <p>Welcome to the exhibition <span class="highlight">“In Our Own Voice…” Seen Through Our Eyes</span>, curated by CJD Braunschweig. This unique experience invites you to discover the rich and diverse world of Judaism through interactive installations, historical artifacts, and personal stories.</p>
                 
-                <p>Die Ausstellung beleuchtet verschiedene Aspekte jüdischen Lebens: von den Wurzeln in der Antike über die Blütezeit in Mittelalter und Neuzeit bis hin zu den Herausforderungen und dem Wiederaufleben in der Gegenwart. Wir zeigen die Verbindungen zwischen Religion, Kultur, Kunst und Alltag, die das jüdische Leben über Jahrtausende geprägt haben.</p>
+                <p>The exhibition highlights different aspects of Jewish life: from its roots in antiquity and flourishing periods in the Middle Ages and modern era to present-day challenges and revival. We present the connections between religion, culture, art, and everyday life that have shaped Jewish identity for millennia.</p>
                 
-                <p>Unser Ziel ist es, Vorurteile abzubauen und Verständnis zu fördern, indem wir Besuchern ermöglichen, <span class="highlight">„Mit eigener Stimme…“ und unseren Augen betrachtet</span> zu sehen, was jüdische Identität ausmacht. Die Ausstellung kombiniert traditionelle Exponate mit moderner Medientechnik und schafft so ein einprägsames Bildungserlebnis für alle Altersgruppen.</p>
+                <p>Our goal is to reduce prejudice and foster understanding by helping visitors explore what defines Jewish identity through <span class="highlight">“In Our Own Voice…” Seen Through Our Eyes</span>. The exhibition combines traditional exhibits with modern media technology to create a memorable educational experience for all age groups.</p>
                 
-                <p>Die Ausstellung ist vom 15. März bis 30. Juni 2026 im Kulturhaus Braunschweig zu sehen. Eintritt frei. Gefördert durch die Stiftung Erinnerung, Verantwortung und Zukunft.</p>
+                <p>The exhibition will be shown at Kulturhaus Braunschweig from March 15 to June 30, 2026. Admission is free. Funded by the Foundation Remembrance, Responsibility and Future.</p>
             </div>
             
             <div class="image-section">
-                <img src="/api/placeholder/800/500" alt="Ausstellung „Mit eigener Stimme…“ und unseren Augen betrachtet" class="exhibition-image">
+                <img src="/api/placeholder/800/500" alt="Exhibition “In Our Own Voice…” Seen Through Our Eyes" class="exhibition-image">
             </div>
         </div>
 
         <!-- ANGEPASSTE BUTTONS (Icons ebenfalls thematisch angepasst) -->
         <div class="buttons-section">
-            <a href="/lernenundwerte" class="button button-1">
+            <a href="/en/lernenundwerte" class="button button-1">
                 <div class="button-icon"><i class="fas fa-book-open"></i></div> <!-- Geändert -->
-                <div class="button-title">Lernen & Werte</div>
-                <div class="button-desc">Pädagogische Ansätze und Wertevermittlung im CJD Braunschweig</div>
+                <div class="button-title">Learning & Values</div>
+                <div class="button-desc">Educational approaches and value-based learning at CJD Braunschweig</div>
             </a>
             
-            <a href="/juedischeralltag" class="button button-2">
+            <a href="/en/juedischeralltag" class="button button-2">
                 <div class="button-icon"><i class="fas fa-menorah"></i></div> <!-- Geändert -->
-                <div class="button-title">Jüdischer Alltag</div>
-                <div class="button-desc">Traditionen, Rituale und das tägliche Leben in der jüdischen Gemeinschaft</div>
+                <div class="button-title">Jewish Everyday Life</div>
+                <div class="button-desc">Traditions, rituals, and everyday life in the Jewish community</div>
             </a>
             
-            <a href="/einblicke" class="button button-3">
+            <a href="/en/einblicke" class="button button-3">
                 <div class="button-icon"><i class="fas fa-eye"></i></div> <!-- Bleibt -->
-                <div class="button-title">Einblicke & Erkenntnisse</div>
-                <div class="button-desc">Persönliche Geschichten und historische Einordnungen</div>
+                <div class="button-title">Insights & Discoveries</div>
+                <div class="button-desc">Personal stories and historical context</div>
             </a>
             
-            <a href="/inspiration" class="button button-4">
+            <a href="/en/inspiration" class="button button-4">
                 <div class="button-icon"><i class="fas fa-torah"></i></div> <!-- Geändert -->
-                <div class="button-title">Inspiration & Lehre</div>
-                <div class="button-desc">Bildungsimpulse und Lehren für die Gegenwart</div>
+                <div class="button-title">Inspiration & Teachings</div>
+                <div class="button-desc">Educational impulses and lessons for the present</div>
             </a>
 
         </div>
 
         <div class="games-overview-cta">
-            <a href="/spiele" class="games-overview-button">
+            <a href="/en/spiele" class="games-overview-button">
                 <i class="fas fa-gamepad"></i>
-                Zur Übersicht aller Spiele
+                Go to all games
             </a>
         </div>
 
         <footer class="footer">
-            <p><strong>CJD Braunschweig</strong> · Christophorusschule · 38102 Braunschweig · Tel: 0531 123456</p>
-            <p>Öffnungszeiten: Di–So 10–18 Uhr, Do bis 20 Uhr · <a href="/impressum/">Impressum</a>
-            <p>Diese Ausstellung wird unterstützt von: <span class="menorah">✡</span> Stiftung EVZ · <span class="menorah">✡</span> Zentralrat der Juden · <span class="menorah">✡</span> Stadt Braunschweig</p>
+            <p><strong>CJD Braunschweig</strong> · Christophorusschule · 38102 Braunschweig · Phone: +49 531 123456</p>
+            <p>Opening hours: Tue–Sun 10:00–18:00, Thu until 20:00 · <a href="/en/impressum/">Legal notice</a>
+            <p>This exhibition is supported by: <span class="menorah">✡</span> EVZ Foundation · <span class="menorah">✡</span> Central Council of Jews · <span class="menorah">✡</span> City of Braunschweig</p>
         </footer>
     </div>
 
@@ -897,7 +885,7 @@
                 }, gradientDelay);
             }
 
-            // Aktive Navigation hervorheben
+            // Highlight active navigation
             const currentPath = window.location.pathname;
             const navLinks = document.querySelectorAll('.nav-link');
             
@@ -905,18 +893,18 @@
                 const linkPath = link.getAttribute('href');
                 if (currentPath === linkPath) {
                     link.classList.add('active');
-                } else if (currentPath !== '/' && linkPath === '/') {
+                } else if (currentPath !== '/en/' && linkPath === '/en/') {
                     link.classList.remove('active');
                 }
             });
             
-            // Menorah-Animation
+            // Menorah animation
             const menorahs = document.querySelectorAll('.menorah, .nav-icon');
             menorahs.forEach((menorah, index) => {
                 menorah.style.animationDelay = (index * 0.3) + 's';
             });
             
-            // Hamburger-Menü Funktionalität
+            // Hamburger menu functionality
             const hamburger = document.getElementById('hamburger');
             const navMenu = document.getElementById('nav-menu');
 
@@ -925,7 +913,7 @@
                     e.stopPropagation();
                     navMenu.classList.toggle('active');
                     
-                    // Icon wechseln
+                    // Toggle icon
                     const icon = hamburger.querySelector('i');
                     if (navMenu.classList.contains('active')) {
                         icon.classList.remove('fa-bars');
@@ -936,7 +924,7 @@
                     }
                 });
 
-                // Menü schließen bei Klick auf einen Link
+                // Close menu when a nav link is clicked
                 navMenu.querySelectorAll('.nav-link').forEach(link => {
                     link.addEventListener('click', function() {
                         navMenu.classList.remove('active');
@@ -946,7 +934,7 @@
                     });
                 });
 
-                // Menü schließen bei Klick außerhalb
+                // Close menu when clicking outside
                 document.addEventListener('click', function(event) {
                     if (!navMenu.contains(event.target) && !hamburger.contains(event.target)) {
                         navMenu.classList.remove('active');
