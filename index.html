@@ -106,6 +106,25 @@
         }
 
         /* NEUE NAVIGATION - Im Stil der Buttons */
+        .shabbat-banner {
+            display: none;
+            width: calc(100% + 40px);
+            margin-left: -20px;
+            margin-right: -20px;
+            background: linear-gradient(90deg, #f2b84b 0%, #f6d78f 50%, #f2b84b 100%);
+            color: #2f220e;
+            text-align: center;
+            padding: 0.75rem 1rem;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            border-bottom: 1px solid rgba(70, 50, 33, 0.24);
+            box-shadow: 0 4px 14px rgba(17, 34, 60, 0.14);
+        }
+
+        .shabbat-banner.is-visible {
+            display: block;
+        }
+
         .main-nav {
             width: calc(100% + 40px);
             max-width: none;
@@ -760,6 +779,10 @@
     </style>
 </head>
 <body>
+    <div class="shabbat-banner" id="shabbat-banner" role="status" aria-live="polite">
+        ✨ Heute ist Schabbat – Schabbat Schalom!
+    </div>
+
     <!-- NEUE NAVIGATION mit Hamburger-Menü -->
     <nav class="main-nav">
         <div class="nav-inner">
@@ -888,6 +911,19 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            const isShabbatNow = () => {
+                const nowBerlin = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Berlin' }));
+                const weekday = nowBerlin.getDay();
+                const hour = nowBerlin.getHours();
+
+                return weekday === 6 || (weekday === 5 && hour >= 18);
+            };
+
+            const shabbatBanner = document.getElementById('shabbat-banner');
+            if (shabbatBanner && isShabbatNow()) {
+                shabbatBanner.classList.add('is-visible');
+            }
+
             const heroTitle = document.querySelector('.hero-title');
             if (heroTitle) {
                 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
