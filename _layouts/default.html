@@ -1,5 +1,8 @@
 <!DOCTYPE html>
-<html lang="de">
+{% assign current_path = page.permalink | default: page.url | default: "" %}
+{% assign is_en = false %}
+{% if current_path contains "/en/" %}{% assign is_en = true %}{% endif %}
+<html lang="{% if is_en %}en{% else %}de{% endif %}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -545,54 +548,54 @@
 </head>
 <body>
     <div class="shabbat-banner" id="shabbat-banner" role="status" aria-live="polite">
-        ✨ Heute ist Schabbat – Schabbat Schalom!
+        {% if is_en %}✨ Today is Shabbat – Shabbat Shalom!{% else %}✨ Heute ist Schabbat – Schabbat Schalom!{% endif %}
     </div>
 
     <!-- Navigation -->
     <nav class="site-nav">
         <div class="nav-container">
-            <a href="/" class="nav-brand">
+            <a href="{% if is_en %}/en/{% else %}/{% endif %}" class="nav-brand">
                 <i class="fas fa-landmark brand-icon"></i>
                 <div>
                     <div class="brand-title">CJD Braunschweig</div>
-                    <div class="brand-subtitle">„Mit eigener Stimme…“ und unseren Augen betrachtet</div>
+                    <div class="brand-subtitle">{% if is_en %}“In Our Own Voice…” Seen Through Our Eyes{% else %}„Mit eigener Stimme…“ und unseren Augen betrachtet{% endif %}</div>
                 </div>
             </a>
 
             <!-- Hamburger-Button -->
-            <button class="hamburger" id="hamburger" aria-label="Menü">
+            <button class="hamburger" id="hamburger" aria-label="{% if is_en %}Menu{% else %}Menü{% endif %}">
                 <i class="fas fa-bars"></i>
             </button>
             
             <ul class="nav-menu" id="nav-menu">
-                <li><a href="/" class="nav-link" data-nav="home">
+                <li><a href="{% if is_en %}/en/{% else %}/{% endif %}" class="nav-link" data-nav="home">
                     <i class="fas fa-home"></i>
-                    <span>Startseite</span>
+                    <span>{% if is_en %}Home{% else %}Startseite{% endif %}</span>
                 </a></li>
 
-                <li><a href="/spiele" class="nav-link" data-nav="spiele">
+                <li><a href="{% if is_en %}/en/spiele{% else %}/spiele{% endif %}" class="nav-link" data-nav="spiele">
                     <i class="fas fa-gamepad"></i>
-                    <span>Alle Spiele</span>
+                    <span>{% if is_en %}All Games{% else %}Alle Spiele{% endif %}</span>
                 </a></li>
                 
-                <li><a href="/lernenundwerte" class="nav-link" data-nav="lernenundwerte">
+                <li><a href="{% if is_en %}/en/lernenundwerte{% else %}/lernenundwerte{% endif %}" class="nav-link" data-nav="lernenundwerte">
                     <i class="fas fa-book-open"></i>
-                    <span>Lernen & Werte</span>
+                    <span>{% if is_en %}Learning & Values{% else %}Lernen & Werte{% endif %}</span>
                 </a></li>
                 
-                <li><a href="/juedischeralltag" class="nav-link" data-nav="juedischeralltag">
+                <li><a href="{% if is_en %}/en/juedischeralltag{% else %}/juedischeralltag{% endif %}" class="nav-link" data-nav="juedischeralltag">
                     <i class="fas fa-menorah"></i>
-                    <span>Jüdischer Alltag</span>
+                    <span>{% if is_en %}Jewish Everyday Life{% else %}Jüdischer Alltag{% endif %}</span>
                 </a></li>
                 
-                <li><a href="/einblicke" class="nav-link" data-nav="einblicke">
+                <li><a href="{% if is_en %}/en/einblicke{% else %}/einblicke{% endif %}" class="nav-link" data-nav="einblicke">
                     <i class="fas fa-eye"></i>
-                    <span>Einblicke & Erkenntnisse</span>
+                    <span>{% if is_en %}Insights & Findings{% else %}Einblicke & Erkenntnisse{% endif %}</span>
                 </a></li>
                 
-                <li><a href="/inspiration" class="nav-link" data-nav="inspiration">
+                <li><a href="{% if is_en %}/en/inspiration{% else %}/inspiration{% endif %}" class="nav-link" data-nav="inspiration">
                     <i class="fas fa-torah"></i> <!-- Korrigiert: Torah-Rolle -->
-                    <span>Inspiration & Lehre</span>
+                    <span>{% if is_en %}Inspiration & Teaching{% else %}Inspiration & Lehre{% endif %}</span>
                 </a></li>
             </ul>
         </div>
@@ -603,7 +606,7 @@
         <div class="content-wrapper">
             <div class="content-container">
                 <header class="page-header">
-                    <h1 class="page-title">{{ page.title | default: "Willkommen" }}</h1>
+                    <h1 class="page-title">{{ page.title | default: site.title }}</h1>
                     <p class="page-subtitle" id="page-subtitle"></p>
                 </header>
                 
@@ -619,7 +622,7 @@
         <div class="footer-container">
             <div class="footer-info">
                 <p><strong>CJD Braunschweig</strong> · Christophorusschule · 38102 Braunschweig</p>
-                <p>Diese Ausstellung wird unterstützt von: 
+                <p>{% if is_en %}This exhibition is supported by:{% else %}Diese Ausstellung wird unterstützt von:{% endif %} 
                     <span class="footer-menorah">✡</span> Stiftung EVZ · 
                     <span class="footer-menorah">✡</span> Zentralrat der Juden · 
                     <span class="footer-menorah">✡</span> Stadt Braunschweig
@@ -627,13 +630,13 @@
             </div>
             
             <div class="footer-links">
-                <a href="/impressum/" class="footer-link">Impressum</a>
-                <a href="/datenschutz/" class="footer-link">Datenschutz</a>
-                <a href="/kontakt/" class="footer-link">Kontakt</a>
+                <a href="{% if is_en %}/en/impressum/{% else %}/impressum/{% endif %}" class="footer-link">{% if is_en %}Legal Notice{% else %}Impressum{% endif %}</a>
+                <a href="{% if is_en %}/en/datenschutz/{% else %}/datenschutz/{% endif %}" class="footer-link">{% if is_en %}Privacy{% else %}Datenschutz{% endif %}</a>
+                <a href="{% if is_en %}/en/kontakt/{% else %}/kontakt/{% endif %}" class="footer-link">{% if is_en %}Contact{% else %}Kontakt{% endif %}</a>
             </div>
             
             <div class="footer-info">
-                <p>© <span id="current-year"></span> CJD Braunschweig. Alle Rechte vorbehalten.</p>
+                <p>© <span id="current-year"></span> CJD Braunschweig. {% if is_en %}All rights reserved.{% else %}Alle Rechte vorbehalten.{% endif %}</p>
             </div>
         </div>
     </footer>
