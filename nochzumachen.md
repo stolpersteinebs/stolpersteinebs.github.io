@@ -1,4 +1,6 @@
 ---
 title: noch zu machen
-
-## bitte eintragen
+permalink: /nochzumachen/
+layout: default
+---  
+# bitte eintragen
