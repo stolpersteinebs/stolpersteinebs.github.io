@@ -687,6 +687,30 @@
             text-decoration: underline;
         }
 
+        .language-switch {
+            margin-top: 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .language-switch label {
+            font-weight: 600;
+        }
+
+        .language-switch select {
+            border: 1px solid rgba(28, 47, 90, 0.3);
+            border-radius: 10px;
+            padding: 0.45rem 0.75rem;
+            background: rgba(255, 255, 255, 0.9);
+            color: var(--text-dark);
+            font-family: inherit;
+            font-size: 0.95rem;
+            cursor: pointer;
+        }
+
         .menorah {
             font-size: 2rem;
             color: var(--accent-gold);
@@ -906,6 +930,13 @@
             <p><strong>CJD Braunschweig</strong> · Christophorusschule · 38102 Braunschweig · Tel: 0531 123456</p>
             <p>Öffnungszeiten: Di–So 10–18 Uhr, Do bis 20 Uhr · <a href="/impressum/">Impressum</a>
             <p>Diese Ausstellung wird unterstützt von: <span class="menorah">✡</span> Stiftung EVZ · <span class="menorah">✡</span> Zentralrat der Juden · <span class="menorah">✡</span> Stadt Braunschweig</p>
+            <div class="language-switch">
+                <label for="language-select">Sprache:</label>
+                <select id="language-select" aria-label="Sprache auswählen">
+                    <option value="de" selected>Deutsch</option>
+                    <option value="en">English</option>
+                </select>
+            </div>
         </footer>
     </div>
             <footer class="footer">
@@ -949,6 +980,17 @@
                 }
             });
             
+            const languageSelect = document.getElementById('language-select');
+            if (languageSelect) {
+                languageSelect.addEventListener('change', function () {
+                    if (this.value === 'de') {
+                        window.location.href = '/';
+                    } else if (this.value === 'en') {
+                        window.location.href = '/en/';
+                    }
+                });
+            }
+
             // Menorah-Animation
             const menorahs = document.querySelectorAll('.menorah, .nav-icon');
             menorahs.forEach((menorah, index) => {
