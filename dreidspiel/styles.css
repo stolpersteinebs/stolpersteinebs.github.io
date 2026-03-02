@@ -134,12 +134,25 @@ body.pseudo-fullscreen .render-frame {
 
 #startButton,
 #restartButton,
+#saveLeaderboardButton,
 .later {
     margin-top: 12px;
     border: none;
     border-radius: 12px;
     background: linear-gradient(135deg, var(--accent), #d8893b);
     color: #122848;
+    font-weight: 800;
+    font-size: 1rem;
+    padding: 11px 17px;
+    cursor: pointer;
+}
+
+#skipLeaderboardButton {
+    margin-top: 12px;
+    border: 1px solid rgba(47, 111, 204, 0.3);
+    border-radius: 12px;
+    background: #fff;
+    color: var(--ink);
     font-weight: 800;
     font-size: 1rem;
     padding: 11px 17px;
@@ -554,6 +567,74 @@ body.pseudo-fullscreen .render-frame .fullscreen-btn {
     margin: 0 0 8px;
     font-weight: 800;
     color: var(--violet);
+}
+
+
+
+.leaderboard-box {
+    max-width: 460px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 12px 16px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.82);
+}
+
+.leaderboard-status {
+    min-height: 1.2em;
+    margin: 8px 0 0;
+    font-weight: 700;
+    color: var(--ink-soft);
+}
+
+.leaderboard-status.error {
+    color: var(--bad);
+}
+
+.leaderboard-optin {
+    margin: 14px auto;
+    padding: 14px;
+    max-width: 420px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.75);
+}
+
+.leaderboard-optin label {
+    display: block;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+#playerName {
+    width: min(100%, 280px);
+    border: 1px solid rgba(47, 111, 204, 0.32);
+    border-radius: 10px;
+    padding: 9px 10px;
+    font: inherit;
+}
+
+.leaderboard-actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.leaderboard {
+    margin-top: 14px;
+}
+.start-leaderboard {
+    margin-top: 16px;
+}
+
+
+.leaderboard ol {
+    max-width: 360px;
+    margin: 8px auto 0;
+    text-align: left;
+    padding-left: 20px;
 }
 
 .hidden {

@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="dreid-supabase-url" content="https://twehohdgzrbikuaiptfh.supabase.co">
+    <meta name="dreid-supabase-key" content="sb_publishable_CDnbNX7X82lPgC69kfvSqw_rmtRkwrn">
+    <meta name="dreid-supabase-table" content="dreidleaderboard">
     <title>3D Lernwelt Judentum</title>
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -28,6 +31,10 @@
         <p>Du hast 4 Minuten, um alle Wissens-Stationen zu finden.</p>
         <p class="start-highscore">Bester Score: <span id="startHighscore">0</span></p>
         <button id="startButton" type="button">Lernwelt starten</button>
+        <section class="leaderboard leaderboard-box start-leaderboard" aria-label="Bestenliste vor Spielstart">
+            <h3>Bestenliste</h3>
+            <ol id="startLeaderboardList"></ol>
+        </section>
     </section>
 
     <section id="gamePanel" class="hidden" aria-live="polite">
@@ -85,6 +92,23 @@
         <p id="resultMotto" class="result-motto"></p>
         <p id="resultMeta" class="result-meta"></p>
         <p id="resultText"></p>
+
+        <div id="leaderboardOptIn" class="leaderboard-optin hidden">
+            <p>Mochtest du deinen Score in die Bestenliste eintragen?</p>
+            <label for="playerName">Dein Name</label>
+            <input id="playerName" type="text" maxlength="20" placeholder="Name eingeben" autocomplete="nickname">
+            <div class="leaderboard-actions">
+                <button id="saveLeaderboardButton" type="button">Ja, eintragen</button>
+                <button id="skipLeaderboardButton" type="button" class="secondary">Nein danke</button>
+            </div>
+            <p id="leaderboardStatus" class="leaderboard-status" role="status" aria-live="polite"></p>
+        </div>
+
+        <section class="leaderboard leaderboard-box" aria-label="Bestenliste">
+            <h3>Bestenliste</h3>
+            <ol id="leaderboardList"></ol>
+        </section>
+
         <button id="restartButton" type="button">Nochmal spielen</button>
     </section>
 </main>
