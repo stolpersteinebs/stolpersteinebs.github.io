@@ -232,11 +232,6 @@ body.pseudo-fullscreen .render-frame {
     order: 3;
 }
 
-.touch-action {
-    order: 2;
-}
-
-
 .touch-stick-group {
     display: flex;
     flex-direction: column;
@@ -299,11 +294,6 @@ body.pseudo-fullscreen .render-frame {
     user-select: none;
 }
 
-.touch-action {
-    flex: 0 0 auto;
-    min-width: 120px;
-}
-
 .fullscreen-btn {
     position: absolute;
     top: 12px;
@@ -362,18 +352,49 @@ body.pseudo-fullscreen .render-frame .fullscreen-btn {
     right: 16px;
 }
 
-.nearby {
+.interact-btn {
     position: absolute;
     left: 50%;
     bottom: 14px;
     transform: translateX(-50%);
     background: rgba(17, 27, 50, 0.85);
     border: 1px solid rgba(255, 255, 255, 0.26);
-    border-radius: 999px;
+    border-radius: 14px;
     color: #fff;
-    padding: 7px 13px;
-    font-weight: 700;
+    padding: 8px 16px 7px;
+    font-weight: 800;
     text-align: center;
+    min-width: 170px;
+    cursor: pointer;
+    transition: box-shadow 160ms ease, border-color 160ms ease, transform 160ms ease, opacity 160ms ease;
+    z-index: 3;
+}
+
+.interact-btn-title,
+.interact-btn-sub {
+    display: block;
+}
+
+.interact-btn-title {
+    font-size: 1rem;
+    line-height: 1.1;
+}
+
+.interact-btn-sub {
+    margin-top: 1px;
+    font-size: 0.72rem;
+    color: rgba(223, 230, 245, 0.78);
+    font-weight: 600;
+}
+
+.interact-btn:disabled {
+    opacity: 0.72;
+}
+
+.interact-btn.is-nearby {
+    border-color: rgba(255, 220, 138, 0.95);
+    box-shadow: 0 0 0 1px rgba(255, 220, 138, 0.45), 0 0 22px rgba(255, 208, 110, 0.65);
+    transform: translateX(-50%) translateY(-1px);
 }
 
 .controls-hint {

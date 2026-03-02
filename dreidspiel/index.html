@@ -39,7 +39,10 @@
                     <div class="hud-score">Punkte: <span id="score">0</span></div>
                     <div class="hud-meta">Zeit: <span id="timeLeft">240</span>s · Serie: <span id="streak">0</span> · Stationen: <span id="solved">0</span>/<span id="total">6</span> · Highscore: <span id="highscore">0</span></div>
                 </section>
-                <div id="nearbyPrompt" class="nearby hidden"></div>
+                <button id="interactButton" type="button" class="interact-btn" aria-label="Interagieren">
+                    <span class="interact-btn-title">Interagieren</span>
+                    <span class="interact-btn-sub">oder E drucken</span>
+                </button>
                 <div id="mobileFullscreenGate" class="mobile-gate hidden" aria-live="assertive">
                     <p id="mobileFullscreenText">Auf dem Smartphone ist dieses Spiel nur im Vollbild verfugbar.</p>
                     <button id="mobileFullscreenButton" type="button" class="touch-btn">Vollbild aktivieren</button>
@@ -58,7 +61,6 @@
                             <div id="turnStickKnob" class="touch-stick-knob" aria-hidden="true"></div>
                         </div>
                     </div>
-                    <button id="touchInteract" type="button" class="touch-btn touch-action">Interagieren</button>
                 </div>
                 <section id="questionModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="questionTitle">
                     <div class="modal-card">
