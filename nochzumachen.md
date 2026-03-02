@@ -12,6 +12,6 @@ layout: default
 - [x] 3D-Spiel: Stationen bewegen sich
 - [x] 3D-Spiel: klarere Legende für Punkte auf der Map
 - [x] 3D-Spiel: Vollbild-Knopf verdeckt die Map nicht mehr
-- [ ] 3D-Spiel: Rangliste/Supabase weiter beobachten (Serverzugriff im Browser abhängig von Supabase-Policies)
+- [x] 3D-Spiel: Rangliste/Supabase weiter beobachten (Serverzugriff im Browser abhängig von Supabase-Policies)
 - [ ] Englische Übersetzung der Spiele
 - [ ] Easter Egg an überraschenden Stellen verstecken
