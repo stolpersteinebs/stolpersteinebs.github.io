@@ -5,7 +5,7 @@ permalink: /spiele/
 ---
 Hier findest du alle interaktiven Spiele der Ausstellung auf einen Blick.
 
-- [Drei-D-Lernwelt](/dreidspiel/)
+- [3D-Lernwelt](/dreidspiel/)
 - [Koscher-Spiel](/koscherspiel/)
 - [Schabbattisch-Spiel](/schabbattischspiel/)
 - [Feiertags-Quiz](/feiertagsquiz/)
