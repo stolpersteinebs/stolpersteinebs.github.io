@@ -656,6 +656,30 @@
             text-decoration: underline;
         }
 
+        .language-switch {
+            margin-top: 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .language-switch label {
+            font-weight: 600;
+        }
+
+        .language-switch select {
+            border: 1px solid rgba(28, 47, 90, 0.3);
+            border-radius: 10px;
+            padding: 0.45rem 0.75rem;
+            background: rgba(255, 255, 255, 0.9);
+            color: var(--text-dark);
+            font-family: inherit;
+            font-size: 0.95rem;
+            cursor: pointer;
+        }
+
         .menorah {
             font-size: 2rem;
             color: var(--accent-gold);
@@ -796,7 +820,7 @@
     <div class="container">
         <header class="header">
             <p class="kicker">Interactive Educational Exhibition</p>
-            <h1 class="hero-title" aria-label="CJD Braunschweig präsentiert: “In Our Own Voice…” Seen Through Our Eyes">
+            <h1 class="hero-title" aria-label="CJD Braunschweig presents: In Our Own Voice, Seen Through Our Eyes">
                 <span class="title-lead">CJD Braunschweig presents:</span>
                 <span class="title-drop" aria-hidden="true">
                     <span class="stone-word" style="--drop-delay: 0.95s;">"In</span>
@@ -871,6 +895,13 @@
             <p><strong>CJD Braunschweig</strong> · Christophorusschule · 38102 Braunschweig · Phone: +49 531 123456</p>
             <p>Opening hours: Tue–Sun 10:00–18:00, Thu until 20:00 · <a href="/en/impressum/">Legal notice</a>
             <p>This exhibition is supported by: <span class="menorah">✡</span> EVZ Foundation · <span class="menorah">✡</span> Central Council of Jews · <span class="menorah">✡</span> City of Braunschweig</p>
+            <div class="language-switch">
+                <label for="language-select">Language:</label>
+                <select id="language-select" aria-label="Select language">
+                    <option value="de">Deutsch</option>
+                    <option value="en" selected>English</option>
+                </select>
+            </div>
         </footer>
     </div>
 
@@ -898,6 +929,17 @@
                 }
             });
             
+            const languageSelect = document.getElementById('language-select');
+            if (languageSelect) {
+                languageSelect.addEventListener('change', function () {
+                    if (this.value === 'de') {
+                        window.location.href = '/';
+                    } else if (this.value === 'en') {
+                        window.location.href = '/en/';
+                    }
+                });
+            }
+
             // Menorah animation
             const menorahs = document.querySelectorAll('.menorah, .nav-icon');
             menorahs.forEach((menorah, index) => {
