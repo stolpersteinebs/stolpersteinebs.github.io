@@ -96,6 +96,7 @@ const timeBarEl = document.getElementById("timeBar");
 const questionTextEl = document.getElementById("questionText");
 const answersEl = document.getElementById("answers");
 const feedbackEl = document.getElementById("feedback");
+const celebrationTextEl = document.getElementById("celebrationText");
 const comboTextEl = document.getElementById("comboText");
 const nudgeTextEl = document.getElementById("nudgeText");
 const nextButton = document.getElementById("nextButton");
@@ -307,6 +308,10 @@ function resetRoundHints() {
     nudgeTextEl.textContent = "";
     feedbackEl.className = "feedback hidden";
     feedbackEl.textContent = "";
+    if (celebrationTextEl) {
+        celebrationTextEl.classList.add("hidden");
+        celebrationTextEl.classList.remove("burst");
+    }
     nextButton.classList.add("hidden");
     nextButton.classList.remove("cta");
     setUrgency(false);
@@ -359,6 +364,14 @@ function renderQuestion() {
     startTimer();
 }
 
+function triggerCelebration() {
+    if (!celebrationTextEl) return;
+    celebrationTextEl.classList.remove("hidden");
+    celebrationTextEl.classList.remove("burst");
+    void celebrationTextEl.offsetWidth;
+    celebrationTextEl.classList.add("burst");
+}
+
 function setPostAnswerNudge(text) {
     nudgeTextEl.textContent = text;
     nudgeTextEl.classList.remove("hidden");
@@ -404,6 +417,7 @@ function handleAnswer(selectedIndex, timedOut) {
         feedbackEl.className = "feedback ok";
         feedbackEl.textContent = `Richtig. +${formatScore(gainedPoints)} Punkte (${BASE_POINTS} Basis, +${timeBonus} Zeitbonus, +${streakBonus} Serienbonus). ${q.explanation}`;
         showComboText();
+        triggerCelebration();
         setPostAnswerNudge("Stark! Weiter zur nächsten Frage.");
         playSound("correct");
         if (streak >= 4) {

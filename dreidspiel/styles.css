@@ -203,6 +203,11 @@ body.pseudo-fullscreen .render-frame {
     text-shadow: 0 1px 3px rgba(8, 14, 28, 0.72);
 }
 
+.hud-meta .warn {
+    color: #ffd76f;
+    text-shadow: 0 0 8px rgba(255, 210, 118, 0.5);
+}
+
 .scene-card {
     padding: 16px;
 }
@@ -309,8 +314,8 @@ body.pseudo-fullscreen .render-frame {
 
 .fullscreen-btn {
     position: absolute;
-    top: 12px;
-    right: 12px;
+    bottom: 12px;
+    left: 12px;
     z-index: 4;
     border: 1px solid rgba(255, 255, 255, 0.4);
     border-radius: 999px;
@@ -356,13 +361,51 @@ body.pseudo-fullscreen .render-frame {
 }
 
 .render-frame:fullscreen .fullscreen-btn {
-    top: 16px;
-    right: 16px;
+    bottom: 16px;
+    left: 16px;
 }
 
 body.pseudo-fullscreen .render-frame .fullscreen-btn {
-    top: 16px;
-    right: 16px;
+    bottom: 16px;
+    left: 16px;
+}
+
+.jump-btn {
+    position: absolute;
+    left: 12px;
+    bottom: 62px;
+    background: rgba(17, 27, 50, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.26);
+    border-radius: 14px;
+    color: #fff;
+    padding: 8px 14px 7px;
+    font-weight: 800;
+    text-align: center;
+    min-width: 130px;
+    cursor: pointer;
+    transition: box-shadow 160ms ease, border-color 160ms ease, transform 160ms ease, opacity 160ms ease;
+    z-index: 3;
+}
+
+.jump-btn-title,
+.jump-btn-sub {
+    display: block;
+}
+
+.jump-btn-sub {
+    margin-top: 1px;
+    font-size: 0.72rem;
+    color: rgba(223, 230, 245, 0.78);
+    font-weight: 600;
+}
+
+.jump-btn:disabled {
+    opacity: 0.72;
+}
+
+.jump-btn.ready {
+    border-color: rgba(162, 229, 186, 0.95);
+    box-shadow: 0 0 0 1px rgba(162, 229, 186, 0.45), 0 0 22px rgba(119, 227, 163, 0.65);
 }
 
 .interact-btn {
@@ -662,5 +705,16 @@ body.pseudo-fullscreen .render-frame .fullscreen-btn {
 @media (hover: none) and (pointer: coarse) {
     .touch-controls {
         display: flex;
+    }
+}
+
+
+@media (max-width: 900px) {
+    .jump-btn {
+        bottom: 138px;
+    }
+
+    .fullscreen-btn {
+        bottom: 86px;
     }
 }

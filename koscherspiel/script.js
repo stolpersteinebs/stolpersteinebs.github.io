@@ -30,6 +30,14 @@ const fallbackFoods = {
     ]
 };
 
+const foodEmojiMap = {
+    apfel: "🍎",
+    carrot: "🥕",
+    karotte: "🥕",
+    brokkoli: "🥦",
+    schweinesteak: "🥩"
+};
+
 const powerupTypes = [
     { key: "shield", label: "Schutz", icon: "🛡️", colorClass: "powerup-shield" },
     { key: "slow", label: "Zeitlupe", icon: "⏱️", colorClass: "powerup-slow" },
@@ -417,6 +425,11 @@ function currentFallSpeed() {
     return hasPowerup("slow") ? baseSpeed * 0.68 : baseSpeed;
 }
 
+function getFoodEmoji(name = "") {
+    const normalized = String(name).toLocaleLowerCase("de-DE").replace(/\s+/g, "");
+    return foodEmojiMap[normalized] || "🍽️";
+}
+
 function spawnPowerup() {
     const type = powerupTypes[Math.floor(Math.random() * powerupTypes.length)];
     return {
@@ -438,7 +451,8 @@ function spawnFood() {
         isKosher,
         className: "item",
         image: selectedFood.image,
-        label: selectedFood.name
+        label: selectedFood.name,
+        emoji: getFoodEmoji(selectedFood.name)
     };
 }
 
@@ -459,6 +473,12 @@ function spawnItem() {
         img.src = spawned.image;
         img.alt = spawned.label;
         itemEl.appendChild(img);
+
+        const emoji = document.createElement("span");
+        emoji.className = "food-emoji";
+        emoji.setAttribute("aria-hidden", "true");
+        emoji.textContent = spawned.emoji || "🍽️";
+        itemEl.appendChild(emoji);
     }
 
     itemEl.style.transform = `translate(${x}px, ${y}px)`;

@@ -120,6 +120,9 @@ const TOUCH_MOVE_FACTOR = 0.38;
 const TOUCH_TURN_FACTOR = 0.5;
 const TURN_SPEED = 2.3;
 const MAX_TIME = 240;
+const STATION_DEADLINE_SECONDS = 45;
+const JUMP_DISTANCE = 1.35;
+const JUMP_COOLDOWN_MS = 2200;
 const MAX_LIVES = 3;
 const SCORE_BASE = 220;
 const SCORE_TIME_FACTOR = 2;
@@ -149,6 +152,7 @@ const laterButton = document.getElementById("laterButton");
 const startHighscoreEl = document.getElementById("startHighscore");
 const timeLeftEl = document.getElementById("timeLeft");
 const scoreEl = document.getElementById("score");
+const stationDeadlineEl = document.getElementById("stationDeadline");
 const streakEl = document.getElementById("streak");
 const livesEl = document.getElementById("lives");
 const solvedEl = document.getElementById("solved");
@@ -156,6 +160,7 @@ const totalEl = document.getElementById("total");
 const highscoreEl = document.getElementById("highscore");
 
 const interactButton = document.getElementById("interactButton");
+const jumpButton = document.getElementById("jumpButton");
 const feedbackBannerEl = document.getElementById("feedbackBanner");
 
 const questionTitleEl = document.getElementById("questionTitle");
@@ -251,7 +256,16 @@ function createInitialState() {
             y: 1.8,
             angle: 0.28
         },
-        stations: STATION_DEFS.map((station) => ({ ...station, solved: false, failed: false })),
+        stations: STATION_DEFS.map((station, index) => ({
+            ...station,
+            solved: false,
+            failed: false,
+            baseX: station.x,
+            baseY: station.y,
+            movePhase: Math.random() * Math.PI * 2 + index * 0.45,
+            moveAxis: index % 2 === 0 ? "x" : "y",
+            moveAmplitude: 0.16 + (index % 3) * 0.04
+        })),
         timeLeft: MAX_TIME,
         score: 0,
         streak: 0,
@@ -264,7 +278,9 @@ function createInitialState() {
         nearbyStationId: null,
         activeStationId: null,
         powerups: [],
-        finishReason: ""
+        finishReason: "",
+        stationDeadlineLeft: STATION_DEADLINE_SECONDS,
+        jumpReadyAt: 0
     };
 }
 
@@ -511,6 +527,16 @@ function updateHud() {
     solvedEl.textContent = String(state.solved);
     totalEl.textContent = String(state.stations.length);
     highscoreEl.textContent = formatPoints(state.highscore);
+
+    if (stationDeadlineEl) {
+        stationDeadlineEl.textContent = String(Math.max(0, Math.ceil(state.stationDeadlineLeft)));
+        stationDeadlineEl.classList.toggle("warn", state.stationDeadlineLeft <= 10);
+    }
+
+    if (jumpButton) {
+        jumpButton.disabled = Date.now() < state.jumpReadyAt;
+        jumpButton.classList.toggle("ready", Date.now() >= state.jumpReadyAt);
+    }
 }
 
 
@@ -905,6 +931,36 @@ function drawMinimap(canvasWidth) {
     ctx.moveTo(px, py);
     ctx.lineTo(px + Math.cos(state.player.angle) * 10, py + Math.sin(state.player.angle) * 10);
     ctx.stroke();
+
+    const legendX = x + 8;
+    const legendY = y + size - 46;
+    const legendW = Math.min(size - 16, 150);
+    const legendH = 38;
+    drawRoundedRect(legendX, legendY, legendW, legendH, 8);
+    ctx.fillStyle = "rgba(7, 14, 25, 0.78)";
+    ctx.fill();
+
+    const legend = [
+        ["#f2b84b", "offen"],
+        ["#1ea38b", "gelöst"],
+        ["#c93a49", "falsch"]
+    ];
+
+    ctx.font = `${Math.max(9, cell * 0.42)}px Arial`;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+
+    legend.forEach((entry, idx) => {
+        const dotX = legendX + 10 + idx * 45;
+        const dotY = legendY + 20;
+        ctx.fillStyle = entry[0];
+        ctx.beginPath();
+        ctx.arc(dotX, dotY, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "rgba(240, 247, 255, 0.94)";
+        ctx.fillText(entry[1], dotX + 7, dotY);
+    });
 }
 
 function applyPowerup(powerup) {
@@ -965,6 +1021,80 @@ function updatePowerups(delta) {
             applyPowerup(powerup);
         }
     });
+}
+
+
+function updateStations(delta, elapsedSeconds) {
+    state.stations.forEach((station) => {
+        if (station.solved) return;
+
+        const wave = Math.sin(elapsedSeconds * 1.1 + station.movePhase) * station.moveAmplitude;
+        const candidateX = station.moveAxis === "x" ? station.baseX + wave : station.baseX;
+        const candidateY = station.moveAxis === "y" ? station.baseY + wave : station.baseY;
+
+        if (!isBlocked(candidateX, candidateY)) {
+            station.x = candidateX;
+            station.y = candidateY;
+        }
+    });
+}
+
+function consumeStationDeadline(delta) {
+    if (!state || !state.running || state.questionOpen) return;
+
+    state.stationDeadlineLeft = Math.max(0, state.stationDeadlineLeft - delta);
+    if (state.stationDeadlineLeft <= 0) {
+        state.stationDeadlineLeft = STATION_DEADLINE_SECONDS;
+        state.streak = 0;
+        state.lives = Math.max(0, state.lives - 1);
+        showFeedback("Zu langsam zur nächsten Station – 1 Leben verloren.", "bad");
+
+        if (state.lives <= 0) {
+            void endGame("Keine Leben mehr.");
+        }
+
+        updateHud();
+    }
+}
+
+function tryJump() {
+    if (!state || !state.running || state.questionOpen) return;
+    if (Date.now() < state.jumpReadyAt) return;
+
+    const facingX = Math.cos(state.player.angle);
+    const facingY = Math.sin(state.player.angle);
+
+    const steps = 18;
+    const stepSize = JUMP_DISTANCE / steps;
+    let sawWall = false;
+    let landing = null;
+
+    for (let i = 1; i <= steps; i += 1) {
+        const px = state.player.x + facingX * stepSize * i;
+        const py = state.player.y + facingY * stepSize * i;
+        const blocked = isBlocked(px, py);
+
+        if (blocked) {
+            sawWall = true;
+            continue;
+        }
+
+        if (sawWall) {
+            landing = { x: px, y: py };
+            break;
+        }
+    }
+
+    if (!landing) {
+        showFeedback("Hier kannst du nicht springen.", "bad");
+        return;
+    }
+
+    state.player.x = landing.x;
+    state.player.y = landing.y;
+    state.jumpReadyAt = Date.now() + JUMP_COOLDOWN_MS;
+    showFeedback("Sprung geschafft!", "ok");
+    updateHud();
 }
 
 function movePlayer(delta) {
@@ -1323,6 +1453,7 @@ function answerStation(stationId, selectedIndex) {
 
     station.solved = true;
     state.solved += 1;
+    state.stationDeadlineLeft = STATION_DEADLINE_SECONDS;
     updateHud();
 
     questionTextEl.textContent = correct
@@ -1473,11 +1604,14 @@ function loop(timestamp) {
     if (!lastFrame) lastFrame = timestamp;
     const delta = Math.min((timestamp - lastFrame) / 1000, 0.04);
     lastFrame = timestamp;
+    const elapsedSeconds = timestamp / 1000;
 
     const gateBlocksInput = mobileFullscreenGateEl && !mobileFullscreenGateEl.classList.contains("hidden");
     if (!state.questionOpen && !gateBlocksInput) {
         movePlayer(delta);
+        updateStations(delta, elapsedSeconds);
         updatePowerups(delta);
+        consumeStationDeadline(delta);
         updateNearbyPrompt();
     }
 
@@ -1591,6 +1725,11 @@ window.addEventListener("keydown", (event) => {
         tryOpenNearbyStation();
     }
 
+    if (event.code === "Enter") {
+        event.preventDefault();
+        tryJump();
+    }
+
     if (event.code === "Escape" && state && state.questionOpen) {
         event.preventDefault();
         closeQuestion();
@@ -1636,6 +1775,18 @@ if (interactButton) {
 
     interactButton.addEventListener("click", () => {
         tryOpenNearbyStation();
+    });
+}
+
+
+if (jumpButton) {
+    jumpButton.addEventListener("pointerdown", (event) => {
+        event.preventDefault();
+        tryJump();
+    });
+
+    jumpButton.addEventListener("click", () => {
+        tryJump();
     });
 }
 
