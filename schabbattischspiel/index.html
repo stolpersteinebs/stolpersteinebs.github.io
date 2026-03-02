@@ -55,6 +55,112 @@
     </section>
 </main>
 
+<script>
+(function () {
+  const lang = new URLSearchParams(window.location.search).get("lang");
+  if (lang !== "en") return;
+  document.documentElement.lang = "en";
+
+  const setText = (selector, text) => {
+    const el = document.querySelector(selector);
+    if (el) el.textContent = text;
+  };
+
+  const map = {
+    "feiertagsquiz/index.html": () => {
+      setText("h1", "Holiday Quiz");
+      setText(".top p", "Test your knowledge of Jewish holidays, symbols, and terms.");
+      setText(".hint", "Note: Some traditions are practiced differently across communities.");
+      setText("#startScreen h2", "Ready for the Holiday Quiz?");
+      setText("#startScreen p", "You play against the clock, collect points, and build streak bonuses.");
+      setText("#startButton", "Start Quiz");
+      setText("#result h2", "Result");
+      setText("#restartButton", "Play Again");
+      setText("#nextButton", "Next Question");
+      setText("#celebrationText", "Correct! 🎉");
+      document.querySelectorAll('.quick-links a')[0].textContent='Home';
+      document.querySelectorAll('.quick-links a')[1].textContent='Kosher Game';
+      document.querySelectorAll('.quick-links a')[2].textContent='3D Learning World';
+      document.querySelectorAll('.quick-links a')[3].textContent='Shabbat Table';
+      const snd=document.getElementById('soundToggle'); if(snd) snd.textContent='Sound: On';
+    },
+    "menoraquiz/index.html": () => {
+      setText("h1", "Menorah Quiz");
+      setText(".top p", "Test your knowledge of the Menorah, its history, and meaning.");
+      setText(".hint", "Note: Some depictions and interpretations vary by tradition.");
+      setText("#startScreen h2", "Ready for the Menorah Quiz?");
+      setText("#startScreen p", "You play against the clock, collect points, and build streak bonuses.");
+      setText("#startButton", "Start Quiz");
+      setText("#result h2", "Result");
+      setText("#restartButton", "Play Again");
+      setText("#nextButton", "Next Question");
+      setText("#celebrationText", "Correct! 🎉");
+      document.querySelectorAll('.quick-links a')[0].textContent='Home';
+      document.querySelectorAll('.quick-links a')[1].textContent='Holiday Quiz';
+      document.querySelectorAll('.quick-links a')[2].textContent='Kosher Game';
+      document.querySelectorAll('.quick-links a')[3].textContent='Shabbat Table';
+      const snd=document.getElementById('soundToggle'); if(snd) snd.textContent='Sound: On';
+    },
+    "koscherspiel/index.html": () => {
+      setText("h1", "Kosher Collection Game");
+      setText(".instructions", "Collect kosher foods with the cart and avoid non-kosher items. Move left/right with arrow keys or A/D.");
+      setText("#startTitle", "Ready to collect?");
+      setText("#startScreen p", "Start when you are ready and collect as many kosher foods as possible.");
+      setText("#startButton", "Start Game");
+      setText("#gameOverTitle", "Game Over");
+      setText("#restartButton", "Restart");
+      const labels=document.querySelectorAll('.hud-item');
+      if(labels[0]) labels[0].childNodes[0].textContent='Score: ';
+      if(labels[1]) labels[1].childNodes[0].textContent='Lives: ';
+      if(labels[2]) labels[2].childNodes[0].textContent='Level: ';
+      if(labels[3]) labels[3].childNodes[0].textContent='High Score: ';
+      if(labels[4]) labels[4].childNodes[0].textContent='Power-Up: ';
+      setText('.leaderboard h2','Leaderboard');
+      document.querySelectorAll('.quick-links a')[0].textContent='Home';
+      document.querySelectorAll('.quick-links a')[1].textContent='Holiday Quiz';
+      document.querySelectorAll('.quick-links a')[2].textContent='3D Learning World';
+      document.querySelectorAll('.quick-links a')[3].textContent='Shabbat Table';
+    },
+    "schabbattischspiel/index.html": () => {
+      setText("h1", "Set the Shabbat Table Correctly");
+      setText(".top p", "Place the items in the right order, as they are traditionally prepared before Shabbat begins.");
+      setText(".instructions h2", "Instructions");
+      const lis=document.querySelectorAll('.instructions li');
+      if(lis[0]) lis[0].textContent='Click the item that belongs on the table next.';
+      if(lis[1]) lis[1].textContent='When correct, your prepared table grows on the right.';
+      if(lis[2]) lis[2].textContent='Mistakes are allowed — you get immediate feedback.';
+      setText("#hint", "Tip: Start with the basic table setup.");
+      setText("#trayTitle", "Available Items");
+      setText("#tableTitle", "Your Prepared Table");
+      setText("#tableCaption", "Empty table — now set it step by step.");
+      setText("#restartButton", "Restart");
+      const hud=document.querySelectorAll('.hud-item');
+      if(hud[0]) hud[0].childNodes[0].textContent='Score: ';
+      if(hud[1]) hud[1].childNodes[0].textContent='Steps: ';
+      if(hud[2]) hud[2].childNodes[0].textContent='Mistakes: ';
+      document.querySelectorAll('.quick-links a')[0].textContent='Home';
+      document.querySelectorAll('.quick-links a')[1].textContent='Kosher Game';
+      document.querySelectorAll('.quick-links a')[2].textContent='Holiday Quiz';
+      document.querySelectorAll('.quick-links a')[3].textContent='3D Learning World';
+    },
+    "dreidspiel/index.html": () => {
+      setText("h1", "3D Learning World: Judaism");
+      setText(".top p", "Explore the world, find stations, and prove your knowledge through the right choices.");
+      setText("#startScreen h2", "Start Mission");
+      setText("#startScreen p", "Controls: WASD to move, left/right arrows to turn, E to interact.");
+      setText("#startButton", "Start Learning World");
+      setText(".leaderboard h3", "Leaderboard");
+      document.querySelectorAll('.quick-links a')[0].textContent='Home';
+      document.querySelectorAll('.quick-links a')[1].textContent='Kosher Game';
+      document.querySelectorAll('.quick-links a')[2].textContent='Holiday Quiz';
+      document.querySelectorAll('.quick-links a')[3].textContent='Shabbat Table';
+    }
+  };
+  const key = window.location.pathname.replace(/^\//, "") + "index.html";
+  const entry = Object.keys(map).find(k => key.includes(k));
+  if (entry) map[entry]();
+})();
+</script>
 <script src="script.js"></script>
 <script src="/assets/easteregg.js"></script>
 </body>
