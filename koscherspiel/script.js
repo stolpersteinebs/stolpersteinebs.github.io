@@ -72,7 +72,6 @@ const itemWidth = 40;
 const powerupDurationMs = 6000;
 const leaderboardSize = 5;
 const maxLevel = 10;
-const defaultLeaderboardApiPath = "/api/koscher-leaderboard.php";
 
 const keys = {
     left: false,
@@ -145,30 +144,6 @@ function normalizeLeaderboard(rawEntries) {
 }
 
 
-function getEntriesFromPayload(payload) {
-    if (Array.isArray(payload)) {
-        return payload;
-    }
-
-    if (!payload || typeof payload !== "object") {
-        return null;
-    }
-
-    if (Array.isArray(payload.entries)) {
-        return payload.entries;
-    }
-
-    if (Array.isArray(payload.leaderboard)) {
-        return payload.leaderboard;
-    }
-
-    if (Array.isArray(payload.scores)) {
-        return payload.scores;
-    }
-
-    return null;
-}
-
 async function parseJsonSafely(response) {
     const raw = await response.text();
 
@@ -200,99 +175,85 @@ function persistLeaderboardLocally(scores) {
     }
 }
 
-function getLeaderboardApiUrl() {
-    const metaApiUrl = document
-        .querySelector('meta[name="koscher-leaderboard-api"]')
+function getSupabaseConfig() {
+    const url = document
+        .querySelector('meta[name="koscher-supabase-url"]')
         ?.getAttribute("content")
         ?.trim();
+    const key = document
+        .querySelector('meta[name="koscher-supabase-key"]')
+        ?.getAttribute("content")
+        ?.trim();
+    const table = document
+        .querySelector('meta[name="koscher-supabase-table"]')
+        ?.getAttribute("content")
+        ?.trim() || "leaderboard";
 
-    if (metaApiUrl) {
-        return metaApiUrl;
+    if (!url || !key) {
+        return null;
     }
 
-    const fromWindow = typeof window.KOSCHER_LEADERBOARD_API_URL === "string"
-        ? window.KOSCHER_LEADERBOARD_API_URL.trim()
-        : "";
-
-    if (fromWindow) {
-        return fromWindow;
-    }
-
-    return defaultLeaderboardApiPath;
+    return {
+        url: url.replace(/\/+$/, ""),
+        key,
+        table
+    };
 }
 
-function normalizeApiUrl(rawUrl) {
-    if (typeof rawUrl !== "string") {
-        return "";
-    }
+async function loadLeaderboardFromSupabase(config) {
+    const endpoint = `${config.url}/rest/v1/${encodeURIComponent(config.table)}?select=name,score`;
 
-    const trimmed = rawUrl.trim();
-
-    if (!trimmed) {
-        return "";
-    }
-
-    if (trimmed.startsWith("lapi/")) {
-        return `/${trimmed.slice(1)}`;
-    }
-
-    if (trimmed.startsWith("api/")) {
-        return `/${trimmed}`;
-    }
-
-    return trimmed;
-}
-
-function getLeaderboardApiCandidates() {
-    const configured = normalizeApiUrl(getLeaderboardApiUrl());
-    const fallbacks = [
-        defaultLeaderboardApiPath,
-        "/api/koscher-leaderboard.php",
-        "../api/koscher-leaderboard.php"
-    ].map(normalizeApiUrl);
-
-    return [configured, ...fallbacks].filter((url, index, all) => url && all.indexOf(url) === index);
-}
-
-async function requestLeaderboard({ method, body }) {
-    const candidates = getLeaderboardApiCandidates();
-
-    for (const apiUrl of candidates) {
-        try {
-            const response = await fetch(apiUrl, {
-                method,
-                headers: {
-                    "Accept": "application/json",
-                    ...(body ? { "Content-Type": "application/json" } : {})
-                },
-                ...(body ? { body: JSON.stringify(body) } : {})
-            });
-
-            if (!response.ok) {
-                continue;
-            }
-
-            const payload = await parseJsonSafely(response);
-            return { ok: true, payload, url: apiUrl };
-        } catch {
-            // Nächste URL probieren.
+    const response = await fetch(endpoint, {
+        method: "GET",
+        headers: {
+            apikey: config.key,
+            Authorization: `Bearer ${config.key}`,
+            Accept: "application/json"
         }
+    });
+
+    if (!response.ok) {
+        throw new Error("Supabase GET fehlgeschlagen");
     }
 
-    return { ok: false, payload: null, url: candidates[0] || defaultLeaderboardApiPath };
+    const payload = await parseJsonSafely(response);
+    return normalizeLeaderboard(payload);
+}
+
+async function saveLeaderboardToSupabase(config, name, score) {
+    const endpoint = `${config.url}/rest/v1/${encodeURIComponent(config.table)}`;
+    const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+            apikey: config.key,
+            Authorization: `Bearer ${config.key}`,
+            "Content-Type": "application/json",
+            Prefer: "return=minimal"
+        },
+        body: JSON.stringify([{ name, score }])
+    });
+
+    if (!response.ok) {
+        throw new Error("Supabase POST fehlgeschlagen");
+    }
+
+    return loadLeaderboardFromSupabase(config);
 }
 
 async function loadLeaderboard() {
-    const result = await requestLeaderboard({ method: "GET" });
+    const supabaseConfig = getSupabaseConfig();
 
-    if (result.ok) {
-        const serverEntries = getEntriesFromPayload(result.payload);
-        const normalized = normalizeLeaderboard(serverEntries);
+    if (supabaseConfig) {
+        try {
+            const supabaseEntries = await loadLeaderboardFromSupabase(supabaseConfig);
 
-        if (normalized.length > 0) {
-            persistLeaderboardLocally(normalized);
-            renderLeaderboard(normalized);
-            return;
+            if (supabaseEntries.length > 0) {
+                persistLeaderboardLocally(supabaseEntries);
+                renderLeaderboard(supabaseEntries);
+                return;
+            }
+        } catch {
+            // Fallback auf localStorage-Strategie.
         }
     }
 
@@ -307,23 +268,22 @@ async function saveLeaderboard(name, score) {
 
     persistLeaderboardLocally(topScores);
 
-    const result = await requestLeaderboard({
-        method: "POST",
-        body: { name: cleanedName, score }
-    });
+    const supabaseConfig = getSupabaseConfig();
+    if (supabaseConfig) {
+        try {
+            const supabaseEntries = await saveLeaderboardToSupabase(supabaseConfig, cleanedName, score);
 
-    if (result.ok) {
-        const serverEntries = getEntriesFromPayload(result.payload);
-        const normalized = normalizeLeaderboard(serverEntries);
+            if (supabaseEntries.length > 0) {
+                persistLeaderboardLocally(supabaseEntries);
+                renderLeaderboard(supabaseEntries);
+            } else {
+                renderLeaderboard(topScores);
+            }
 
-        if (normalized.length > 0) {
-            persistLeaderboardLocally(normalized);
-            renderLeaderboard(normalized);
-        } else {
-            renderLeaderboard(topScores);
+            return { savedOnServer: true };
+        } catch {
+            // Fallback auf localStorage
         }
-
-        return { savedOnServer: true };
     }
 
     renderLeaderboard(topScores);
@@ -862,8 +822,9 @@ if (saveLeaderboardButton && skipLeaderboardButton && playerNameInput && leaderb
             return;
         }
 
-        const apiUrl = getLeaderboardApiUrl();
-        setStatus(`Server nicht erreicht (${apiUrl}) – lokal eingetragen.`, "danger");
+        const supabaseConfig = getSupabaseConfig();
+        const endpoint = supabaseConfig?.url || "Supabase";
+        setStatus(`Server nicht erreicht (${endpoint}) – lokal eingetragen.`, "danger");
     });
 
     skipLeaderboardButton.addEventListener("click", () => {
