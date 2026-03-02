@@ -129,6 +129,7 @@ const PLAYER_RADIUS = 0.2;
 const POWERUP_COUNT = 4;
 const POWERUP_RESPAWN_MS = 5200;
 const POWERUP_MOVE_SPEED = 1.2;
+const LEADERBOARD_SIZE = 5;
 
 const POWERUP_TYPES = [
     { id: "life", icon: "❤️", color: "#ff7b8b", points: 0, life: 1, time: 0, message: "+1 Leben" },
@@ -165,6 +166,12 @@ const resultTextEl = document.getElementById("resultText");
 const resultMetaEl = document.getElementById("resultMeta");
 const scoreWheelValueEl = document.getElementById("scoreWheelValue");
 
+const leaderboardOptInEl = document.getElementById("leaderboardOptIn");
+const playerNameInput = document.getElementById("playerName");
+const saveLeaderboardButton = document.getElementById("saveLeaderboardButton");
+const skipLeaderboardButton = document.getElementById("skipLeaderboardButton");
+const leaderboardListEl = document.getElementById("leaderboardList");
+
 const canvas = document.getElementById("view");
 const ctx = canvas.getContext("2d");
 
@@ -195,6 +202,7 @@ let rafId = null;
 let lastFrame = 0;
 let feedbackTimeoutId = null;
 let resolveTimeoutId = null;
+let leaderboardEntries = [];
 
 const moveStickInput = {
     active: false,
@@ -267,6 +275,126 @@ function normalizeAngle(angle) {
 
 function formatPoints(value) {
     return new Intl.NumberFormat("de-DE").format(Math.max(0, Math.round(value)));
+}
+
+function normalizeLeaderboard(rawEntries) {
+    if (!Array.isArray(rawEntries)) {
+        return [];
+    }
+
+    const normalized = rawEntries
+        .map((entry) => {
+            if (!entry || typeof entry !== "object") return null;
+
+            const score = Number(entry.score);
+            if (!Number.isFinite(score)) return null;
+
+            const trimmedName = typeof entry.name === "string" ? entry.name.trim() : "";
+            return {
+                name: trimmedName || "Anonym",
+                score
+            };
+        })
+        .filter(Boolean);
+
+    const bestScoresByName = new Map();
+
+    normalized.forEach((entry) => {
+        const key = entry.name.toLocaleLowerCase("de-DE");
+        const existing = bestScoresByName.get(key);
+        if (!existing || entry.score > existing.score) {
+            bestScoresByName.set(key, entry);
+        }
+    });
+
+    return Array.from(bestScoresByName.values())
+        .sort((a, b) => b.score - a.score)
+        .slice(0, LEADERBOARD_SIZE);
+}
+
+function getSupabaseConfig() {
+    const url = document.querySelector('meta[name="dreid-supabase-url"]')?.getAttribute("content")?.trim();
+    const key = document.querySelector('meta[name="dreid-supabase-key"]')?.getAttribute("content")?.trim();
+    const table = document.querySelector('meta[name="dreid-supabase-table"]')?.getAttribute("content")?.trim() || "dreidleaderboard";
+
+    if (!url || !key) {
+        return null;
+    }
+
+    return {
+        url: url.replace(/\/+$/, ""),
+        key,
+        table
+    };
+}
+
+async function parseJsonSafely(response) {
+    const raw = await response.text();
+    if (!raw || !raw.trim()) return null;
+
+    try {
+        return JSON.parse(raw);
+    } catch {
+        return null;
+    }
+}
+
+async function loadLeaderboardFromSupabase(config) {
+    const endpoint = `${config.url}/rest/v1/${encodeURIComponent(config.table)}?select=name,score`;
+    const response = await fetch(endpoint, {
+        method: "GET",
+        headers: {
+            apikey: config.key,
+            Authorization: `Bearer ${config.key}`,
+            Accept: "application/json"
+        }
+    });
+
+    if (!response.ok) {
+        throw new Error("Supabase GET fehlgeschlagen");
+    }
+
+    const payload = await parseJsonSafely(response);
+    return normalizeLeaderboard(payload);
+}
+
+async function saveLeaderboardToSupabase(config, name, score) {
+    const endpoint = `${config.url}/rest/v1/${encodeURIComponent(config.table)}`;
+    const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+            apikey: config.key,
+            Authorization: `Bearer ${config.key}`,
+            "Content-Type": "application/json",
+            Prefer: "return=minimal"
+        },
+        body: JSON.stringify([{ name, score }])
+    });
+
+    if (!response.ok) {
+        throw new Error("Supabase POST fehlgeschlagen");
+    }
+
+    return loadLeaderboardFromSupabase(config);
+}
+
+function renderLeaderboard(entries) {
+    if (!leaderboardListEl) return;
+
+    leaderboardListEl.innerHTML = "";
+
+    if (!entries.length) {
+        const item = document.createElement("li");
+        item.textContent = "Noch keine Eintrage";
+        leaderboardListEl.appendChild(item);
+        return;
+    }
+
+    entries.forEach((entry) => {
+        const item = document.createElement("li");
+        item.textContent = `${entry.name}: ${formatPoints(entry.score)} Punkte`;
+        leaderboardListEl.appendChild(item);
+    });
 }
 
 function randomBetween(min, max) {
@@ -1183,11 +1311,11 @@ function answerStation(stationId, selectedIndex) {
     continueButton.addEventListener("click", () => {
         closeQuestion();
         if (state.lives <= 0) {
-            endGame("Keine Leben mehr.");
+            void endGame("Keine Leben mehr.");
             return;
         }
         if (state.solved >= state.stations.length) {
-            endGame("Alle Orte im Labyrinth erkundet.");
+            void endGame("Alle Orte im Labyrinth erkundet.");
         }
     });
     answerButtonsEl.appendChild(continueButton);
@@ -1196,11 +1324,11 @@ function answerStation(stationId, selectedIndex) {
         if (!state || !state.running || !state.questionOpen) return;
         closeQuestion();
         if (state.lives <= 0) {
-            endGame("Keine Leben mehr.");
+            void endGame("Keine Leben mehr.");
             return;
         }
         if (state.solved >= state.stations.length) {
-            endGame("Alle Orte im Labyrinth erkundet.");
+            void endGame("Alle Orte im Labyrinth erkundet.");
         }
     }, 2200);
 }
@@ -1220,7 +1348,35 @@ function getResultMotto(score, correctCount, totalStations) {
     return "Solider Start: erkunde die Stationen in Ruhe noch einmal fur mehr Sicherheit.";
 }
 
-function endGame(reason) {
+async function refreshLeaderboard() {
+    const config = getSupabaseConfig();
+
+    if (!config) {
+        leaderboardEntries = [];
+        renderLeaderboard(leaderboardEntries);
+        return;
+    }
+
+    try {
+        leaderboardEntries = await loadLeaderboardFromSupabase(config);
+    } catch {
+        leaderboardEntries = [];
+    }
+
+    renderLeaderboard(leaderboardEntries);
+}
+
+function setupLeaderboardOptIn() {
+    if (!leaderboardOptInEl) return;
+
+    leaderboardOptInEl.classList.remove("hidden");
+    if (playerNameInput) {
+        playerNameInput.value = "";
+        playerNameInput.focus();
+    }
+}
+
+async function endGame(reason) {
     if (!state || !state.running) return;
 
     state.running = false;
@@ -1259,7 +1415,10 @@ function endGame(reason) {
     updateFullscreenButtonLabel();
     gamePanelEl.classList.add("hidden");
     resultEl.classList.remove("hidden");
+    setupLeaderboardOptIn();
+    renderLeaderboard(leaderboardEntries);
 }
+
 
 function startTimer() {
     if (timerId) {
@@ -1274,7 +1433,7 @@ function startTimer() {
         if (state.timeLeft <= 0) {
             state.timeLeft = 0;
             updateHud();
-            endGame("Zeit abgelaufen.");
+            void endGame("Zeit abgelaufen.");
             return;
         }
 
@@ -1327,6 +1486,7 @@ async function startGame() {
     resultEl.classList.add("hidden");
     questionModalEl.classList.add("hidden");
     feedbackBannerEl.classList.add("hidden");
+    if (leaderboardOptInEl) leaderboardOptInEl.classList.add("hidden");
     setInteractButtonState(false);
     gamePanelEl.classList.remove("hidden");
 
@@ -1343,6 +1503,7 @@ async function startGame() {
 function showStartScreen() {
     const highscore = Number(localStorage.getItem("dreid_lernwelt_highscore") || 0);
     startHighscoreEl.textContent = formatPoints(highscore);
+    void refreshLeaderboard();
 }
 
 startButton.addEventListener("click", startGame);
@@ -1351,6 +1512,37 @@ laterButton.addEventListener("click", () => {
     if (!state) return;
     closeQuestion();
 });
+
+if (saveLeaderboardButton) {
+    saveLeaderboardButton.addEventListener("click", async () => {
+        if (!state || !leaderboardOptInEl) return;
+
+        const config = getSupabaseConfig();
+        if (!config) {
+            leaderboardOptInEl.classList.add("hidden");
+            return;
+        }
+
+        const name = playerNameInput?.value?.trim() || "Anonym";
+
+        saveLeaderboardButton.disabled = true;
+        try {
+            leaderboardEntries = await saveLeaderboardToSupabase(config, name, state.score);
+            renderLeaderboard(leaderboardEntries);
+            leaderboardOptInEl.classList.add("hidden");
+        } catch {
+            showFeedback("Eintrag konnte nicht gespeichert werden.", "bad");
+        } finally {
+            saveLeaderboardButton.disabled = false;
+        }
+    });
+}
+
+if (skipLeaderboardButton && leaderboardOptInEl) {
+    skipLeaderboardButton.addEventListener("click", () => {
+        leaderboardOptInEl.classList.add("hidden");
+    });
+}
 
 window.addEventListener("keydown", (event) => {
     if (event.code in keys) {
