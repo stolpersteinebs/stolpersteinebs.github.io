@@ -72,7 +72,6 @@ const itemWidth = 40;
 const powerupDurationMs = 6000;
 const leaderboardSize = 5;
 const maxLevel = 10;
-const defaultLeaderboardApiPath = "/api/koscher-leaderboard.php";
 
 const keys = {
     left: false,
@@ -145,30 +144,6 @@ function normalizeLeaderboard(rawEntries) {
 }
 
 
-function getEntriesFromPayload(payload) {
-    if (Array.isArray(payload)) {
-        return payload;
-    }
-
-    if (!payload || typeof payload !== "object") {
-        return null;
-    }
-
-    if (Array.isArray(payload.entries)) {
-        return payload.entries;
-    }
-
-    if (Array.isArray(payload.leaderboard)) {
-        return payload.leaderboard;
-    }
-
-    if (Array.isArray(payload.scores)) {
-        return payload.scores;
-    }
-
-    return null;
-}
-
 async function parseJsonSafely(response) {
     const raw = await response.text();
 
@@ -198,27 +173,6 @@ function persistLeaderboardLocally(scores) {
     } catch {
         // Ignorieren: Bestenliste bleibt dann nur temporär sichtbar.
     }
-}
-
-function getLeaderboardApiUrl() {
-    const metaApiUrl = document
-        .querySelector('meta[name="koscher-leaderboard-api"]')
-        ?.getAttribute("content")
-        ?.trim();
-
-    if (metaApiUrl) {
-        return metaApiUrl;
-    }
-
-    const fromWindow = typeof window.KOSCHER_LEADERBOARD_API_URL === "string"
-        ? window.KOSCHER_LEADERBOARD_API_URL.trim()
-        : "";
-
-    if (fromWindow) {
-        return fromWindow;
-    }
-
-    return defaultLeaderboardApiPath;
 }
 
 function getSupabaseConfig() {
@@ -263,7 +217,7 @@ async function loadLeaderboardFromSupabase(config) {
     }
 
     const payload = await parseJsonSafely(response);
-    return normalizeLeaderboard(getEntriesFromPayload(payload) || payload);
+    return normalizeLeaderboard(payload);
 }
 
 async function saveLeaderboardToSupabase(config, name, score) {
@@ -286,67 +240,6 @@ async function saveLeaderboardToSupabase(config, name, score) {
     return loadLeaderboardFromSupabase(config);
 }
 
-function normalizeApiUrl(rawUrl) {
-    if (typeof rawUrl !== "string") {
-        return "";
-    }
-
-    const trimmed = rawUrl.trim();
-
-    if (!trimmed) {
-        return "";
-    }
-
-    if (trimmed.startsWith("lapi/")) {
-        return `/${trimmed.slice(1)}`;
-    }
-
-    if (trimmed.startsWith("api/")) {
-        return `/${trimmed}`;
-    }
-
-    return trimmed;
-}
-
-function getLeaderboardApiCandidates() {
-    const configured = normalizeApiUrl(getLeaderboardApiUrl());
-    const fallbacks = [
-        defaultLeaderboardApiPath,
-        "/api/koscher-leaderboard.php",
-        "../api/koscher-leaderboard.php"
-    ].map(normalizeApiUrl);
-
-    return [configured, ...fallbacks].filter((url, index, all) => url && all.indexOf(url) === index);
-}
-
-async function requestLeaderboard({ method, body }) {
-    const candidates = getLeaderboardApiCandidates();
-
-    for (const apiUrl of candidates) {
-        try {
-            const response = await fetch(apiUrl, {
-                method,
-                headers: {
-                    "Accept": "application/json",
-                    ...(body ? { "Content-Type": "application/json" } : {})
-                },
-                ...(body ? { body: JSON.stringify(body) } : {})
-            });
-
-            if (!response.ok) {
-                continue;
-            }
-
-            const payload = await parseJsonSafely(response);
-            return { ok: true, payload, url: apiUrl };
-        } catch {
-            // Nächste URL probieren.
-        }
-    }
-
-    return { ok: false, payload: null, url: candidates[0] || defaultLeaderboardApiPath };
-}
-
 async function loadLeaderboard() {
     const supabaseConfig = getSupabaseConfig();
 
@@ -360,20 +253,7 @@ async function loadLeaderboard() {
                 return;
             }
         } catch {
-            // Fallback auf bestehende API-/localStorage-Strategie.
-        }
-    }
-
-    const result = await requestLeaderboard({ method: "GET" });
-
-    if (result.ok) {
-        const serverEntries = getEntriesFromPayload(result.payload);
-        const normalized = normalizeLeaderboard(serverEntries);
-
-        if (normalized.length > 0) {
-            persistLeaderboardLocally(normalized);
-            renderLeaderboard(normalized);
-            return;
+            // Fallback auf localStorage-Strategie.
         }
     }
 
@@ -402,27 +282,8 @@ async function saveLeaderboard(name, score) {
 
             return { savedOnServer: true };
         } catch {
-            // Fallback auf bisherige API
+            // Fallback auf localStorage
         }
-    }
-
-    const result = await requestLeaderboard({
-        method: "POST",
-        body: { name: cleanedName, score }
-    });
-
-    if (result.ok) {
-        const serverEntries = getEntriesFromPayload(result.payload);
-        const normalized = normalizeLeaderboard(serverEntries);
-
-        if (normalized.length > 0) {
-            persistLeaderboardLocally(normalized);
-            renderLeaderboard(normalized);
-        } else {
-            renderLeaderboard(topScores);
-        }
-
-        return { savedOnServer: true };
     }
 
     renderLeaderboard(topScores);
@@ -961,8 +822,9 @@ if (saveLeaderboardButton && skipLeaderboardButton && playerNameInput && leaderb
             return;
         }
 
-        const apiUrl = getLeaderboardApiUrl();
-        setStatus(`Server nicht erreicht (${apiUrl}) – lokal eingetragen.`, "danger");
+        const supabaseConfig = getSupabaseConfig();
+        const endpoint = supabaseConfig?.url || "Supabase";
+        setStatus(`Server nicht erreicht (${endpoint}) – lokal eingetragen.`, "danger");
     });
 
     skipLeaderboardButton.addEventListener("click", () => {
