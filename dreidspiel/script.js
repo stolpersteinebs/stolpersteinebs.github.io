@@ -1063,18 +1063,35 @@ function tryJump() {
 
     const facingX = Math.cos(state.player.angle);
     const facingY = Math.sin(state.player.angle);
-    const midX = state.player.x + facingX * 0.7;
-    const midY = state.player.y + facingY * 0.7;
-    const targetX = state.player.x + facingX * JUMP_DISTANCE;
-    const targetY = state.player.y + facingY * JUMP_DISTANCE;
 
-    if (!isBlocked(midX, midY) || isBlocked(targetX, targetY)) {
+    const steps = 18;
+    const stepSize = JUMP_DISTANCE / steps;
+    let sawWall = false;
+    let landing = null;
+
+    for (let i = 1; i <= steps; i += 1) {
+        const px = state.player.x + facingX * stepSize * i;
+        const py = state.player.y + facingY * stepSize * i;
+        const blocked = isBlocked(px, py);
+
+        if (blocked) {
+            sawWall = true;
+            continue;
+        }
+
+        if (sawWall) {
+            landing = { x: px, y: py };
+            break;
+        }
+    }
+
+    if (!landing) {
         showFeedback("Hier kannst du nicht springen.", "bad");
         return;
     }
 
-    state.player.x = targetX;
-    state.player.y = targetY;
+    state.player.x = landing.x;
+    state.player.y = landing.y;
     state.jumpReadyAt = Date.now() + JUMP_COOLDOWN_MS;
     showFeedback("Sprung geschafft!", "ok");
     updateHud();
