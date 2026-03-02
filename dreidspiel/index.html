@@ -31,7 +31,7 @@
         <p>Du hast 4 Minuten, um alle Wissens-Stationen zu finden.</p>
         <p class="start-highscore">Bester Score: <span id="startHighscore">0</span></p>
         <button id="startButton" type="button">Lernwelt starten</button>
-        <section class="leaderboard start-leaderboard" aria-label="Bestenliste vor Spielstart">
+        <section class="leaderboard leaderboard-box start-leaderboard" aria-label="Bestenliste vor Spielstart">
             <h3>Bestenliste</h3>
             <ol id="startLeaderboardList"></ol>
         </section>
@@ -101,9 +101,10 @@
                 <button id="saveLeaderboardButton" type="button">Ja, eintragen</button>
                 <button id="skipLeaderboardButton" type="button" class="secondary">Nein danke</button>
             </div>
+            <p id="leaderboardStatus" class="leaderboard-status" role="status" aria-live="polite"></p>
         </div>
 
-        <section class="leaderboard" aria-label="Bestenliste">
+        <section class="leaderboard leaderboard-box" aria-label="Bestenliste">
             <h3>Bestenliste</h3>
             <ol id="leaderboardList"></ol>
         </section>

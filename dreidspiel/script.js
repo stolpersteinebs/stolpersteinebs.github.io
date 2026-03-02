@@ -172,6 +172,7 @@ const saveLeaderboardButton = document.getElementById("saveLeaderboardButton");
 const skipLeaderboardButton = document.getElementById("skipLeaderboardButton");
 const leaderboardListEl = document.getElementById("leaderboardList");
 const startLeaderboardListEl = document.getElementById("startLeaderboardList");
+const leaderboardStatusEl = document.getElementById("leaderboardStatus");
 
 const canvas = document.getElementById("view");
 const ctx = canvas.getContext("2d");
@@ -401,6 +402,13 @@ function renderLeaderboardList(listEl, entries) {
 function renderLeaderboard(entries) {
     renderLeaderboardList(leaderboardListEl, entries);
     renderLeaderboardList(startLeaderboardListEl, entries);
+}
+
+function setLeaderboardStatus(message, isError = false) {
+    if (!leaderboardStatusEl) return;
+
+    leaderboardStatusEl.textContent = message;
+    leaderboardStatusEl.classList.toggle("error", isError);
 }
 
 function randomBetween(min, max) {
@@ -1391,6 +1399,7 @@ function setupLeaderboardOptIn() {
         playerNameInput.value = "";
         playerNameInput.focus();
     }
+    setLeaderboardStatus("");
 }
 
 async function endGame(reason) {
@@ -1504,6 +1513,7 @@ async function startGame() {
     questionModalEl.classList.add("hidden");
     feedbackBannerEl.classList.add("hidden");
     if (leaderboardOptInEl) leaderboardOptInEl.classList.add("hidden");
+    setLeaderboardStatus("");
     setInteractButtonState(false);
     gamePanelEl.classList.remove("hidden");
 
@@ -1534,21 +1544,28 @@ if (saveLeaderboardButton) {
     saveLeaderboardButton.addEventListener("click", async () => {
         if (!state || !leaderboardOptInEl) return;
 
+        const name = playerNameInput?.value?.trim() || "Anonym";
+        const optimisticEntries = normalizeLeaderboard([...leaderboardEntries, { name, score: state.score }]);
+        leaderboardEntries = optimisticEntries;
+        renderLeaderboard(leaderboardEntries);
+
         const config = getSupabaseConfig();
         if (!config) {
             leaderboardOptInEl.classList.add("hidden");
+            setLeaderboardStatus("Lokal gespeichert (Supabase-Konfiguration fehlt).", false);
             return;
         }
 
-        const name = playerNameInput?.value?.trim() || "Anonym";
-
         saveLeaderboardButton.disabled = true;
+        setLeaderboardStatus("Speichere Eintrag ...", false);
+
         try {
             leaderboardEntries = await saveLeaderboardToSupabase(config, name, state.score);
             renderLeaderboard(leaderboardEntries);
             leaderboardOptInEl.classList.add("hidden");
+            setLeaderboardStatus("Eintrag erfolgreich gespeichert.", false);
         } catch {
-            showFeedback("Eintrag konnte nicht gespeichert werden.", "bad");
+            setLeaderboardStatus("Server nicht erreichbar: Eintrag nur lokal angezeigt.", true);
         } finally {
             saveLeaderboardButton.disabled = false;
         }

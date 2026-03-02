@@ -570,6 +570,28 @@ body.pseudo-fullscreen .render-frame .fullscreen-btn {
 }
 
 
+
+.leaderboard-box {
+    max-width: 460px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 12px 16px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.82);
+}
+
+.leaderboard-status {
+    min-height: 1.2em;
+    margin: 8px 0 0;
+    font-weight: 700;
+    color: var(--ink-soft);
+}
+
+.leaderboard-status.error {
+    color: var(--bad);
+}
+
 .leaderboard-optin {
     margin: 14px auto;
     padding: 14px;
