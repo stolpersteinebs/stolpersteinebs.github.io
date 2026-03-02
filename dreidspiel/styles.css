@@ -603,6 +603,10 @@ body.pseudo-fullscreen .render-frame .fullscreen-btn {
 .leaderboard {
     margin-top: 14px;
 }
+.start-leaderboard {
+    margin-top: 16px;
+}
+
 
 .leaderboard ol {
     max-width: 360px;

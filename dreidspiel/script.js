@@ -171,6 +171,7 @@ const playerNameInput = document.getElementById("playerName");
 const saveLeaderboardButton = document.getElementById("saveLeaderboardButton");
 const skipLeaderboardButton = document.getElementById("skipLeaderboardButton");
 const leaderboardListEl = document.getElementById("leaderboardList");
+const startLeaderboardListEl = document.getElementById("startLeaderboardList");
 
 const canvas = document.getElementById("view");
 const ctx = canvas.getContext("2d");
@@ -378,23 +379,28 @@ async function saveLeaderboardToSupabase(config, name, score) {
     return loadLeaderboardFromSupabase(config);
 }
 
-function renderLeaderboard(entries) {
-    if (!leaderboardListEl) return;
+function renderLeaderboardList(listEl, entries) {
+    if (!listEl) return;
 
-    leaderboardListEl.innerHTML = "";
+    listEl.innerHTML = "";
 
     if (!entries.length) {
         const item = document.createElement("li");
         item.textContent = "Noch keine Eintrage";
-        leaderboardListEl.appendChild(item);
+        listEl.appendChild(item);
         return;
     }
 
     entries.forEach((entry) => {
         const item = document.createElement("li");
         item.textContent = `${entry.name}: ${formatPoints(entry.score)} Punkte`;
-        leaderboardListEl.appendChild(item);
+        listEl.appendChild(item);
     });
+}
+
+function renderLeaderboard(entries) {
+    renderLeaderboardList(leaderboardListEl, entries);
+    renderLeaderboardList(startLeaderboardListEl, entries);
 }
 
 function randomBetween(min, max) {
@@ -1267,6 +1273,17 @@ function closeQuestion() {
     state.answerLocked = false;
     questionModalEl.classList.add("hidden");
     updateNearbyPrompt();
+
+    if (!state.running) return;
+
+    if (state.lives <= 0) {
+        void endGame("Keine Leben mehr.");
+        return;
+    }
+
+    if (state.solved >= state.stations.length) {
+        void endGame("Alle Orte im Labyrinth erkundet.");
+    }
 }
 
 function answerStation(stationId, selectedIndex) {
