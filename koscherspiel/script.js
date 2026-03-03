@@ -21,6 +21,9 @@ const skipLeaderboardButton = document.getElementById("skipLeaderboardButton");
 const leftBtn = document.getElementById("leftBtn");
 const rightBtn = document.getElementById("rightBtn");
 const shopList = document.getElementById("shopList");
+const abilityShopList = document.getElementById("abilityShopList");
+const cartShopTab = document.getElementById("cartShopTab");
+const abilityShopTab = document.getElementById("abilityShopTab");
 
 const fallbackFoods = {
     kosherFoods: [
@@ -114,14 +117,24 @@ const emojiFoodSpawnChance = 0.72;
 const cartSkins = [
     { key: "classic", label: "Klassisch", cost: 0, power: "Kein Bonus", description: "Standard-Wagen ohne Spezialeffekt." },
     { key: "sky", label: "Himmelblau", cost: 15, power: "Schutzchance", description: "25% Chance, bei nicht-koscherem Essen kein Leben zu verlieren." },
-    { key: "mint", label: "Mint", cost: 25, power: "Extra-Punkt", description: "+1 zusätzlicher Punkt bei jedem koscheren Fang." },
+    { key: "mint", label: "Mint", cost: 100, power: "Extra-Punkt", description: "+1 zusätzlicher Punkt bei jedem koscheren Fang." },
     { key: "rose", label: "Rose", cost: 35, power: "Münz-Boost", description: "Am Ende 50% mehr Münzen erhalten." },
-    { key: "violet", label: "Violett", cost: 45, power: "Zweite Chance", description: "Einmal pro Runde: statt Game Over mit 1 Leben weiterspielen." }
+    { key: "violet", label: "Violett", cost: 45, power: "Zweite Chance", description: "Einmal pro Runde: statt Game Over mit 1 Leben weiterspielen." },
+    { key: "jumper", label: "Springer", cost: 60, power: "Sprung", description: "Mit Leertaste/W/↑ springen und nicht-koscheren Treffern ausweichen." }
 ];
 
 const cartSkinKeys = cartSkins.map((skin) => skin.key);
 const coinRatePerPoint = 0.5;
 const maxStoredCoins = 9999;
+const abilityDefs = [
+    {
+        key: "nonKosherShield",
+        label: "Nicht-koscher Schutz",
+        description: "5% mehr Wahrscheinlichkeit, dass kein Herz abgezogen wird, wenn du nicht-koschere Dinge einfängst.",
+        maxLevel: 8,
+        costPerLevel: 20
+    }
+];
 
 const powerupTypes = [
     { key: "shield", label: "Schutz", icon: "🛡️", colorClass: "powerup-shield" },
@@ -168,6 +181,9 @@ const powerupDurationMs = 6000;
 const growMultiplier = 1.45;
 const magnetPullSpeed = 280;
 const leaderboardSize = 5;
+const gravity = 1200;
+const jumpVelocity = 500;
+const maxNonKosherShieldChance = 0.4;
 
 const keys = {
     left: false,
@@ -480,6 +496,40 @@ function renderLeaderboard(scores = getStoredLeaderboard()) {
     });
 }
 
+function getStoredAbilities() {
+    const defaults = { nonKosherShield: 0 };
+    try {
+        const parsed = JSON.parse(localStorage.getItem("koscher_abilities") || "{}");
+        if (!parsed || typeof parsed !== "object") {
+            return defaults;
+        }
+
+        return abilityDefs.reduce((acc, ability) => {
+            const rawLevel = Number(parsed[ability.key]);
+            acc[ability.key] = clamp(Math.floor(Number.isFinite(rawLevel) ? rawLevel : 0), 0, ability.maxLevel);
+            return acc;
+        }, { ...defaults });
+    } catch {
+        return defaults;
+    }
+}
+
+function persistAbilities(abilities) {
+    const normalized = abilityDefs.reduce((acc, ability) => {
+        const rawLevel = Number(abilities[ability.key]);
+        acc[ability.key] = clamp(Math.floor(Number.isFinite(rawLevel) ? rawLevel : 0), 0, ability.maxLevel);
+        return acc;
+    }, {});
+
+    try {
+        localStorage.setItem("koscher_abilities", JSON.stringify(normalized));
+    } catch {
+        // Ignorieren: Upgrades bleiben nur temporär.
+    }
+
+    return normalized;
+}
+
 function createInitialState() {
     const unlockedCarts = getStoredUnlockedCarts();
     const preferredCart = getSelectedCart();
@@ -493,10 +543,14 @@ function createInitialState() {
         lives: 3,
         level: 1,
         playerX: 0,
+        playerY: 0,
+        jumpVelocityY: 0,
         isMoving: false,
         spawnTimer: 0,
         items: [],
         highscore: getStoredHighscore(),
+        abilities: getStoredAbilities(),
+        currentShopTab: "carts",
         selectedCart,
         unlockedCarts,
         cartSecondChanceUsed: false,
@@ -535,8 +589,27 @@ function applyCartSkinClass() {
     player.classList.add(`cart-skin-${skin.key}`);
 }
 
+function switchShopTab(tabKey) {
+    if (!state || !["carts", "abilities"].includes(tabKey)) return;
+    state.currentShopTab = tabKey;
+    renderShop();
+}
+
 function renderShop() {
-    if (!shopList || !state) return;
+    if (!shopList || !abilityShopList || !state) return;
+
+    const cartsTabActive = state.currentShopTab !== "abilities";
+    shopList.classList.toggle("hidden", !cartsTabActive);
+    abilityShopList.classList.toggle("hidden", cartsTabActive);
+
+    if (cartShopTab) {
+        cartShopTab.classList.toggle("active", cartsTabActive);
+        cartShopTab.setAttribute("aria-selected", String(cartsTabActive));
+    }
+    if (abilityShopTab) {
+        abilityShopTab.classList.toggle("active", !cartsTabActive);
+        abilityShopTab.setAttribute("aria-selected", String(!cartsTabActive));
+    }
 
     shopList.innerHTML = "";
 
@@ -569,6 +642,60 @@ function renderShop() {
 
         shopList.appendChild(item);
     });
+
+    abilityShopList.innerHTML = "";
+    abilityDefs.forEach((ability) => {
+        const currentLevel = state.abilities[ability.key] || 0;
+        const currentChance = Math.min(maxNonKosherShieldChance, currentLevel * 0.05);
+        const nextChance = Math.min(maxNonKosherShieldChance, (currentLevel + 1) * 0.05);
+        const maxed = currentLevel >= ability.maxLevel;
+        const affordable = state.coins >= ability.costPerLevel;
+
+        const item = document.createElement("article");
+        item.className = "shop-item";
+        if (maxed) item.classList.add("selected");
+        if (!maxed && !affordable) item.classList.add("locked");
+
+        const status = maxed
+            ? `Max. erreicht (${Math.round(currentChance * 100)}%)`
+            : `Level ${currentLevel}/${ability.maxLevel} · Nächstes Upgrade: ${Math.round(nextChance * 100)}%`;
+
+        item.innerHTML = `
+            <h3>${ability.label}</h3>
+            <p class="shop-power">Schutz jetzt: ${Math.round(currentChance * 100)}%</p>
+            <p class="shop-description">${ability.description}</p>
+            <p class="shop-status">${status}</p>
+            <button type="button" data-ability-key="${ability.key}">${maxed ? "Max" : `Upgrade (${formatCoins(ability.costPerLevel)} Münzen)`}</button>
+        `;
+
+        const button = item.querySelector("button");
+        if (button) button.disabled = maxed || !affordable;
+
+        abilityShopList.appendChild(item);
+    });
+}
+
+function buyAbility(abilityKey) {
+    if (!state) return;
+    const ability = abilityDefs.find((entry) => entry.key === abilityKey);
+    if (!ability) return;
+
+    const currentLevel = state.abilities[abilityKey] || 0;
+    if (currentLevel >= ability.maxLevel) {
+        setStatus("Dieses Upgrade ist bereits auf Maximum.");
+        return;
+    }
+    if (state.coins < ability.costPerLevel) {
+        setStatus("Nicht genug Münzen.", "danger");
+        return;
+    }
+
+    state.coins = persistCoins(state.coins - ability.costPerLevel);
+    state.abilities[abilityKey] = currentLevel + 1;
+    state.abilities = persistAbilities(state.abilities);
+    updateHUD();
+    renderShop();
+    setStatus(`${ability.label} verbessert!`);
 }
 
 function selectCart(cartKey) {
@@ -666,7 +793,7 @@ function syncPlayerSize() {
 
 function positionPlayer() {
     syncPlayerSize();
-    player.style.transform = `translate(${state.playerX}px, 0)`;
+    player.style.transform = `translate(${state.playerX}px, ${state.playerY}px)`;
 }
 
 function centerPlayerIdle() {
@@ -826,6 +953,21 @@ function cartSavedDamage() {
     return false;
 }
 
+function abilitySavedDamage() {
+    if (!state) return false;
+
+    const level = state.abilities.nonKosherShield || 0;
+    const chance = Math.min(maxNonKosherShieldChance, level * 0.05);
+    if (chance <= 0) return false;
+
+    if (Math.random() < chance) {
+        setStatus(`Upgrade-Schutz ausgelöst (${Math.round(chance * 100)}%)!`);
+        return true;
+    }
+
+    return false;
+}
+
 function handleCatch(item, index) {
     if (item.isPowerup) {
         if (item.powerupType === "life") {
@@ -845,7 +987,7 @@ function handleCatch(item, index) {
         const points = basePoints + bonusPoints;
         state.score += points;
         setStatus(`+${points} Koscher!`);
-    } else if (!consumeShieldIfActive() && !cartSavedDamage()) {
+    } else if (!consumeShieldIfActive() && !cartSavedDamage() && !abilitySavedDamage()) {
         state.lives -= 1;
         state.score = Math.max(0, state.score - 1);
         setStatus("-1 Leben: Nicht koscher!", "danger");
@@ -910,24 +1052,44 @@ function currentPlayerSpeed() {
     return Math.max(levelSpeedBoost, minimumCatchableSpeed);
 }
 
+function jumpPlayer() {
+    if (!state || !state.running) return;
+    if (!hasCartPower("jumper")) return;
+    if (state.playerY < 0) return;
+
+    state.jumpVelocityY = -jumpVelocity;
+    setStatus("Sprung!");
+}
+
+function updateJump(deltaSeconds) {
+    if (!state) return;
+
+    state.jumpVelocityY += gravity * deltaSeconds;
+    state.playerY += state.jumpVelocityY * deltaSeconds;
+
+    if (state.playerY > 0) {
+        state.playerY = 0;
+        state.jumpVelocityY = 0;
+    }
+}
+
 function updatePlayer(deltaSeconds) {
     const move = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
     state.isMoving = move !== 0;
 
-    if (move === 0) {
-        positionPlayer();
-        return;
+    if (move !== 0) {
+        state.playerX += move * currentPlayerSpeed() * deltaSeconds;
+        state.playerX = clamp(state.playerX, 0, gameWidth() - currentPlayerWidth());
     }
 
-    state.playerX += move * currentPlayerSpeed() * deltaSeconds;
-    state.playerX = clamp(state.playerX, 0, gameWidth() - currentPlayerWidth());
+    updateJump(deltaSeconds);
     positionPlayer();
 }
 
 function updateItems(deltaSeconds) {
     const playerRect = {
         x: state.playerX,
-        y: gameHeight() - 14 - 36,
+        y: gameHeight() - 14 - 36 + state.playerY,
         width: currentPlayerWidth(),
         height: 36
     };
@@ -935,7 +1097,7 @@ function updateItems(deltaSeconds) {
     for (let i = state.items.length - 1; i >= 0; i -= 1) {
         const item = state.items[i];
 
-        if (!item.isPowerup && hasPowerup("magnet") && state.isMoving) {
+        if (!item.isPowerup && item.isKosher && hasPowerup("magnet") && state.isMoving) {
             const targetX = state.playerX + (currentPlayerWidth() - itemWidth) / 2;
             const dx = targetX - item.x;
             const magnetStep = Math.min(Math.abs(dx), magnetPullSpeed * deltaSeconds);
@@ -1081,6 +1243,8 @@ function startGame() {
     if (coinResult) coinResult.textContent = "";
 
     state.playerX = (gameWidth() - basePlayerWidth) / 2;
+    state.playerY = 0;
+    state.jumpVelocityY = 0;
     positionPlayer();
 
     lastTime = 0;
@@ -1156,6 +1320,10 @@ document.addEventListener("keydown", (event) => {
     if (event.key === "ArrowRight" || event.key.toLowerCase() === "d") {
         setDirection("right", true);
     }
+    if (event.key === " " || event.key === "ArrowUp" || event.key.toLowerCase() === "w") {
+        event.preventDefault();
+        jumpPlayer();
+    }
 });
 
 document.addEventListener("keyup", (event) => {
@@ -1223,6 +1391,24 @@ if (shopList) {
 
         buyCart(cartKey);
     });
+}
+
+if (abilityShopList) {
+    abilityShopList.addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-ability-key]");
+        if (!button) return;
+
+        const abilityKey = button.getAttribute("data-ability-key");
+        if (!abilityKey) return;
+        buyAbility(abilityKey);
+    });
+}
+
+if (cartShopTab) {
+    cartShopTab.addEventListener("click", () => switchShopTab("carts"));
+}
+if (abilityShopTab) {
+    abilityShopTab.addEventListener("click", () => switchShopTab("abilities"));
 }
 
 if (leftBtn) {
