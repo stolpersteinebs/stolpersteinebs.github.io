@@ -32,6 +32,7 @@ const fallbackFoods = {
 
 const foodEmojiMap = {
     apfel: "🍎",
+    apple: "🍎",
     banane: "🍌",
     birne: "🍐",
     kirsche: "🍒",
@@ -68,6 +69,42 @@ const foodEmojiMap = {
 
 const kosherEmojiFallback = ["🍎", "🍐", "🍊", "🍋", "🍇", "🍉", "🍓", "🫐", "🥕", "🥦", "🥬", "🥔", "🫑", "🥒", "🍅", "🍄", "🧅", "🍞", "🥯", "🧆"];
 const nonKosherEmojiFallback = ["🥩", "🥓", "🍖", "🌭", "🍤", "🦑", "🦞", "🦪"];
+
+const kosherEmojiFoods = [
+    { name: "Banane", emoji: "🍌" },
+    { name: "Birne", emoji: "🍐" },
+    { name: "Kirsche", emoji: "🍒" },
+    { name: "Erdbeere", emoji: "🍓" },
+    { name: "Blaubeeren", emoji: "🫐" },
+    { name: "Trauben", emoji: "🍇" },
+    { name: "Zitrone", emoji: "🍋" },
+    { name: "Melone", emoji: "🍈" },
+    { name: "Wassermelone", emoji: "🍉" },
+    { name: "Avocado", emoji: "🥑" },
+    { name: "Tomate", emoji: "🍅" },
+    { name: "Paprika", emoji: "🫑" },
+    { name: "Gurke", emoji: "🥒" },
+    { name: "Salat", emoji: "🥬" },
+    { name: "Kartoffel", emoji: "🥔" },
+    { name: "Zwiebel", emoji: "🧅" },
+    { name: "Pilz", emoji: "🍄" },
+    { name: "Brot", emoji: "🍞" },
+    { name: "Bagel", emoji: "🥯" },
+    { name: "Falafel", emoji: "🧆" }
+];
+
+const nonKosherEmojiFoods = [
+    { name: "Schweinesteak", emoji: "🥩" },
+    { name: "Speck", emoji: "🥓" },
+    { name: "Schinken", emoji: "🍖" },
+    { name: "Wurst", emoji: "🌭" },
+    { name: "Garnele", emoji: "🍤" },
+    { name: "Tintenfisch", emoji: "🦑" },
+    { name: "Hummer", emoji: "🦞" },
+    { name: "Austern", emoji: "🦪" }
+];
+
+const emojiFoodSpawnChance = 0.72;
 
 const powerupTypes = [
     { key: "shield", label: "Schutz", icon: "🛡️", colorClass: "powerup-shield" },
@@ -478,6 +515,21 @@ function spawnPowerup() {
 
 function spawnFood() {
     const isKosher = Math.random() < 0.82;
+
+    if (Math.random() < emojiFoodSpawnChance) {
+        const emojiFoods = isKosher ? kosherEmojiFoods : nonKosherEmojiFoods;
+        const selectedEmojiFood = emojiFoods[Math.floor(Math.random() * emojiFoods.length)];
+
+        return {
+            isPowerup: false,
+            isKosher,
+            className: "item",
+            label: selectedEmojiFood.name,
+            emoji: selectedEmojiFood.emoji,
+            emojiOnly: true
+        };
+    }
+
     const foodList = isKosher ? kosherFoods : nonKosherFoods;
     const selectedFood = foodList[Math.floor(Math.random() * foodList.length)];
 
@@ -488,7 +540,7 @@ function spawnFood() {
         image: selectedFood.image,
         label: selectedFood.name,
         emoji: getFoodEmoji(selectedFood.name, isKosher),
-        emojiOnly: Math.random() < 0.35
+        emojiOnly: true
     };
 }
 
