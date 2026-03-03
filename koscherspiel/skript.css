@@ -103,22 +103,27 @@ h1 {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 2.2rem;
     will-change: transform;
     z-index: 3;
 }
 
 #player::before {
-    content: "🛒";
-    filter: var(--cart-filter, none) drop-shadow(0 2px 0 rgba(0, 0, 0, 0.16));
+    content: "";
+    width: 100%;
+    height: 100%;
+    background-image: var(--cart-image, url('einkaufswägen/Klassisch.png'));
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain;
+    filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.16));
 }
 
-#player.cart-skin-classic { --cart-filter: none; }
-#player.cart-skin-sky { --cart-filter: hue-rotate(170deg) saturate(1.5); }
-#player.cart-skin-mint { --cart-filter: hue-rotate(90deg) saturate(1.6); }
-#player.cart-skin-rose { --cart-filter: hue-rotate(300deg) saturate(1.4); }
-#player.cart-skin-violet { --cart-filter: hue-rotate(245deg) saturate(1.8); }
-#player.cart-skin-jumper { --cart-filter: hue-rotate(25deg) saturate(1.9); }
+#player.cart-skin-classic { --cart-image: url('einkaufswägen/Klassisch.png'); }
+#player.cart-skin-sky { --cart-image: url('einkaufswägen/Himmelblau.png'); }
+#player.cart-skin-mint { --cart-image: url('einkaufswägen/Mint.png'); }
+#player.cart-skin-rose { --cart-image: url('einkaufswägen/Rose.png'); }
+#player.cart-skin-violet { --cart-image: url('einkaufswägen/Violett.png'); }
+#player.cart-skin-jumper { --cart-image: url('einkaufswägen/Springer.png'); }
 
 .item {
     position: absolute;

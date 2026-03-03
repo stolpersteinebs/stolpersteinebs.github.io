@@ -115,12 +115,12 @@ const nonKosherEmojiFoods = [
 const emojiFoodSpawnChance = 0.72;
 
 const cartSkins = [
-    { key: "classic", label: "Klassisch", cost: 0, power: "Kein Bonus", description: "Standard-Wagen ohne Spezialeffekt." },
-    { key: "sky", label: "Himmelblau", cost: 15, power: "Schutzchance", description: "25% Chance, bei nicht-koscherem Essen kein Leben zu verlieren." },
-    { key: "mint", label: "Mint", cost: 100, power: "Extra-Punkt", description: "+1 zusätzlicher Punkt bei jedem koscheren Fang." },
-    { key: "rose", label: "Rose", cost: 35, power: "Münz-Boost", description: "Am Ende 50% mehr Münzen erhalten." },
-    { key: "violet", label: "Violett", cost: 45, power: "Zweite Chance", description: "Einmal pro Runde: statt Game Over mit 1 Leben weiterspielen." },
-    { key: "jumper", label: "Springer", cost: 60, power: "Sprung", description: "Mit Leertaste/W/↑ springen und nicht-koscheren Treffern ausweichen." }
+    { key: "classic", label: "Klassisch", image: "einkaufswägen/Klassisch.png", cost: 0, power: "Kein Bonus", description: "Standard-Wagen ohne Spezialeffekt." },
+    { key: "sky", label: "Himmelblau", image: "einkaufswägen/Himmelblau.png", cost: 15, power: "Schutzchance", description: "25% Chance, bei nicht-koscherem Essen kein Leben zu verlieren." },
+    { key: "mint", label: "Mint", image: "einkaufswägen/Mint.png", cost: 100, power: "Extra-Punkt", description: "+1 zusätzlicher Punkt bei jedem koscheren Fang." },
+    { key: "rose", label: "Rose", image: "einkaufswägen/Rose.png", cost: 35, power: "Münz-Boost", description: "Am Ende 50% mehr Münzen erhalten." },
+    { key: "violet", label: "Violett", image: "einkaufswägen/Violett.png", cost: 45, power: "Zweite Chance", description: "Einmal pro Runde: statt Game Over mit 1 Leben weiterspielen." },
+    { key: "jumper", label: "Springer", image: "einkaufswägen/Springer.png", cost: 60, power: "Sprung", description: "Mit Leertaste/W/↑ springen und nicht-koscheren Treffern ausweichen." }
 ];
 
 const cartSkinKeys = cartSkins.map((skin) => skin.key);
@@ -587,6 +587,7 @@ function applyCartSkinClass() {
     player.classList.remove(...cartSkinKeys.map((key) => `cart-skin-${key}`));
     const skin = currentCartSkin();
     player.classList.add(`cart-skin-${skin.key}`);
+    player.style.setProperty("--cart-image", `url('${skin.image}')`);
 }
 
 function switchShopTab(tabKey) {
