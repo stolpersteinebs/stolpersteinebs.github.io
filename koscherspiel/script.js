@@ -32,11 +32,42 @@ const fallbackFoods = {
 
 const foodEmojiMap = {
     apfel: "🍎",
+    banane: "🍌",
+    birne: "🍐",
+    kirsche: "🍒",
+    erdbeere: "🍓",
+    blaubeere: "🫐",
+    trauben: "🍇",
+    zitrone: "🍋",
+    melone: "🍈",
+    wassermelone: "🍉",
+    avocado: "🥑",
+    tomate: "🍅",
+    paprika: "🫑",
+    gurke: "🥒",
+    salat: "🥬",
+    kartoffel: "🥔",
+    zwiebel: "🧅",
+    knoblauch: "🧄",
+    pilz: "🍄",
+    brot: "🍞",
+    bagel: "🥯",
+    falafel: "🧆",
     carrot: "🥕",
     karotte: "🥕",
     brokkoli: "🥦",
-    schweinesteak: "🥩"
+    schweinesteak: "🥩",
+    speck: "🥓",
+    schinken: "🍖",
+    wurst: "🌭",
+    garnele: "🍤",
+    tintenfisch: "🦑",
+    hummer: "🦞",
+    austern: "🦪"
 };
+
+const kosherEmojiFallback = ["🍎", "🍐", "🍊", "🍋", "🍇", "🍉", "🍓", "🫐", "🥕", "🥦", "🥬", "🥔", "🫑", "🥒", "🍅", "🍄", "🧅", "🍞", "🥯", "🧆"];
+const nonKosherEmojiFallback = ["🥩", "🥓", "🍖", "🌭", "🍤", "🦑", "🦞", "🦪"];
 
 const powerupTypes = [
     { key: "shield", label: "Schutz", icon: "🛡️", colorClass: "powerup-shield" },
@@ -79,7 +110,6 @@ const playerSpeed = 340;
 const itemWidth = 40;
 const powerupDurationMs = 6000;
 const leaderboardSize = 5;
-const maxLevel = 10;
 
 const keys = {
     left: false,
@@ -425,9 +455,14 @@ function currentFallSpeed() {
     return hasPowerup("slow") ? baseSpeed * 0.68 : baseSpeed;
 }
 
-function getFoodEmoji(name = "") {
+function getFoodEmoji(name = "", isKosher = true) {
     const normalized = String(name).toLocaleLowerCase("de-DE").replace(/\s+/g, "");
-    return foodEmojiMap[normalized] || "🍽️";
+    if (foodEmojiMap[normalized]) {
+        return foodEmojiMap[normalized];
+    }
+
+    const emojiList = isKosher ? kosherEmojiFallback : nonKosherEmojiFallback;
+    return emojiList[Math.floor(Math.random() * emojiList.length)] || "🍽️";
 }
 
 function spawnPowerup() {
@@ -452,7 +487,7 @@ function spawnFood() {
         className: "item",
         image: selectedFood.image,
         label: selectedFood.name,
-        emoji: getFoodEmoji(selectedFood.name),
+        emoji: getFoodEmoji(selectedFood.name, isKosher),
         emojiOnly: Math.random() < 0.35
     };
 }
@@ -545,11 +580,6 @@ function handleCatch(item, index) {
     removeItem(index);
     recalcLevel();
 
-    if (state.level >= maxLevel) {
-        endGame("Geschafft! Du hast alle Level gemeistert.");
-        return;
-    }
-
     updateHUD();
 
     if (state.lives <= 0) {
@@ -584,8 +614,14 @@ function recalcLevel() {
 
 function currentPlayerSpeed() {
     if (!state) return playerSpeed;
-    if (state.level < 5) return playerSpeed;
-    return playerSpeed + (state.level - 4) * 28;
+
+    const levelSpeedBoost = state.level < 5 ? playerSpeed : playerSpeed + (state.level - 4) * 28;
+    const fallSpeed = currentFallSpeed();
+    const crossDistance = Math.max(1, gameWidth() - playerWidth);
+    const fallDistance = Math.max(1, gameHeight() + itemWidth);
+    const minimumCatchableSpeed = (crossDistance / fallDistance) * fallSpeed * 1.2;
+
+    return Math.max(levelSpeedBoost, minimumCatchableSpeed);
 }
 
 function updatePlayer(deltaSeconds) {
