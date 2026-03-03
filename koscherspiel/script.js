@@ -120,7 +120,8 @@ const cartSkins = [
     { key: "mint", label: "Mint", image: "einkaufswägen/Mint.png", cost: 100, power: "Extra-Punkt", description: "+1 zusätzlicher Punkt bei jedem koscheren Fang." },
     { key: "rose", label: "Rose", image: "einkaufswägen/Rose.png", cost: 35, power: "Münz-Boost", description: "Am Ende 50% mehr Münzen erhalten." },
     { key: "violet", label: "Violett", image: "einkaufswägen/Violett.png", cost: 45, power: "Zweite Chance", description: "Einmal pro Runde: statt Game Over mit 1 Leben weiterspielen." },
-    { key: "jumper", label: "Springer", image: "einkaufswägen/Springer.png", cost: 60, power: "Sprung", description: "Mit Leertaste/W/↑ springen und nicht-koscheren Treffern ausweichen." }
+    { key: "jumper", label: "Springer", image: "einkaufswägen/Springer.png", cost: 60, power: "Sprung", description: "Mit Leertaste/W/↑ springen und nicht-koscheren Treffern ausweichen." },
+    { key: "ultimate", label: "Ultimate", image: "einkaufswägen/Ultimate.png", cost: 700, power: "Ultra-Kombi", description: "Alle Wagenfähigkeiten kombiniert und verstärkt: 2,5x Punkte, 30% Schutzchance, +75% Münzen, 2 zweite Chancen und Sprung." }
 ];
 
 const cartSkinKeys = cartSkins.map((skin) => skin.key);
@@ -184,6 +185,7 @@ const leaderboardSize = 5;
 const gravity = 1200;
 const jumpVelocity = 500;
 const maxNonKosherShieldChance = 0.4;
+const ultimateRequiredCarts = ["sky", "mint", "rose", "violet", "jumper"];
 
 const keys = {
     left: false,
@@ -553,7 +555,7 @@ function createInitialState() {
         currentShopTab: "carts",
         selectedCart,
         unlockedCarts,
-        cartSecondChanceUsed: false,
+        cartSecondChancesUsed: 0,
         activePowerups: {
             shield: 0,
             slow: 0,
@@ -621,11 +623,16 @@ function renderShop() {
         const unlocked = state.unlockedCarts.includes(skin.key);
         const selected = state.selectedCart === skin.key;
         const affordable = state.coins >= skin.cost;
+        const hasPrerequisites = hasCartPrerequisites(skin.key);
+        const canBuy = affordable && hasPrerequisites;
 
         if (selected) item.classList.add("selected");
-        if (!unlocked && !affordable) item.classList.add("locked");
+        if (!unlocked && !canBuy) item.classList.add("locked");
 
-        const status = unlocked ? (selected ? "Ausgewählt" : "Freigeschaltet") : `Preis: ${formatCoins(skin.cost)} Münzen`;
+        let status = unlocked ? (selected ? "Ausgewählt" : "Freigeschaltet") : `Preis: ${formatCoins(skin.cost)} Münzen`;
+        if (!unlocked && !hasPrerequisites && skin.key === "ultimate") {
+            status = "Voraussetzung: Kaufe zuerst alle anderen Wagen.";
+        }
         const buttonLabel = unlocked ? (selected ? "Aktiv" : "Auswählen") : "Kaufen";
 
         item.innerHTML = `
@@ -638,7 +645,7 @@ function renderShop() {
 
         const button = item.querySelector("button");
         if (button) {
-            button.disabled = selected || (!unlocked && !affordable);
+            button.disabled = selected || (!unlocked && !canBuy);
         }
 
         shopList.appendChild(item);
@@ -674,6 +681,13 @@ function renderShop() {
 
         abilityShopList.appendChild(item);
     });
+}
+
+function hasCartPrerequisites(cartKey) {
+    if (!state) return false;
+    if (cartKey !== "ultimate") return true;
+
+    return ultimateRequiredCarts.every((requiredKey) => state.unlockedCarts.includes(requiredKey));
 }
 
 function buyAbility(abilityKey) {
@@ -722,6 +736,11 @@ function buyCart(cartKey) {
 
     if (state.coins < skin.cost) {
         setStatus("Nicht genug Münzen.", "danger");
+        return;
+    }
+
+    if (!hasCartPrerequisites(cartKey)) {
+        setStatus("Du musst zuerst alle anderen Wagen kaufen.", "danger");
         return;
     }
 
@@ -942,12 +961,14 @@ function hasCartPower(cartKey) {
 }
 
 function cartSavedDamage() {
-    if (!hasCartPower("sky")) {
+    if (!hasCartPower("sky") && !hasCartPower("ultimate")) {
         return false;
     }
 
-    if (Math.random() < 0.25) {
-        setStatus("Himmelblau hat den Schaden abgewehrt!");
+    const saveChance = hasCartPower("ultimate") ? 0.30 : 0.25;
+    if (Math.random() < saveChance) {
+        const cartName = hasCartPower("ultimate") ? "Ultimate" : "Himmelblau";
+        setStatus(`${cartName} hat den Schaden abgewehrt!`);
         return true;
     }
 
@@ -984,8 +1005,7 @@ function handleCatch(item, index) {
 
     if (item.isKosher) {
         const basePoints = hasPowerup("double") ? 2 : 1;
-        const bonusPoints = hasCartPower("mint") ? 1 : 0;
-        const points = basePoints + bonusPoints;
+        const points = hasCartPower("ultimate") ? basePoints * 2.5 : basePoints + (hasCartPower("mint") ? 1 : 0);
         state.score += points;
         setStatus(`+${points} Koscher!`);
     } else if (!consumeShieldIfActive() && !cartSavedDamage() && !abilitySavedDamage()) {
@@ -1026,13 +1046,18 @@ function removeItem(index) {
 }
 
 function tryCartSecondChance() {
-    if (!hasCartPower("violet") || state.cartSecondChanceUsed || state.lives > 0) {
+    const hasSecondChance = hasCartPower("violet") || hasCartPower("ultimate");
+    if (!hasSecondChance || state.lives > 0) {
         return false;
     }
 
-    state.cartSecondChanceUsed = true;
+    const maxSecondChances = hasCartPower("ultimate") ? 2 : 1;
+    if (state.cartSecondChancesUsed >= maxSecondChances) return false;
+
+    state.cartSecondChancesUsed += 1;
     state.lives = 1;
-    setStatus("Violett rettet dich: zweite Chance!", "danger");
+    const cartName = hasCartPower("ultimate") ? "Ultimate" : "Violett";
+    setStatus(`${cartName} rettet dich: zweite Chance!`, "danger");
     updateHUD();
     return true;
 }
@@ -1055,7 +1080,7 @@ function currentPlayerSpeed() {
 
 function jumpPlayer() {
     if (!state || !state.running) return;
-    if (!hasCartPower("jumper")) return;
+    if (!hasCartPower("jumper") && !hasCartPower("ultimate")) return;
     if (state.playerY < 0) return;
 
     state.jumpVelocityY = -jumpVelocity;
@@ -1198,7 +1223,9 @@ function endGame(reason) {
     }
 
     let earnedCoins = state.score * coinRatePerPoint;
-    if (hasCartPower("rose")) {
+    if (hasCartPower("ultimate")) {
+        earnedCoins *= 1.75;
+    } else if (hasCartPower("rose")) {
         earnedCoins *= 1.5;
     }
     earnedCoins = Math.round(earnedCoins * 10) / 10;
@@ -1209,7 +1236,9 @@ function endGame(reason) {
 
     if (resultText) resultText.textContent = `${reason} Dein Ergebnis: ${state.score} Punkte.`;
     if (coinResult) {
-        const boostText = hasCartPower("rose") ? " (inkl. Rose-Bonus)" : "";
+        const boostText = hasCartPower("ultimate")
+            ? " (inkl. Ultimate-Bonus)"
+            : (hasCartPower("rose") ? " (inkl. Rose-Bonus)" : "");
         coinResult.textContent = `+${formatCoins(earnedCoins)} Münzen${boostText}. Gesamt: ${formatCoins(state.coins)}.`;
     }
     if (gameOverScreen) gameOverScreen.classList.remove("hidden");
