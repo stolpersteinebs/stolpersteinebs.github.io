@@ -212,7 +212,6 @@ const gravity = 1200;
 const jumpVelocity = 500;
 const ultimateRequiredCarts = ["sky", "mint", "rose", "violet", "jumper"];
 const unlockAllCartsCheatSequence = "koscherwagen";
-let cheatCodeProgress = "";
 
 const keys = {
     left: false,
@@ -1340,29 +1339,9 @@ function setDirection(direction, active) {
     keys[direction] = active;
 }
 
-function handleUnlockAllCartsCheat(event) {
+function activateUnlockAllCartsCheat() {
     if (!state) return;
 
-    const target = event.target;
-    if (target instanceof HTMLElement) {
-        const tagName = target.tagName.toLowerCase();
-        const isEditable = target.isContentEditable || tagName === "input" || tagName === "textarea" || tagName === "select";
-        if (isEditable) {
-            cheatCodeProgress = "";
-            return;
-        }
-    }
-
-    if (!event.key || event.key.length !== 1 || !/[a-z]/i.test(event.key)) {
-        return;
-    }
-
-    cheatCodeProgress = (cheatCodeProgress + event.key.toLowerCase()).slice(-unlockAllCartsCheatSequence.length);
-    if (cheatCodeProgress !== unlockAllCartsCheatSequence) {
-        return;
-    }
-
-    cheatCodeProgress = "";
     state.unlockedCarts = persistUnlockedCarts(cartSkinKeys);
     state.selectedCart = persistSelectedCart("ultimate");
     applyCartSkinClass();
@@ -1429,8 +1408,6 @@ function bindTouchFieldControl() {
 }
 
 document.addEventListener("keydown", (event) => {
-    handleUnlockAllCartsCheat(event);
-
     if (event.key === "ArrowLeft" || event.key.toLowerCase() === "a") {
         setDirection("left", true);
     }
@@ -1485,11 +1462,18 @@ if (saveLeaderboardButton && skipLeaderboardButton && playerNameInput && leaderb
     skipLeaderboardButton.addEventListener("click", () => {
         if (!state || state.leaderboardSubmitted) return;
 
+        const enteredCode = playerNameInput.value.trim().toLowerCase();
+        const shouldActivateCheat = enteredCode === unlockAllCartsCheatSequence;
+
         state.leaderboardSubmitted = true;
         saveLeaderboardButton.disabled = true;
         skipLeaderboardButton.disabled = true;
         playerNameInput.disabled = true;
         leaderboardOptIn.classList.add("hidden");
+
+        if (shouldActivateCheat) {
+            activateUnlockAllCartsCheat();
+        }
     });
 }
 
