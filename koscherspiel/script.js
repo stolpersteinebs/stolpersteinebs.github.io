@@ -32,11 +32,79 @@ const fallbackFoods = {
 
 const foodEmojiMap = {
     apfel: "🍎",
+    apple: "🍎",
+    banane: "🍌",
+    birne: "🍐",
+    kirsche: "🍒",
+    erdbeere: "🍓",
+    blaubeere: "🫐",
+    trauben: "🍇",
+    zitrone: "🍋",
+    melone: "🍈",
+    wassermelone: "🍉",
+    avocado: "🥑",
+    tomate: "🍅",
+    paprika: "🫑",
+    gurke: "🥒",
+    salat: "🥬",
+    kartoffel: "🥔",
+    zwiebel: "🧅",
+    knoblauch: "🧄",
+    pilz: "🍄",
+    brot: "🍞",
+    bagel: "🥯",
+    falafel: "🧆",
     carrot: "🥕",
     karotte: "🥕",
     brokkoli: "🥦",
-    schweinesteak: "🥩"
+    schweinesteak: "🥩",
+    speck: "🥓",
+    schinken: "🍖",
+    wurst: "🌭",
+    garnele: "🍤",
+    tintenfisch: "🦑",
+    hummer: "🦞",
+    austern: "🦪"
 };
+
+const kosherEmojiFallback = ["🍎", "🍐", "🍊", "🍋", "🍇", "🍉", "🍓", "🫐", "🥕", "🥦", "🥬", "🥔", "🫑", "🥒", "🍅", "🍄", "🧅", "🍞", "🥯", "🧆"];
+const nonKosherEmojiFallback = ["🥩", "🥓", "🍖", "🌭", "🍤", "🦑", "🦞", "🦪"];
+
+const kosherEmojiFoods = [
+    { name: "Banane", emoji: "🍌" },
+    { name: "Birne", emoji: "🍐" },
+    { name: "Kirsche", emoji: "🍒" },
+    { name: "Erdbeere", emoji: "🍓" },
+    { name: "Blaubeeren", emoji: "🫐" },
+    { name: "Trauben", emoji: "🍇" },
+    { name: "Zitrone", emoji: "🍋" },
+    { name: "Melone", emoji: "🍈" },
+    { name: "Wassermelone", emoji: "🍉" },
+    { name: "Avocado", emoji: "🥑" },
+    { name: "Tomate", emoji: "🍅" },
+    { name: "Paprika", emoji: "🫑" },
+    { name: "Gurke", emoji: "🥒" },
+    { name: "Salat", emoji: "🥬" },
+    { name: "Kartoffel", emoji: "🥔" },
+    { name: "Zwiebel", emoji: "🧅" },
+    { name: "Pilz", emoji: "🍄" },
+    { name: "Brot", emoji: "🍞" },
+    { name: "Bagel", emoji: "🥯" },
+    { name: "Falafel", emoji: "🧆" }
+];
+
+const nonKosherEmojiFoods = [
+    { name: "Schweinesteak", emoji: "🥩" },
+    { name: "Speck", emoji: "🥓" },
+    { name: "Schinken", emoji: "🍖" },
+    { name: "Wurst", emoji: "🌭" },
+    { name: "Garnele", emoji: "🍤" },
+    { name: "Tintenfisch", emoji: "🦑" },
+    { name: "Hummer", emoji: "🦞" },
+    { name: "Austern", emoji: "🦪" }
+];
+
+const emojiFoodSpawnChance = 0.72;
 
 const powerupTypes = [
     { key: "shield", label: "Schutz", icon: "🛡️", colorClass: "powerup-shield" },
@@ -79,7 +147,6 @@ const playerSpeed = 340;
 const itemWidth = 40;
 const powerupDurationMs = 6000;
 const leaderboardSize = 5;
-const maxLevel = 10;
 
 const keys = {
     left: false,
@@ -425,9 +492,14 @@ function currentFallSpeed() {
     return hasPowerup("slow") ? baseSpeed * 0.68 : baseSpeed;
 }
 
-function getFoodEmoji(name = "") {
+function getFoodEmoji(name = "", isKosher = true) {
     const normalized = String(name).toLocaleLowerCase("de-DE").replace(/\s+/g, "");
-    return foodEmojiMap[normalized] || "🍽️";
+    if (foodEmojiMap[normalized]) {
+        return foodEmojiMap[normalized];
+    }
+
+    const emojiList = isKosher ? kosherEmojiFallback : nonKosherEmojiFallback;
+    return emojiList[Math.floor(Math.random() * emojiList.length)] || "🍽️";
 }
 
 function spawnPowerup() {
@@ -443,6 +515,21 @@ function spawnPowerup() {
 
 function spawnFood() {
     const isKosher = Math.random() < 0.82;
+
+    if (Math.random() < emojiFoodSpawnChance) {
+        const emojiFoods = isKosher ? kosherEmojiFoods : nonKosherEmojiFoods;
+        const selectedEmojiFood = emojiFoods[Math.floor(Math.random() * emojiFoods.length)];
+
+        return {
+            isPowerup: false,
+            isKosher,
+            className: "item",
+            label: selectedEmojiFood.name,
+            emoji: selectedEmojiFood.emoji,
+            emojiOnly: true
+        };
+    }
+
     const foodList = isKosher ? kosherFoods : nonKosherFoods;
     const selectedFood = foodList[Math.floor(Math.random() * foodList.length)];
 
@@ -452,8 +539,8 @@ function spawnFood() {
         className: "item",
         image: selectedFood.image,
         label: selectedFood.name,
-        emoji: getFoodEmoji(selectedFood.name),
-        emojiOnly: Math.random() < 0.35
+        emoji: getFoodEmoji(selectedFood.name, isKosher),
+        emojiOnly: true
     };
 }
 
@@ -545,11 +632,6 @@ function handleCatch(item, index) {
     removeItem(index);
     recalcLevel();
 
-    if (state.level >= maxLevel) {
-        endGame("Geschafft! Du hast alle Level gemeistert.");
-        return;
-    }
-
     updateHUD();
 
     if (state.lives <= 0) {
@@ -584,8 +666,14 @@ function recalcLevel() {
 
 function currentPlayerSpeed() {
     if (!state) return playerSpeed;
-    if (state.level < 5) return playerSpeed;
-    return playerSpeed + (state.level - 4) * 28;
+
+    const levelSpeedBoost = state.level < 5 ? playerSpeed : playerSpeed + (state.level - 4) * 28;
+    const fallSpeed = currentFallSpeed();
+    const crossDistance = Math.max(1, gameWidth() - playerWidth);
+    const fallDistance = Math.max(1, gameHeight() + itemWidth);
+    const minimumCatchableSpeed = (crossDistance / fallDistance) * fallSpeed * 1.2;
+
+    return Math.max(levelSpeedBoost, minimumCatchableSpeed);
 }
 
 function updatePlayer(deltaSeconds) {
