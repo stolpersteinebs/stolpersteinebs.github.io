@@ -53,6 +53,23 @@
         }, 4200);
     }
 
+    function addSurpriseTriggers() {
+        const selectors = [
+            ".nav-brand",
+            ".brand-title",
+            ".page-title",
+            "h1",
+            "#startButton"
+        ];
+
+        selectors.forEach((selector) => {
+            const node = document.querySelector(selector);
+            if (!node) return;
+
+            node.addEventListener("dblclick", () => activateEgg());
+        });
+    }
+
     window.addEventListener("keydown", (event) => {
         if (event.code === secret[cursor]) {
             cursor += 1;
@@ -65,4 +82,6 @@
 
         cursor = event.code === secret[0] ? 1 : 0;
     });
+
+    addSurpriseTriggers();
 })();

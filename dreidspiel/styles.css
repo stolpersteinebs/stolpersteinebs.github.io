@@ -314,8 +314,9 @@ body.pseudo-fullscreen .render-frame {
 
 .fullscreen-btn {
     position: absolute;
-    bottom: 12px;
-    left: 12px;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
     z-index: 4;
     border: 1px solid rgba(255, 255, 255, 0.4);
     border-radius: 999px;
@@ -361,19 +362,18 @@ body.pseudo-fullscreen .render-frame {
 }
 
 .render-frame:fullscreen .fullscreen-btn {
-    bottom: 16px;
-    left: 16px;
+    right: 16px;
 }
 
 body.pseudo-fullscreen .render-frame .fullscreen-btn {
-    bottom: 16px;
-    left: 16px;
+    right: 16px;
 }
 
 .jump-btn {
     position: absolute;
     left: 12px;
-    bottom: 62px;
+    top: 50%;
+    transform: translateY(-50%);
     background: rgba(17, 27, 50, 0.85);
     border: 1px solid rgba(255, 255, 255, 0.26);
     border-radius: 14px;
@@ -711,10 +711,10 @@ body.pseudo-fullscreen .render-frame .fullscreen-btn {
 
 @media (max-width: 900px) {
     .jump-btn {
-        bottom: 138px;
+        left: 10px;
     }
 
     .fullscreen-btn {
-        bottom: 86px;
+        right: 10px;
     }
 }

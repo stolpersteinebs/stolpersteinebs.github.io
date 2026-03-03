@@ -409,6 +409,28 @@
             margin: 0 3px;
         }
 
+        .language-switch {
+            margin-top: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 999px;
+            padding: 6px 10px;
+        }
+
+        .language-switch label {
+            font-weight: 700;
+        }
+
+        .language-switch select {
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            padding: 4px 10px;
+            font: inherit;
+        }
+
         /* Animationen */
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
@@ -637,6 +659,13 @@
             
             <div class="footer-info">
                 <p>© <span id="current-year"></span> CJD Braunschweig. {% if is_en %}All rights reserved.{% else %}Alle Rechte vorbehalten.{% endif %}</p>
+                <div class="language-switch">
+                    <label for="language-select">{% if is_en %}Language:{% else %}Sprache:{% endif %}</label>
+                    <select id="language-select" aria-label="{% if is_en %}Select language{% else %}Sprache auswählen{% endif %}">
+                        <option value="de" {% unless is_en %}selected{% endunless %}>Deutsch</option>
+                        <option value="en" {% if is_en %}selected{% endif %}>English</option>
+                    </select>
+                </div>
             </div>
         </div>
     </footer>
@@ -682,6 +711,17 @@
             const subtitleText = document.querySelector('.page-subtitle')?.textContent?.trim();
             if (subtitleText && subtitleText.length > 0) {
                 subtitleEl.textContent = subtitleText;
+            }
+
+            const languageSelect = document.getElementById('language-select');
+            if (languageSelect) {
+                languageSelect.addEventListener('change', function () {
+                    if (this.value === 'de') {
+                        window.location.href = '/';
+                    } else {
+                        window.location.href = '/en/';
+                    }
+                });
             }
 
             // Hamburger-Menü Funktionalität

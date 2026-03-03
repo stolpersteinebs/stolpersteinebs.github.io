@@ -114,6 +114,18 @@ const STATION_DEFS = [
     }
 ];
 
+
+const isEnglish = new URLSearchParams(window.location.search).get("lang") === "en";
+
+const STATION_DEFS_EN = [
+    { id: "schabbat", name: "Shabbat Table", interactionLabel: "Shabbat Table", question: "It is shortly before sunset on Friday. Which action best fits the spirit of Shabbat?", options: ["Go shopping quickly", "Light Shabbat candles before sunset and say Kiddush", "Light candles after dinner", "Start Shabbat with housework"], fact: "On Shabbat, candles, blessings, and shared meals are especially important.", successAction: "The character says the blessing and begins the meal calmly." },
+    { id: "pessach", name: "Seder Table", interactionLabel: "Seder Table", question: "During the Seder evening, which activity traditionally belongs to retelling the Passover story?", options: ["Collect chametz and eat it immediately", "Read the Haggadah, ask questions, and eat matzah", "Only hand out sweets without the story", "Replace the Seder meal with fasting"], fact: "Passover Seder commemorates the Exodus from Egypt.", successAction: "The character points to the Seder plate and retells the story of liberation." },
+    { id: "kashrut", name: "Kosher Kitchen", interactionLabel: "Kosher Kitchen", question: "You are planning a kosher dinner for guests. Which decision is correct?", options: ["Cook dairy and meat in the same pot", "Use foods prepared according to dietary laws", "Serve only sweets", "Mix everything together"], fact: "Kashrut means preparing food according to Jewish dietary laws.", successAction: "The character calmly sorts ingredients and continues cooking correctly." },
+    { id: "synagoge", name: "Synagogue", interactionLabel: "Synagogue", question: "You visit a synagogue service for the first time. What is appropriate?", options: ["Stay calm, observe head-covering customs, and participate respectfully", "Make phone calls between prayers", "Take flash photos in the aisle", "Discuss loudly while others pray"], fact: "The synagogue is a place for prayer, learning, and community.", successAction: "The character puts on a kippah and begins a quiet prayer." },
+    { id: "jomkippur", name: "Yom Kippur Room", interactionLabel: "Yom Kippur Room", question: "Yom Kippur is about to begin. Which preparation matches the meaning of this day best?", options: ["Plan a big evening feast", "Fast, pray, and actively ask forgiveness", "Organize a sports tournament", "Celebrate new resolutions at a party"], fact: "Yom Kippur is an important day for fasting and reconciliation.", successAction: "The character becomes quiet, reflects, and offers an apology." },
+    { id: "hebraeisch", name: "Torah Room", interactionLabel: "Torah Room", question: "You are asked to help with a Torah reading. Which action is respectful and correct?", options: ["Follow the text with a yad and handle the scroll carefully", "Write notes directly into the scroll with a pen", "Tear out a page to explain it better", "Crumple the scroll as a joke and smooth it out"], fact: "The Torah is traditionally written in Hebrew and treated with great respect.", successAction: "The character points to the text with a pointer and reads with focus." }
+];
+
 const FOV = Math.PI / 3;
 const MOVE_SPEED = 2.8;
 const TOUCH_MOVE_FACTOR = 0.38;
@@ -121,7 +133,7 @@ const TOUCH_TURN_FACTOR = 0.5;
 const TURN_SPEED = 2.3;
 const MAX_TIME = 240;
 const STATION_DEADLINE_SECONDS = 45;
-const JUMP_DISTANCE = 1.35;
+const JUMP_DISTANCE = 2.25;
 const JUMP_COOLDOWN_MS = 2200;
 const MAX_LIVES = 3;
 const SCORE_BASE = 220;
@@ -256,16 +268,25 @@ function createInitialState() {
             y: 1.8,
             angle: 0.28
         },
-        stations: STATION_DEFS.map((station, index) => ({
-            ...station,
-            solved: false,
-            failed: false,
-            baseX: station.x,
-            baseY: station.y,
-            movePhase: Math.random() * Math.PI * 2 + index * 0.45,
-            moveAxis: index % 2 === 0 ? "x" : "y",
-            moveAmplitude: 0.16 + (index % 3) * 0.04
-        })),
+        stations: (isEnglish ? STATION_DEFS_EN : STATION_DEFS).map((station, index) => {
+            const moveAxis = index % 2 === 0 ? "x" : "y";
+            const range = getStationTravelRange(station.x, station.y, moveAxis);
+
+            return {
+                ...station,
+                spriteType: STATION_DEFS[index].spriteType,
+                x: STATION_DEFS[index].x,
+                y: STATION_DEFS[index].y,
+                solved: false,
+                failed: false,
+                baseX: STATION_DEFS[index].x,
+                baseY: STATION_DEFS[index].y,
+                movePhase: Math.random() * Math.PI * 2 + index * 0.45,
+                moveAxis,
+                moveMinOffset: range.min,
+                moveMaxOffset: range.max
+            };
+        }),
         timeLeft: MAX_TIME,
         score: 0,
         streak: 0,
@@ -403,14 +424,14 @@ function renderLeaderboardList(listEl, entries) {
 
     if (!entries.length) {
         const item = document.createElement("li");
-        item.textContent = "Noch keine Eintrage";
+        item.textContent = isEnglish ? "No entries yet" : "Noch keine Eintrage";
         listEl.appendChild(item);
         return;
     }
 
     entries.forEach((entry) => {
         const item = document.createElement("li");
-        item.textContent = `${entry.name}: ${formatPoints(entry.score)} Punkte`;
+        item.textContent = isEnglish ? `${entry.name}: ${formatPoints(entry.score)} pts` : `${entry.name}: ${formatPoints(entry.score)} Punkte`;
         listEl.appendChild(item);
     });
 }
@@ -1024,13 +1045,37 @@ function updatePowerups(delta) {
 }
 
 
+function getStationTravelRange(x, y, axis) {
+    const step = 0.08;
+    const maxDistance = 2.8;
+    let min = 0;
+    let max = 0;
+
+    for (let dist = step; dist <= maxDistance; dist += step) {
+        const tx = axis === "x" ? x - dist : x;
+        const ty = axis === "y" ? y - dist : y;
+        if (isBlocked(tx, ty)) break;
+        min = -dist;
+    }
+
+    for (let dist = step; dist <= maxDistance; dist += step) {
+        const tx = axis === "x" ? x + dist : x;
+        const ty = axis === "y" ? y + dist : y;
+        if (isBlocked(tx, ty)) break;
+        max = dist;
+    }
+
+    return { min, max };
+}
+
 function updateStations(delta, elapsedSeconds) {
     state.stations.forEach((station) => {
         if (station.solved) return;
 
-        const wave = Math.sin(elapsedSeconds * 1.1 + station.movePhase) * station.moveAmplitude;
-        const candidateX = station.moveAxis === "x" ? station.baseX + wave : station.baseX;
-        const candidateY = station.moveAxis === "y" ? station.baseY + wave : station.baseY;
+        const wave = (Math.sin(elapsedSeconds * 0.9 + station.movePhase) + 1) / 2;
+        const offset = station.moveMinOffset + (station.moveMaxOffset - station.moveMinOffset) * wave;
+        const candidateX = station.moveAxis === "x" ? station.baseX + offset : station.baseX;
+        const candidateY = station.moveAxis === "y" ? station.baseY + offset : station.baseY;
 
         if (!isBlocked(candidateX, candidateY)) {
             station.x = candidateX;
@@ -1047,10 +1092,10 @@ function consumeStationDeadline(delta) {
         state.stationDeadlineLeft = STATION_DEADLINE_SECONDS;
         state.streak = 0;
         state.lives = Math.max(0, state.lives - 1);
-        showFeedback("Zu langsam zur nächsten Station – 1 Leben verloren.", "bad");
+        showFeedback(isEnglish ? "Too slow to reach the next station – 1 life lost." : "Zu langsam zur nächsten Station – 1 Leben verloren.", "bad");
 
         if (state.lives <= 0) {
-            void endGame("Keine Leben mehr.");
+            void endGame(isEnglish ? "No lives left." : "Keine Leben mehr.");
         }
 
         updateHud();
@@ -1064,36 +1109,37 @@ function tryJump() {
     const facingX = Math.cos(state.player.angle);
     const facingY = Math.sin(state.player.angle);
 
-    const steps = 18;
+    const steps = 42;
     const stepSize = JUMP_DISTANCE / steps;
-    let sawWall = false;
+    let wallStartStep = null;
     let landing = null;
 
     for (let i = 1; i <= steps; i += 1) {
         const px = state.player.x + facingX * stepSize * i;
         const py = state.player.y + facingY * stepSize * i;
-        const blocked = isBlocked(px, py);
 
-        if (blocked) {
-            sawWall = true;
+        if (isBlocked(px, py)) {
+            if (wallStartStep === null) {
+                wallStartStep = i;
+            }
             continue;
         }
 
-        if (sawWall) {
+        if (wallStartStep !== null && i - wallStartStep >= 2) {
             landing = { x: px, y: py };
             break;
         }
     }
 
     if (!landing) {
-        showFeedback("Hier kannst du nicht springen.", "bad");
+        showFeedback(isEnglish ? "You cannot jump here." : "Hier kannst du nicht springen.", "bad");
         return;
     }
 
     state.player.x = landing.x;
     state.player.y = landing.y;
     state.jumpReadyAt = Date.now() + JUMP_COOLDOWN_MS;
-    showFeedback("Sprung geschafft!", "ok");
+    showFeedback(isEnglish ? "Jump successful!" : "Sprung geschafft!", "ok");
     updateHud();
 }
 
@@ -1415,7 +1461,7 @@ function closeQuestion() {
     if (!state.running) return;
 
     if (state.lives <= 0) {
-        void endGame("Keine Leben mehr.");
+        void endGame(isEnglish ? "No lives left." : "Keine Leben mehr.");
         return;
     }
 
@@ -1467,7 +1513,7 @@ function answerStation(stationId, selectedIndex) {
     continueButton.addEventListener("click", () => {
         closeQuestion();
         if (state.lives <= 0) {
-            void endGame("Keine Leben mehr.");
+            void endGame(isEnglish ? "No lives left." : "Keine Leben mehr.");
             return;
         }
         if (state.solved >= state.stations.length) {
@@ -1480,7 +1526,7 @@ function answerStation(stationId, selectedIndex) {
         if (!state || !state.running || !state.questionOpen) return;
         closeQuestion();
         if (state.lives <= 0) {
-            void endGame("Keine Leben mehr.");
+            void endGame(isEnglish ? "No lives left." : "Keine Leben mehr.");
             return;
         }
         if (state.solved >= state.stations.length) {

@@ -452,7 +452,8 @@ function spawnFood() {
         className: "item",
         image: selectedFood.image,
         label: selectedFood.name,
-        emoji: getFoodEmoji(selectedFood.name)
+        emoji: getFoodEmoji(selectedFood.name),
+        emojiOnly: Math.random() < 0.35
     };
 }
 
@@ -468,17 +469,14 @@ function spawnItem() {
         itemEl.textContent = spawned.icon;
         itemEl.setAttribute("role", "img");
         itemEl.setAttribute("aria-label", spawned.label);
+    } else if (spawned.emojiOnly) {
+        itemEl.classList.add("emoji-item");
+        itemEl.textContent = spawned.emoji || "🍽️";
     } else {
         const img = document.createElement("img");
         img.src = spawned.image;
         img.alt = spawned.label;
         itemEl.appendChild(img);
-
-        const emoji = document.createElement("span");
-        emoji.className = "food-emoji";
-        emoji.setAttribute("aria-hidden", "true");
-        emoji.textContent = spawned.emoji || "🍽️";
-        itemEl.appendChild(emoji);
     }
 
     itemEl.style.transform = `translate(${x}px, ${y}px)`;
