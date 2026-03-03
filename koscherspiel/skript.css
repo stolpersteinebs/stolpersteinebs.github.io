@@ -164,6 +164,14 @@ h1 {
     background: #e8818d;
 }
 
+.powerup-grow {
+    background: #9acb6f;
+}
+
+.powerup-magnet {
+    background: #c38af2;
+}
+
 .overlay {
     position: absolute;
     inset: 0;

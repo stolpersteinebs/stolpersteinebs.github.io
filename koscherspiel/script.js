@@ -64,7 +64,8 @@ const foodEmojiMap = {
     garnele: "🍤",
     tintenfisch: "🦑",
     hummer: "🦞",
-    austern: "🦪"
+    austern: "🦪",
+    schnecke: "🐌"
 };
 
 const kosherEmojiFallback = ["🍎", "🍐", "🍊", "🍋", "🍇", "🍉", "🍓", "🫐", "🥕", "🥦", "🥬", "🥔", "🫑", "🥒", "🍅", "🍄", "🧅", "🍞", "🥯", "🧆"];
@@ -101,7 +102,8 @@ const nonKosherEmojiFoods = [
     { name: "Garnele", emoji: "🍤" },
     { name: "Tintenfisch", emoji: "🦑" },
     { name: "Hummer", emoji: "🦞" },
-    { name: "Austern", emoji: "🦪" }
+    { name: "Austern", emoji: "🦪" },
+    { name: "Schnecke", emoji: "🐌" }
 ];
 
 const emojiFoodSpawnChance = 0.72;
@@ -110,7 +112,9 @@ const powerupTypes = [
     { key: "shield", label: "Schutz", icon: "🛡️", colorClass: "powerup-shield" },
     { key: "slow", label: "Zeitlupe", icon: "⏱️", colorClass: "powerup-slow" },
     { key: "double", label: "Doppel-Punkte", icon: "✨", colorClass: "powerup-double" },
-    { key: "life", label: "Extra-Leben", icon: "❤️", colorClass: "powerup-life" }
+    { key: "life", label: "Extra-Leben", icon: "❤️", colorClass: "powerup-life" },
+    { key: "grow", label: "Großer Wagen", icon: "🛒", colorClass: "powerup-grow" },
+    { key: "magnet", label: "Magnet", icon: "🧲", colorClass: "powerup-magnet" }
 ];
 
 function readFoodData() {
@@ -142,10 +146,12 @@ function readFoodData() {
 
 const { kosherFoods, nonKosherFoods } = readFoodData();
 
-const playerWidth = 52;
+const basePlayerWidth = 52;
 const playerSpeed = 340;
 const itemWidth = 40;
 const powerupDurationMs = 6000;
+const growMultiplier = 1.45;
+const magnetPullSpeed = 280;
 const leaderboardSize = 5;
 
 const keys = {
@@ -393,13 +399,16 @@ function createInitialState() {
         lives: 3,
         level: 1,
         playerX: 0,
+        isMoving: false,
         spawnTimer: 0,
         items: [],
         highscore: getStoredHighscore(),
         activePowerups: {
             shield: 0,
             slow: 0,
-            double: 0
+            double: 0,
+            grow: 0,
+            magnet: 0
         }
     };
 }
@@ -463,12 +472,23 @@ function setStatus(text, type = "normal") {
     }, 900);
 }
 
+function currentPlayerWidth() {
+    if (!state) return basePlayerWidth;
+    return hasPowerup("grow") ? basePlayerWidth * growMultiplier : basePlayerWidth;
+}
+
+function syncPlayerSize() {
+    player.style.width = `${currentPlayerWidth()}px`;
+}
+
 function positionPlayer() {
+    syncPlayerSize();
     player.style.transform = `translate(${state.playerX}px, 0)`;
 }
 
 function centerPlayerIdle() {
-    const centeredX = (gameWidth() - playerWidth) / 2;
+    player.style.width = `${basePlayerWidth}px`;
+    const centeredX = (gameWidth() - basePlayerWidth) / 2;
     player.style.transform = `translate(${Math.max(0, centeredX)}px, 0)`;
 }
 
@@ -540,7 +560,7 @@ function spawnFood() {
         image: selectedFood.image,
         label: selectedFood.name,
         emoji: getFoodEmoji(selectedFood.name, isKosher),
-        emojiOnly: true
+        emojiOnly: Math.random() < 0.45
     };
 }
 
@@ -669,7 +689,7 @@ function currentPlayerSpeed() {
 
     const levelSpeedBoost = state.level < 5 ? playerSpeed : playerSpeed + (state.level - 4) * 28;
     const fallSpeed = currentFallSpeed();
-    const crossDistance = Math.max(1, gameWidth() - playerWidth);
+    const crossDistance = Math.max(1, gameWidth() - currentPlayerWidth());
     const fallDistance = Math.max(1, gameHeight() + itemWidth);
     const minimumCatchableSpeed = (crossDistance / fallDistance) * fallSpeed * 1.2;
 
@@ -678,10 +698,15 @@ function currentPlayerSpeed() {
 
 function updatePlayer(deltaSeconds) {
     const move = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
-    if (move === 0) return;
+    state.isMoving = move !== 0;
+
+    if (move === 0) {
+        positionPlayer();
+        return;
+    }
 
     state.playerX += move * currentPlayerSpeed() * deltaSeconds;
-    state.playerX = clamp(state.playerX, 0, gameWidth() - playerWidth);
+    state.playerX = clamp(state.playerX, 0, gameWidth() - currentPlayerWidth());
     positionPlayer();
 }
 
@@ -689,12 +714,21 @@ function updateItems(deltaSeconds) {
     const playerRect = {
         x: state.playerX,
         y: gameHeight() - 14 - 36,
-        width: playerWidth,
+        width: currentPlayerWidth(),
         height: 36
     };
 
     for (let i = state.items.length - 1; i >= 0; i -= 1) {
         const item = state.items[i];
+
+        if (!item.isPowerup && hasPowerup("magnet") && state.isMoving) {
+            const targetX = state.playerX + (currentPlayerWidth() - itemWidth) / 2;
+            const dx = targetX - item.x;
+            const magnetStep = Math.min(Math.abs(dx), magnetPullSpeed * deltaSeconds);
+            item.x += Math.sign(dx) * magnetStep;
+            item.x = clamp(item.x, 0, gameWidth() - itemWidth);
+        }
+
         item.y += currentFallSpeed() * deltaSeconds;
         item.el.style.transform = `translate(${item.x}px, ${item.y}px)`;
 
@@ -816,7 +850,7 @@ function startGame() {
     if (skipLeaderboardButton) skipLeaderboardButton.disabled = false;
     if (statusDisplay) statusDisplay.classList.add("hidden");
 
-    state.playerX = (gameWidth() - playerWidth) / 2;
+    state.playerX = (gameWidth() - basePlayerWidth) / 2;
     positionPlayer();
 
     lastTime = 0;
@@ -959,7 +993,7 @@ window.addEventListener("resize", () => {
         centerPlayerIdle();
         return;
     }
-    state.playerX = clamp(state.playerX, 0, gameWidth() - playerWidth);
+    state.playerX = clamp(state.playerX, 0, gameWidth() - currentPlayerWidth());
     positionPlayer();
 });
 
