@@ -133,7 +133,33 @@ const abilityDefs = [
         label: "Nicht-koscher Schutz",
         description: "5% mehr Wahrscheinlichkeit, dass kein Herz abgezogen wird, wenn du nicht-koschere Dinge einfängst.",
         maxLevel: 8,
-        costPerLevel: 20
+        costPerLevel: 20,
+        statLabel: "Schutz jetzt",
+        valuePerLevel: 0.05,
+        maxValue: 0.4,
+        valueFormatter: (value) => `${Math.round(value * 100)}%`
+    },
+    {
+        key: "speedBoost",
+        label: "Schnelligkeit",
+        description: "Du bewegst den Wagen pro Level 4% schneller.",
+        maxLevel: 6,
+        costPerLevel: 25,
+        statLabel: "Tempo-Bonus",
+        valuePerLevel: 0.04,
+        maxValue: 0.24,
+        valueFormatter: (value) => `+${Math.round(value * 100)}%`
+    },
+    {
+        key: "kosherFocus",
+        label: "Koscher-Fokus",
+        description: "Chance auf +1 Bonuspunkt bei koscheren Fängen.",
+        maxLevel: 5,
+        costPerLevel: 30,
+        statLabel: "Bonuspunkt-Chance",
+        valuePerLevel: 0.1,
+        maxValue: 0.5,
+        valueFormatter: (value) => `${Math.round(value * 100)}%`
     }
 ];
 
@@ -184,7 +210,6 @@ const magnetPullSpeed = 280;
 const leaderboardSize = 5;
 const gravity = 1200;
 const jumpVelocity = 500;
-const maxNonKosherShieldChance = 0.4;
 const ultimateRequiredCarts = ["sky", "mint", "rose", "violet", "jumper"];
 const unlockAllCartsCheatSequence = "koscherwagen";
 let cheatCodeProgress = "";
@@ -501,7 +526,10 @@ function renderLeaderboard(scores = getStoredLeaderboard()) {
 }
 
 function getStoredAbilities() {
-    const defaults = { nonKosherShield: 0 };
+    const defaults = abilityDefs.reduce((acc, ability) => {
+        acc[ability.key] = 0;
+        return acc;
+    }, {});
     try {
         const parsed = JSON.parse(localStorage.getItem("koscher_abilities") || "{}");
         if (!parsed || typeof parsed !== "object") {
@@ -580,6 +608,28 @@ function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
 }
 
+function abilityByKey(key) {
+    return abilityDefs.find((ability) => ability.key === key);
+}
+
+function getAbilityLevel(key) {
+    if (!state) return 0;
+    const ability = abilityByKey(key);
+    if (!ability) return 0;
+    return clamp(Math.floor(Number(state.abilities[key]) || 0), 0, ability.maxLevel);
+}
+
+function getAbilityValue(key, level = getAbilityLevel(key)) {
+    const ability = abilityByKey(key);
+    if (!ability) return 0;
+
+    const value = level * ability.valuePerLevel;
+    if (typeof ability.maxValue === "number") {
+        return Math.min(ability.maxValue, value);
+    }
+    return value;
+}
+
 function currentCartSkin() {
     if (!state) return cartSkins[0];
     return cartSkins.find((skin) => skin.key === state.selectedCart) || cartSkins[0];
@@ -655,9 +705,10 @@ function renderShop() {
 
     abilityShopList.innerHTML = "";
     abilityDefs.forEach((ability) => {
-        const currentLevel = state.abilities[ability.key] || 0;
-        const currentChance = Math.min(maxNonKosherShieldChance, currentLevel * 0.05);
-        const nextChance = Math.min(maxNonKosherShieldChance, (currentLevel + 1) * 0.05);
+        const currentLevel = getAbilityLevel(ability.key);
+        const currentValue = getAbilityValue(ability.key, currentLevel);
+        const nextValue = getAbilityValue(ability.key, currentLevel + 1);
+        const formatValue = ability.valueFormatter || ((value) => String(value));
         const maxed = currentLevel >= ability.maxLevel;
         const affordable = state.coins >= ability.costPerLevel;
 
@@ -667,12 +718,12 @@ function renderShop() {
         if (!maxed && !affordable) item.classList.add("locked");
 
         const status = maxed
-            ? `Max. erreicht (${Math.round(currentChance * 100)}%)`
-            : `Level ${currentLevel}/${ability.maxLevel} · Nächstes Upgrade: ${Math.round(nextChance * 100)}%`;
+            ? `Max. erreicht (${formatValue(currentValue)})`
+            : `Level ${currentLevel}/${ability.maxLevel} · Nächstes Upgrade: ${formatValue(nextValue)}`;
 
         item.innerHTML = `
             <h3>${ability.label}</h3>
-            <p class="shop-power">Schutz jetzt: ${Math.round(currentChance * 100)}%</p>
+            <p class="shop-power">${ability.statLabel}: ${formatValue(currentValue)}</p>
             <p class="shop-description">${ability.description}</p>
             <p class="shop-status">${status}</p>
             <button type="button" data-ability-key="${ability.key}">${maxed ? "Max" : `Upgrade (${formatCoins(ability.costPerLevel)} Münzen)`}</button>
@@ -694,7 +745,7 @@ function hasCartPrerequisites(cartKey) {
 
 function buyAbility(abilityKey) {
     if (!state) return;
-    const ability = abilityDefs.find((entry) => entry.key === abilityKey);
+    const ability = abilityByKey(abilityKey);
     if (!ability) return;
 
     const currentLevel = state.abilities[abilityKey] || 0;
@@ -978,10 +1029,7 @@ function cartSavedDamage() {
 }
 
 function abilitySavedDamage() {
-    if (!state) return false;
-
-    const level = state.abilities.nonKosherShield || 0;
-    const chance = Math.min(maxNonKosherShieldChance, level * 0.05);
+    const chance = getAbilityValue("nonKosherShield");
     if (chance <= 0) return false;
 
     if (Math.random() < chance) {
@@ -1008,8 +1056,10 @@ function handleCatch(item, index) {
     if (item.isKosher) {
         const basePoints = hasPowerup("double") ? 2 : 1;
         const points = hasCartPower("ultimate") ? basePoints * 2.5 : basePoints + (hasCartPower("mint") ? 1 : 0);
-        state.score += points;
-        setStatus(`+${points} Koscher!`);
+        const focusChance = getAbilityValue("kosherFocus");
+        const bonusPoint = focusChance > 0 && Math.random() < focusChance ? 1 : 0;
+        state.score += points + bonusPoint;
+        setStatus(`+${points + bonusPoint} Koscher${bonusPoint ? " (Fokus-Bonus!)" : ""}!`);
     } else if (!consumeShieldIfActive() && !cartSavedDamage() && !abilitySavedDamage()) {
         state.lives -= 1;
         state.score = Math.max(0, state.score - 1);
@@ -1071,13 +1121,15 @@ function recalcLevel() {
 function currentPlayerSpeed() {
     if (!state) return playerSpeed;
 
+    const speedAbilityMultiplier = 1 + getAbilityValue("speedBoost");
     const levelSpeedBoost = state.level < 5 ? playerSpeed : playerSpeed + (state.level - 4) * 28;
+    const boostedLevelSpeed = levelSpeedBoost * speedAbilityMultiplier;
     const fallSpeed = currentFallSpeed();
     const crossDistance = Math.max(1, gameWidth() - currentPlayerWidth());
     const fallDistance = Math.max(1, gameHeight() + itemWidth);
     const minimumCatchableSpeed = (crossDistance / fallDistance) * fallSpeed * 1.2;
 
-    return Math.max(levelSpeedBoost, minimumCatchableSpeed);
+    return Math.max(boostedLevelSpeed, minimumCatchableSpeed);
 }
 
 function jumpPlayer() {
