@@ -75,6 +75,23 @@
     if (el) el.textContent = text;
   };
 
+
+  const setEnglishGameLinks = () => {
+    document.querySelectorAll('.quick-links a').forEach((link, index) => {
+      if (index === 0) {
+        link.setAttribute('href', '/en/');
+        return;
+      }
+
+      const url = new URL(link.getAttribute('href'), window.location.origin);
+      if (!url.pathname.endsWith('/')) {
+        url.pathname += '/';
+      }
+      url.searchParams.set('lang', 'en');
+      link.setAttribute('href', `${url.pathname}${url.search}`);
+    });
+  };
+
   const map = {
     "feiertagsquiz/index.html": () => {
       setText("h1", "Holiday Quiz");
@@ -167,6 +184,7 @@
   };
   const key = window.location.pathname.replace(/^\//, "") + "index.html";
   const entry = Object.keys(map).find(k => key.includes(k));
+  setEnglishGameLinks();
   if (entry) map[entry]();
 })();
 </script>
