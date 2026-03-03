@@ -29,6 +29,7 @@
         <div class="hud-item">Leben: <span id="lives">3</span></div>
         <div class="hud-item">Level: <span id="level">1</span></div>
         <div class="hud-item">Highscore: <span id="highscore">0</span></div>
+        <div class="hud-item">Münzen: <span id="coins">0</span></div>
         <div class="hud-item hud-item-wide">Power-Up: <span id="powerupState">Keins</span></div>
     </section>
 
@@ -45,6 +46,7 @@
         <div id="gameOver" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="gameOverTitle">
             <h2 id="gameOverTitle">Spiel beendet</h2>
             <p id="resultText"></p>
+            <p id="coinResult" class="coin-result"></p>
 
             <div id="leaderboardOptIn" class="leaderboard-optin hidden">
                 <p>Du hast das Spiel abgeschlossen! Möchtest du in die sichtbare Bestenliste?</p>
@@ -58,6 +60,13 @@
 
             <button id="restartButton" type="button">Neu starten</button>
         </div>
+    </section>
+
+
+    <section class="shop" aria-label="Wagen-Shop">
+        <h2>Wagen-Shop</h2>
+        <p>Kaufe neue Einkaufswagen-Farben mit Münzen. 1 Punkt = 0,5 Münzen.</p>
+        <div id="shopList" class="shop-list"></div>
     </section>
 
     <section class="leaderboard" aria-label="Bestenliste">
