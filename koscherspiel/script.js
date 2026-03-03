@@ -4,6 +4,7 @@ const scoreDisplay = document.getElementById("score");
 const livesDisplay = document.getElementById("lives");
 const levelDisplay = document.getElementById("level");
 const highscoreDisplay = document.getElementById("highscore");
+const coinsDisplay = document.getElementById("coins");
 const powerupStateDisplay = document.getElementById("powerupState");
 const leaderboardList = document.getElementById("leaderboardList");
 const statusDisplay = document.getElementById("status");
@@ -11,6 +12,7 @@ const startScreen = document.getElementById("startScreen");
 const startButton = document.getElementById("startButton");
 const gameOverScreen = document.getElementById("gameOver");
 const resultText = document.getElementById("resultText");
+const coinResult = document.getElementById("coinResult");
 const restartButton = document.getElementById("restartButton");
 const leaderboardOptIn = document.getElementById("leaderboardOptIn");
 const playerNameInput = document.getElementById("playerName");
@@ -18,6 +20,7 @@ const saveLeaderboardButton = document.getElementById("saveLeaderboardButton");
 const skipLeaderboardButton = document.getElementById("skipLeaderboardButton");
 const leftBtn = document.getElementById("leftBtn");
 const rightBtn = document.getElementById("rightBtn");
+const shopList = document.getElementById("shopList");
 
 const fallbackFoods = {
     kosherFoods: [
@@ -108,6 +111,18 @@ const nonKosherEmojiFoods = [
 
 const emojiFoodSpawnChance = 0.72;
 
+const cartSkins = [
+    { key: "classic", label: "Klassisch", cost: 0, power: "Kein Bonus", description: "Standard-Wagen ohne Spezialeffekt." },
+    { key: "sky", label: "Himmelblau", cost: 15, power: "Schutzchance", description: "25% Chance, bei nicht-koscherem Essen kein Leben zu verlieren." },
+    { key: "mint", label: "Mint", cost: 25, power: "Extra-Punkt", description: "+1 zusätzlicher Punkt bei jedem koscheren Fang." },
+    { key: "rose", label: "Rose", cost: 35, power: "Münz-Boost", description: "Am Ende 50% mehr Münzen erhalten." },
+    { key: "violet", label: "Violett", cost: 45, power: "Zweite Chance", description: "Einmal pro Runde: statt Game Over mit 1 Leben weiterspielen." }
+];
+
+const cartSkinKeys = cartSkins.map((skin) => skin.key);
+const coinRatePerPoint = 0.5;
+const maxStoredCoins = 9999;
+
 const powerupTypes = [
     { key: "shield", label: "Schutz", icon: "🛡️", colorClass: "powerup-shield" },
     { key: "slow", label: "Zeitlupe", icon: "⏱️", colorClass: "powerup-slow" },
@@ -178,6 +193,80 @@ function persistHighscore(value) {
     } catch {
         // Ignorieren: Spiel soll auch ohne localStorage funktionieren.
     }
+}
+
+function sanitizeCoinValue(value) {
+    if (!Number.isFinite(value)) return 0;
+    return Math.max(0, Math.min(maxStoredCoins, Math.round(value * 10) / 10));
+}
+
+function getStoredCoins() {
+    try {
+        const parsed = Number(localStorage.getItem("koscher_coins") || 0);
+        return sanitizeCoinValue(parsed);
+    } catch {
+        return 0;
+    }
+}
+
+function persistCoins(value) {
+    const normalized = sanitizeCoinValue(value);
+    try {
+        localStorage.setItem("koscher_coins", String(normalized));
+    } catch {
+        // Ignorieren: Münzen bleiben dann nur temporär.
+    }
+    return normalized;
+}
+
+function getStoredUnlockedCarts() {
+    try {
+        const parsed = JSON.parse(localStorage.getItem("koscher_unlocked_carts") || "[]");
+        const unlocked = new Set(["classic"]);
+        if (Array.isArray(parsed)) {
+            parsed.forEach((key) => {
+                if (cartSkinKeys.includes(key)) {
+                    unlocked.add(key);
+                }
+            });
+        }
+        return Array.from(unlocked);
+    } catch {
+        return ["classic"];
+    }
+}
+
+function persistUnlockedCarts(unlockedCartKeys) {
+    const sanitized = Array.from(new Set(["classic", ...unlockedCartKeys.filter((key) => cartSkinKeys.includes(key))]));
+    try {
+        localStorage.setItem("koscher_unlocked_carts", JSON.stringify(sanitized));
+    } catch {
+        // Ignorieren: Freischaltungen bleiben nur temporär.
+    }
+    return sanitized;
+}
+
+function getSelectedCart() {
+    try {
+        const selected = localStorage.getItem("koscher_selected_cart") || "classic";
+        return cartSkinKeys.includes(selected) ? selected : "classic";
+    } catch {
+        return "classic";
+    }
+}
+
+function persistSelectedCart(cartKey) {
+    const nextCart = cartSkinKeys.includes(cartKey) ? cartKey : "classic";
+    try {
+        localStorage.setItem("koscher_selected_cart", nextCart);
+    } catch {
+        // Ignorieren: Auswahl bleibt nur temporär.
+    }
+    return nextCart;
+}
+
+function formatCoins(value) {
+    return sanitizeCoinValue(value).toLocaleString("de-DE", { minimumFractionDigits: 0, maximumFractionDigits: 1 });
 }
 
 function normalizeLeaderboard(rawEntries) {
@@ -392,10 +481,15 @@ function renderLeaderboard(scores = getStoredLeaderboard()) {
 }
 
 function createInitialState() {
+    const unlockedCarts = getStoredUnlockedCarts();
+    const preferredCart = getSelectedCart();
+    const selectedCart = unlockedCarts.includes(preferredCart) ? preferredCart : "classic";
+
     return {
         running: true,
         leaderboardSubmitted: false,
         score: 0,
+        coins: getStoredCoins(),
         lives: 3,
         level: 1,
         playerX: 0,
@@ -403,6 +497,9 @@ function createInitialState() {
         spawnTimer: 0,
         items: [],
         highscore: getStoredHighscore(),
+        selectedCart,
+        unlockedCarts,
+        cartSecondChanceUsed: false,
         activePowerups: {
             shield: 0,
             slow: 0,
@@ -425,6 +522,90 @@ function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
 }
 
+function currentCartSkin() {
+    if (!state) return cartSkins[0];
+    return cartSkins.find((skin) => skin.key === state.selectedCart) || cartSkins[0];
+}
+
+function applyCartSkinClass() {
+    if (!player) return;
+
+    player.classList.remove(...cartSkinKeys.map((key) => `cart-skin-${key}`));
+    const skin = currentCartSkin();
+    player.classList.add(`cart-skin-${skin.key}`);
+}
+
+function renderShop() {
+    if (!shopList || !state) return;
+
+    shopList.innerHTML = "";
+
+    cartSkins.forEach((skin) => {
+        const item = document.createElement("article");
+        item.className = "shop-item";
+
+        const unlocked = state.unlockedCarts.includes(skin.key);
+        const selected = state.selectedCart === skin.key;
+        const affordable = state.coins >= skin.cost;
+
+        if (selected) item.classList.add("selected");
+        if (!unlocked && !affordable) item.classList.add("locked");
+
+        const status = unlocked ? (selected ? "Ausgewählt" : "Freigeschaltet") : `Preis: ${formatCoins(skin.cost)} Münzen`;
+        const buttonLabel = unlocked ? (selected ? "Aktiv" : "Auswählen") : "Kaufen";
+
+        item.innerHTML = `
+            <h3>${skin.label}</h3>
+            <p class="shop-power">Kraft: ${skin.power}</p>
+            <p class="shop-description">${skin.description}</p>
+            <p class="shop-status">${status}</p>
+            <button type="button" data-cart-key="${skin.key}">${buttonLabel}</button>
+        `;
+
+        const button = item.querySelector("button");
+        if (button) {
+            button.disabled = selected || (!unlocked && !affordable);
+        }
+
+        shopList.appendChild(item);
+    });
+}
+
+function selectCart(cartKey) {
+    if (!state) return;
+    if (!state.unlockedCarts.includes(cartKey)) return;
+
+    state.selectedCart = persistSelectedCart(cartKey);
+    applyCartSkinClass();
+    renderShop();
+    setStatus(`Aktiver Wagen: ${currentCartSkin().label}`);
+}
+
+function buyCart(cartKey) {
+    if (!state) return;
+
+    const skin = cartSkins.find((entry) => entry.key === cartKey);
+    if (!skin) return;
+
+    if (state.unlockedCarts.includes(cartKey)) {
+        selectCart(cartKey);
+        return;
+    }
+
+    if (state.coins < skin.cost) {
+        setStatus("Nicht genug Münzen.", "danger");
+        return;
+    }
+
+    state.coins = persistCoins(state.coins - skin.cost);
+    state.unlockedCarts = persistUnlockedCarts([...state.unlockedCarts, cartKey]);
+    state.selectedCart = persistSelectedCart(cartKey);
+    applyCartSkinClass();
+    updateHUD();
+    renderShop();
+    setStatus(`${skin.label} gekauft!`);
+}
+
 function activePowerupLabel() {
     if (!state) return "Keins";
 
@@ -442,6 +623,7 @@ function updateHUD() {
     livesDisplay.textContent = String(state.lives);
     levelDisplay.textContent = String(state.level);
     highscoreDisplay.textContent = String(state.highscore);
+    if (coinsDisplay) coinsDisplay.textContent = formatCoins(state.coins);
     powerupStateDisplay.textContent = activePowerupLabel();
 }
 
@@ -450,6 +632,7 @@ function renderIdleHUD() {
     livesDisplay.textContent = "3";
     levelDisplay.textContent = "1";
     highscoreDisplay.textContent = String(getStoredHighscore());
+    if (coinsDisplay) coinsDisplay.textContent = formatCoins(getStoredCoins());
     powerupStateDisplay.textContent = "Keins";
 }
 
@@ -626,6 +809,23 @@ function consumeShieldIfActive() {
     return true;
 }
 
+function hasCartPower(cartKey) {
+    return Boolean(state && state.selectedCart === cartKey);
+}
+
+function cartSavedDamage() {
+    if (!hasCartPower("sky")) {
+        return false;
+    }
+
+    if (Math.random() < 0.25) {
+        setStatus("Himmelblau hat den Schaden abgewehrt!");
+        return true;
+    }
+
+    return false;
+}
+
 function handleCatch(item, index) {
     if (item.isPowerup) {
         if (item.powerupType === "life") {
@@ -640,10 +840,12 @@ function handleCatch(item, index) {
     }
 
     if (item.isKosher) {
-        const points = hasPowerup("double") ? 2 : 1;
+        const basePoints = hasPowerup("double") ? 2 : 1;
+        const bonusPoints = hasCartPower("mint") ? 1 : 0;
+        const points = basePoints + bonusPoints;
         state.score += points;
         setStatus(`+${points} Koscher!`);
-    } else if (!consumeShieldIfActive()) {
+    } else if (!consumeShieldIfActive() && !cartSavedDamage()) {
         state.lives -= 1;
         state.score = Math.max(0, state.score - 1);
         setStatus("-1 Leben: Nicht koscher!", "danger");
@@ -654,7 +856,7 @@ function handleCatch(item, index) {
 
     updateHUD();
 
-    if (state.lives <= 0) {
+    if (state.lives <= 0 && !tryCartSecondChance()) {
         endGame("Keine Leben mehr.");
     }
 }
@@ -668,7 +870,7 @@ function handleMissed(item, index) {
 
     removeItem(index);
 
-    if (state.lives <= 0) {
+    if (state.lives <= 0 && !tryCartSecondChance()) {
         endGame("Zu viele koschere Lebensmittel verpasst.");
     }
 }
@@ -678,6 +880,18 @@ function removeItem(index) {
     if (removed) {
         removed.el.remove();
     }
+}
+
+function tryCartSecondChance() {
+    if (!hasCartPower("violet") || state.cartSecondChanceUsed || state.lives > 0) {
+        return false;
+    }
+
+    state.cartSecondChanceUsed = true;
+    state.lives = 1;
+    setStatus("Violett rettet dich: zweite Chance!", "danger");
+    updateHUD();
+    return true;
 }
 
 function recalcLevel() {
@@ -820,8 +1034,21 @@ function endGame(reason) {
         }
     }
 
+    let earnedCoins = state.score * coinRatePerPoint;
+    if (hasCartPower("rose")) {
+        earnedCoins *= 1.5;
+    }
+    earnedCoins = Math.round(earnedCoins * 10) / 10;
+
+    state.coins = persistCoins(state.coins + earnedCoins);
     updateHUD();
+    renderShop();
+
     if (resultText) resultText.textContent = `${reason} Dein Ergebnis: ${state.score} Punkte.`;
+    if (coinResult) {
+        const boostText = hasCartPower("rose") ? " (inkl. Rose-Bonus)" : "";
+        coinResult.textContent = `+${formatCoins(earnedCoins)} Münzen${boostText}. Gesamt: ${formatCoins(state.coins)}.`;
+    }
     if (gameOverScreen) gameOverScreen.classList.remove("hidden");
 }
 
@@ -837,7 +1064,9 @@ function startGame() {
 
     clearItems();
     state = createInitialState();
+    applyCartSkinClass();
     updateHUD();
+    renderShop();
 
     if (startScreen) startScreen.classList.add("hidden");
     if (gameOverScreen) gameOverScreen.classList.add("hidden");
@@ -849,6 +1078,7 @@ function startGame() {
     if (saveLeaderboardButton) saveLeaderboardButton.disabled = false;
     if (skipLeaderboardButton) skipLeaderboardButton.disabled = false;
     if (statusDisplay) statusDisplay.classList.add("hidden");
+    if (coinResult) coinResult.textContent = "";
 
     state.playerX = (gameWidth() - basePlayerWidth) / 2;
     positionPlayer();
@@ -978,6 +1208,23 @@ if (saveLeaderboardButton && skipLeaderboardButton && playerNameInput && leaderb
     });
 }
 
+if (shopList) {
+    shopList.addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-cart-key]");
+        if (!button) return;
+
+        const cartKey = button.getAttribute("data-cart-key");
+        if (!cartKey) return;
+
+        if (state && state.unlockedCarts.includes(cartKey)) {
+            selectCart(cartKey);
+            return;
+        }
+
+        buyCart(cartKey);
+    });
+}
+
 if (leftBtn) {
     bindButtonHold(leftBtn, "left");
 }
@@ -997,6 +1244,10 @@ window.addEventListener("resize", () => {
     positionPlayer();
 });
 
+state = createInitialState();
+state.running = false;
+applyCartSkinClass();
 renderIdleHUD();
+renderShop();
 loadLeaderboard();
 centerPlayerIdle();
