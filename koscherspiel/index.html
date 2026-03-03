@@ -65,8 +65,13 @@
 
     <section class="shop" aria-label="Wagen-Shop">
         <h2>Wagen-Shop</h2>
-        <p>Kaufe neue Einkaufswagen-Farben mit Münzen. 1 Punkt = 0,5 Münzen.</p>
-        <div id="shopList" class="shop-list"></div>
+        <p>Kaufe Wagen und Fähigkeiten mit Münzen. 1 Punkt = 0,5 Münzen.</p>
+        <div class="shop-tabs" role="tablist" aria-label="Shop-Kategorien">
+            <button id="cartShopTab" type="button" class="shop-tab active" role="tab" aria-selected="true" data-shop-tab="carts">Wagen</button>
+            <button id="abilityShopTab" type="button" class="shop-tab" role="tab" aria-selected="false" data-shop-tab="abilities">Fähigkeiten</button>
+        </div>
+        <div id="shopList" class="shop-list" data-shop-panel="carts"></div>
+        <div id="abilityShopList" class="shop-list hidden" data-shop-panel="abilities"></div>
     </section>
 
     <section class="leaderboard" aria-label="Bestenliste">

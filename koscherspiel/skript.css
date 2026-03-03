@@ -118,6 +118,7 @@ h1 {
 #player.cart-skin-mint { --cart-filter: hue-rotate(90deg) saturate(1.6); }
 #player.cart-skin-rose { --cart-filter: hue-rotate(300deg) saturate(1.4); }
 #player.cart-skin-violet { --cart-filter: hue-rotate(245deg) saturate(1.8); }
+#player.cart-skin-jumper { --cart-filter: hue-rotate(25deg) saturate(1.9); }
 
 .item {
     position: absolute;
@@ -251,6 +252,27 @@ h1 {
     margin: 0 0 8px;
     text-align: center;
     font-size: 1.1rem;
+}
+
+.shop-tabs {
+    display: flex;
+    gap: 8px;
+    margin: 8px 0 10px;
+}
+
+.shop-tab {
+    flex: 1;
+    border: 1px solid rgba(47, 111, 204, 0.22);
+    border-radius: 8px;
+    padding: 8px 10px;
+    background: #edf3ff;
+    color: var(--ink);
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.shop-tab.active {
+    background: var(--accent);
 }
 
 .shop-list {
