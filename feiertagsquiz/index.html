@@ -4,11 +4,42 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <title>Feiertags-Quiz</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="/assets/game-polish.css">
 </head>
 <body>
+<nav class="site-nav game-site-nav">
+    <div class="nav-container">
+        <a href="/" class="nav-brand">
+            <i class="fas fa-landmark brand-icon"></i>
+            <div class="brand-title-group">
+                <span class="brand-title">CJD Braunschweig</span>
+                <span class="brand-subtitle">„Mit eigener Stimme…"</span>
+            </div>
+        </a>
+
+        <div class="nav-actions">
+            <button class="theme-toggle" id="theme-toggle" aria-label="Dark Mode umschalten">
+                <i class="fas fa-moon"></i>
+            </button>
+
+            <button class="hamburger" id="hamburger" aria-label="Menü">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+
+        <ul class="nav-menu" id="nav-menu">
+            <li><a href="/" class="nav-link" data-nav="home"><i class="fas fa-home"></i> Startseite</a></li>
+            <li><a href="/spiele" class="nav-link" data-nav="spiele"><i class="fas fa-gamepad"></i> Alle Spiele</a></li>
+            <li><a href="/lernenundwerte" class="nav-link" data-nav="lernenundwerte"><i class="fas fa-book-open"></i> Lernen & Werte</a></li>
+            <li><a href="/juedischeralltag" class="nav-link" data-nav="juedischeralltag"><i class="fas fa-menorah"></i> Jüdischer Alltag</a></li>
+            <li><a href="/einblicke" class="nav-link" data-nav="einblicke"><i class="fas fa-eye"></i> Einblicke & Erkenntnisse</a></li>
+            <li><a href="/inspiration" class="nav-link" data-nav="inspiration"><i class="fas fa-torah"></i> Inspiration & Lehre</a></li>
+        </ul>
+    </div>
+</nav>
 <main class="page">
     <header class="top">
         <h1>Feiertags-Quiz</h1>

@@ -216,6 +216,14 @@
             height: 40px;
         }
 
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: auto;
+            flex-shrink: 0;
+        }
+
         .theme-toggle:hover {
             background: rgba(255,255,255,0.1);
             color: var(--accent);
@@ -607,12 +615,6 @@
             .content-container {
                 padding: 32px 24px;
             }
-
-            .theme-toggle {
-                order: -1;
-                margin-left: auto;
-                margin-right: 8px;
-            }
         }
 
         @media (max-width: 640px) {
@@ -658,13 +660,15 @@
                 </div>
             </a>
 
-            <button class="theme-toggle" id="theme-toggle" aria-label="{% if is_en %}Toggle dark mode{% else %}Dark Mode umschalten{% endif %}">
-                <i class="fas fa-moon"></i>
-            </button>
+            <div class="nav-actions">
+                <button class="theme-toggle" id="theme-toggle" aria-label="{% if is_en %}Toggle dark mode{% else %}Dark Mode umschalten{% endif %}">
+                    <i class="fas fa-moon"></i>
+                </button>
 
-            <button class="hamburger" id="hamburger" aria-label="{% if is_en %}Menu{% else %}Menü{% endif %}">
-                <i class="fas fa-bars"></i>
-            </button>
+                <button class="hamburger" id="hamburger" aria-label="{% if is_en %}Menu{% else %}Menü{% endif %}">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
             
             <ul class="nav-menu" id="nav-menu">
                 <li><a href="{% if is_en %}/en/{% else %}/{% endif %}" class="nav-link" data-nav="home">
