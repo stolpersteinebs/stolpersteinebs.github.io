@@ -10,6 +10,17 @@
     --radius: 16px;
 }
 
+[data-theme="dark"] {
+    --bg: #0f1726;
+    --ink: #e6edf7;
+    --ink-soft: #9fc4ff;
+    --card: #16243b;
+    --accent: #e6bf57;
+    --ok: #44d0b5;
+    --bad: #ef7a8b;
+    --shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+}
+
 * {
     box-sizing: border-box;
 }
@@ -210,4 +221,23 @@ body {
     object-fit: cover;
     border: 1px solid #cad3e4;
     background: #fff;
+}
+
+
+.quick-links .theme-toggle-link {
+    border: 1px solid rgba(47, 111, 204, 0.24);
+    background: var(--paper, var(--card, #fff));
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+[data-theme="dark"] body {
+    background:
+        radial-gradient(circle at 18% 12%, rgba(112, 167, 255, 0.22), transparent 42%),
+        radial-gradient(circle at 82% 10%, rgba(230, 191, 87, 0.18), transparent 40%),
+        radial-gradient(circle at 75% 90%, rgba(68, 208, 181, 0.16), transparent 44%),
+        radial-gradient(circle at top, #182338 0%, var(--bg) 72%);
 }
