@@ -30,6 +30,30 @@
             --radius-md: 12px;
             --radius-lg: 20px;
             --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            --card-bg: var(--white);
+            --nav-bg: rgba(26, 54, 93, 0.95);
+            --texture-accent-1: rgba(201, 162, 39, 0.04);
+            --texture-accent-2: rgba(26, 54, 93, 0.03);
+        }
+
+        [data-theme="dark"] {
+            --primary: #9fc4ff;
+            --primary-light: #70a7ff;
+            --accent: #e6bf57;
+            --accent-soft: #6a5420;
+            --bg-warm: #0d1420;
+            --bg-cream: #182334;
+            --text-primary: #e6edf7;
+            --text-secondary: #bfd0e8;
+            --text-muted: #96adc9;
+            --white: #101a2a;
+            --card-bg: #152238;
+            --nav-bg: rgba(12, 23, 38, 0.9);
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.35);
+            --shadow-md: 0 6px 18px rgba(0,0,0,0.35);
+            --shadow-lg: 0 20px 44px rgba(0,0,0,0.42);
+            --texture-accent-1: rgba(230, 191, 87, 0.08);
+            --texture-accent-2: rgba(112, 167, 255, 0.08);
         }
 
         * {
@@ -58,8 +82,8 @@
             position: fixed;
             inset: 0;
             background: 
-                radial-gradient(ellipse at 20% 30%, rgba(201, 162, 39, 0.04) 0%, transparent 50%),
-                radial-gradient(ellipse at 80% 70%, rgba(26, 54, 93, 0.03) 0%, transparent 50%);
+                radial-gradient(ellipse at 20% 30%, var(--texture-accent-1) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 70%, var(--texture-accent-2) 0%, transparent 50%);
             pointer-events: none;
             z-index: -1;
         }
@@ -83,7 +107,7 @@
 
         /* Navigation */
         .site-nav {
-            background: rgba(26, 54, 93, 0.95);
+            background: var(--nav-bg);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             position: sticky;
@@ -158,6 +182,36 @@
             border-radius: var(--radius-sm);
         }
 
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .theme-toggle {
+            border: 1px solid rgba(255,255,255,0.24);
+            border-radius: 999px;
+            background: rgba(255,255,255,0.1);
+            color: var(--white);
+            width: 42px;
+            height: 42px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.95rem;
+            transition: var(--transition);
+        }
+
+        .theme-toggle:hover {
+            background: rgba(255,255,255,0.18);
+            transform: translateY(-1px);
+        }
+
+        .theme-toggle i {
+            color: var(--accent);
+        }
+
         .hamburger:hover {
             background: rgba(255,255,255,0.1);
         }
@@ -210,7 +264,7 @@
         }
 
         .content-container {
-            background: var(--white);
+            background: var(--card-bg);
             border-radius: var(--radius-lg);
             box-shadow: var(--shadow-md);
             padding: 48px;
@@ -449,7 +503,7 @@
         }
 
         /* Responsive */
-        @media (max-width: 900px) {
+        @media (max-width: 1040px) {
             .hamburger {
                 display: block;
             }
@@ -475,6 +529,10 @@
                 width: 100%;
                 padding: 12px 16px;
                 border-radius: var(--radius-sm);
+            }
+
+            .nav-actions {
+                gap: 6px;
             }
 
             .content-container {
@@ -525,9 +583,15 @@
                 </div>
             </a>
 
-            <button class="hamburger" id="hamburger" aria-label="{% if is_en %}Menu{% else %}Menü{% endif %}">
-                <i class="fas fa-bars"></i>
-            </button>
+            <div class="nav-actions">
+                <button class="theme-toggle" id="theme-toggle" aria-label="{% if is_en %}Toggle color mode{% else %}Farbmodus wechseln{% endif %}" aria-pressed="false">
+                    <i class="fas fa-moon" id="theme-icon"></i>
+                </button>
+
+                <button class="hamburger" id="hamburger" aria-label="{% if is_en %}Menu{% else %}Menü{% endif %}">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
             
             <ul class="nav-menu" id="nav-menu">
                 <li><a href="{% if is_en %}/en/{% else %}/{% endif %}" class="nav-link" data-nav="home">
@@ -686,6 +750,36 @@
                         icon.classList.remove('fa-times');
                         icon.classList.add('fa-bars');
                     }
+                });
+            }
+
+            // Theme Toggle
+            const themeToggle = document.getElementById('theme-toggle');
+            const themeIcon = document.getElementById('theme-icon');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const savedTheme = localStorage.getItem('theme');
+            const initialTheme = savedTheme || (prefersDark ? 'dark' : 'light');
+
+            const applyTheme = (theme) => {
+                document.documentElement.setAttribute('data-theme', theme);
+                if (themeToggle) {
+                    themeToggle.setAttribute('aria-pressed', String(theme === 'dark'));
+                }
+
+                if (themeIcon) {
+                    themeIcon.classList.toggle('fa-moon', theme !== 'dark');
+                    themeIcon.classList.toggle('fa-sun', theme === 'dark');
+                }
+            };
+
+            applyTheme(initialTheme);
+
+            if (themeToggle) {
+                themeToggle.addEventListener('click', function() {
+                    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+                    const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                    localStorage.setItem('theme', nextTheme);
+                    applyTheme(nextTheme);
                 });
             }
         });
