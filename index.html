@@ -225,6 +225,14 @@
             height: 40px;
         }
 
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: auto;
+            flex-shrink: 0;
+        }
+
         .theme-toggle:hover {
             background: rgba(255,255,255,0.1);
             color: var(--accent);
@@ -817,11 +825,6 @@
                 order: -1;
             }
 
-            .theme-toggle {
-                order: -1;
-                margin-left: auto;
-                margin-right: 8px;
-            }
         }
 
         @media (max-width: 640px) {
@@ -879,13 +882,15 @@
                 </div>
             </a>
 
-            <button class="theme-toggle" id="theme-toggle" aria-label="Dark Mode umschalten">
-                <i class="fas fa-moon"></i>
-            </button>
+            <div class="nav-actions">
+                <button class="theme-toggle" id="theme-toggle" aria-label="Dark Mode umschalten">
+                    <i class="fas fa-moon"></i>
+                </button>
 
-            <button class="hamburger" id="hamburger" aria-label="Menü">
-                <i class="fas fa-bars"></i>
-            </button>
+                <button class="hamburger" id="hamburger" aria-label="Menü">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
             
             <ul class="nav-menu" id="nav-menu">
                 <li><a href="/" class="nav-link active"><i class="fas fa-home"></i> Startseite</a></li>
