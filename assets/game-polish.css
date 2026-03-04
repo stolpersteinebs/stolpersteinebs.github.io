@@ -1,13 +1,89 @@
 :root {
+  --primary: #1a365d;
+  --primary-light: #2c5282;
+  --accent: #c9a227;
+  --accent-soft: #e8d5a3;
+  --bg-warm: #faf8f3;
+  --bg-cream: #f5f1e8;
+  --text-primary: #1a202c;
+  --text-secondary: #4a5568;
+  --text-muted: #718096;
   --surface-elevated: rgba(255, 255, 255, 0.78);
   --surface-border: rgba(255, 255, 255, 0.5);
   --interactive-shadow: 0 16px 38px rgba(18, 36, 74, 0.16);
 }
 
 [data-theme="dark"] {
+  --primary: #63b3ed;
+  --primary-light: #4299e1;
+  --accent: #ecc94b;
+  --accent-soft: #d69e2e;
+  --bg-warm: #0d1117;
+  --bg-cream: #161b22;
+  --text-primary: #e6edf3;
+  --text-secondary: #8b949e;
+  --text-muted: #6e7681;
   --surface-elevated: rgba(17, 28, 46, 0.72);
   --surface-border: rgba(159, 196, 255, 0.2);
   --interactive-shadow: 0 18px 44px rgba(0, 0, 0, 0.42);
+}
+
+body {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--text-primary);
+  background: var(--bg-warm);
+}
+
+.top h1,
+h1,
+h2,
+h3 {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  letter-spacing: 0.01em;
+  color: var(--primary);
+}
+
+[data-theme="dark"] .top h1,
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3 {
+  color: var(--primary);
+}
+
+.top p,
+.instructions,
+.hint,
+p {
+  color: var(--text-secondary);
+}
+
+.quick-links a,
+.quick-links .theme-toggle-link {
+  color: var(--primary);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid color-mix(in oklab, var(--accent) 25%, transparent);
+  font-weight: 600;
+}
+
+[data-theme="dark"] .quick-links a,
+[data-theme="dark"] .quick-links .theme-toggle-link {
+  background: rgba(28, 33, 40, 0.92);
+  color: var(--text-primary);
+}
+
+button,
+.controls button,
+.answer,
+.tile {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-soft) 100%);
+  color: #2d1e08;
+}
+
+[data-theme="dark"] button,
+[data-theme="dark"] .controls button,
+[data-theme="dark"] .answer,
+[data-theme="dark"] .tile {
+  color: #1a202c;
 }
 
 body::before,
