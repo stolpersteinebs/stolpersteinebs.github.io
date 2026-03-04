@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        (function () {
+            const path = window.location.pathname;
+            const isRootPath = path === '/' || path === '/index.html';
+            if (!isRootPath) return;
+
+            const preferredLanguage = ((navigator.languages && navigator.languages[0]) || navigator.language || '').toLowerCase();
+            if (preferredLanguage && !preferredLanguage.startsWith('de')) {
+                window.location.replace('/en/');
+            }
+        })();
+    </script>
+    <title>CJD Braunschweig: „Mit eigener Stimme…" und unseren Augen betrachtet</title>
+    <link rel="icon" href="/Logo.jpeg" type="image/jpeg">
+    <link rel="shortcut icon" href="/Logo.jpeg" type="image/jpeg">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1a365d;
+            --primary-light: #2c5282;
+            --accent: #c9a227;
+            --accent-soft: #e8d5a3;
+            --bg-warm: #faf8f3;
+            --bg-cream: #f5f1e8;
+            --text-primary: #1a202c;
+            --text-secondary: #4a5568;
+            --text-muted: #718096;
+            --white: #ffffff;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+            --shadow-lg: 0 12px 32px rgba(0,0,0,0.12);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 20px;
+            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-warm);
+            color: var(--text-primary);
+            line-height: 1.7;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Subtle background texture */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: 
+                radial-gradient(ellipse at 20% 30%, rgba(201, 162, 39, 0.04) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 70%, rgba(26, 54, 93, 0.03) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Shabbat Banner */
+        .shabbat-banner {
+            display: none;
+            width: 100%;
+            background: linear-gradient(90deg, var(--accent) 0%, var(--accent-soft) 50%, var(--accent) 100%);
+            color: #3d2914;
+            text-align: center;
+            padding: 0.875rem 1rem;
+            font-weight: 600;
+            font-size: 0.95rem;
+            letter-spacing: 0.02em;
+        }
+
+        .shabbat-banner.is-visible {
+            display: block;
+        }
+
+        /* Navigation */
+        .main-nav {
+            background: rgba(26, 54, 93, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 1px solid rgba(201, 162, 39, 0.2);
+        }
+
+        .nav-inner {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 72px;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            text-decoration: none;
+            color: var(--white);
+            transition: var(--transition);
+        }
+
+        .nav-brand:hover {
+            opacity: 0.9;
+        }
+
+        .nav-icon {
+            font-size: 1.6rem;
+            color: var(--accent);
+            width: 44px;
+            height: 44px;
+            display: grid;
+            place-items: center;
+            background: rgba(201, 162, 39, 0.15);
+            border-radius: var(--radius-sm);
+        }
+
+        .nav-title-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .nav-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.35rem;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+            line-height: 1.2;
+        }
+
+        .nav-subtitle {
+            font-size: 0.8rem;
+            opacity: 0.75;
+            font-weight: 400;
+            letter-spacing: 0.02em;
+        }
+
+        .hamburger {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--white);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            transition: var(--transition);
+            border-radius: var(--radius-sm);
+        }
+
+        .hamburger:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 8px;
+            list-style: none;
+        }
+
+        .nav-link {
+            color: rgba(255,255,255,0.85);
+            text-decoration: none;
+            padding: 0.6rem 1rem;
+            border-radius: var(--radius-sm);
+            transition: var(--transition);
+            font-weight: 500;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .nav-link:hover {
+            color: var(--white);
+            background: rgba(255,255,255,0.1);
+        }
+
+        .nav-link.active {
+            background: var(--accent);
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .nav-link i {
+            font-size: 1rem;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 48px 24px;
+        }
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            margin-bottom: 56px;
+            padding: 48px 40px;
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 50%, var(--primary-light) 100%);
+        }
+
+        .kicker {
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 16px;
+        }
+
+        h1 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(2rem, 5vw, 3.25rem);
+            color: var(--primary);
+            margin-bottom: 20px;
+            line-height: 1.15;
+            font-weight: 600;
+        }
+
+        .title-lead {
+            display: block;
+            font-size: 0.55em;
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-bottom: 0.3em;
+            letter-spacing: 0.02em;
+        }
+
+        .title-main {
+            display: block;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 1.15rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+            max-width: 640px;
+            margin: 0 auto 24px;
+            line-height: 1.6;
+        }
+
+        .feature-pills {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .feature-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: var(--bg-cream);
+            border: 1px solid rgba(201, 162, 39, 0.25);
+            border-radius: 999px;
+            color: var(--primary);
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .feature-pill i {
+            color: var(--accent);
+            font-size: 0.8rem;
+        }
+
+        /* Content Section */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 56px;
+            align-items: start;
+        }
+
+        .text-section {
+            background: var(--white);
+            padding: 36px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            border-left: 3px solid var(--accent);
+        }
+
+        .text-section p {
+            font-size: 1.05rem;
+            margin-bottom: 1.25rem;
+            color: var(--text-secondary);
+            line-height: 1.8;
+        }
+
+        .text-section p:last-child {
+            margin-bottom: 0;
+        }
+
+        .highlight {
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .image-section {
+            position: relative;
+        }
+
+        .exhibition-image {
+            width: 100%;
+            height: auto;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            transition: var(--transition);
+        }
+
+        .exhibition-image:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+
+        .image-caption {
+            position: absolute;
+            bottom: -16px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--white);
+            padding: 10px 20px;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            box-shadow: var(--shadow-sm);
+            white-space: nowrap;
+        }
+
+        /* Buttons Section */
+        .section-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.75rem;
+            color: var(--primary);
+            text-align: center;
+            margin-bottom: 32px;
+            font-weight: 600;
+        }
+
+        .buttons-section {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
+        .button {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 32px 24px;
+            background: var(--white);
+            border-radius: var(--radius-md);
+            text-decoration: none;
+            transition: var(--transition);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            transition: var(--transition);
+        }
+
+        .button-1::before { background: linear-gradient(90deg, #2f6fcc, #1c2f5a); }
+        .button-2::before { background: linear-gradient(90deg, #1ea8a4, #16706d); }
+        .button-3::before { background: linear-gradient(90deg, #6f5bd4, #4b3ea4); }
+        .button-4::before { background: linear-gradient(90deg, #da7a3a, #a45428); }
+
+        .button:hover {
+            transform: translateY(-6px);
+            box-shadow: var(--shadow-lg);
+            border-color: rgba(0,0,0,0.05);
+        }
+
+        .button:hover::before {
+            height: 4px;
+        }
+
+        .button-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: var(--radius-md);
+            display: grid;
+            place-items: center;
+            font-size: 1.5rem;
+            margin-bottom: 16px;
+            transition: var(--transition);
+        }
+
+        .button-1 .button-icon { background: linear-gradient(135deg, rgba(47, 111, 204, 0.12), rgba(28, 47, 90, 0.08)); color: #2f6fcc; }
+        .button-2 .button-icon { background: linear-gradient(135deg, rgba(30, 168, 164, 0.12), rgba(22, 112, 109, 0.08)); color: #1ea8a4; }
+        .button-3 .button-icon { background: linear-gradient(135deg, rgba(111, 91, 212, 0.12), rgba(75, 62, 164, 0.08)); color: #6f5bd4; }
+        .button-4 .button-icon { background: linear-gradient(135deg, rgba(218, 122, 58, 0.12), rgba(164, 84, 40, 0.08)); color: #da7a3a; }
+
+        .button:hover .button-icon {
+            transform: scale(1.05);
+        }
+
+        .button-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .button-desc {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        /* Games CTA */
+        .games-overview-cta {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 56px;
+        }
+
+        .games-overview-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 28px;
+            border-radius: 999px;
+            text-decoration: none;
+            color: var(--white);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: var(--transition);
+            box-shadow: var(--shadow-md);
+        }
+
+        .games-overview-button:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+            background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 100%);
+        }
+
+        .games-overview-button i {
+            font-size: 1.1rem;
+        }
+
+        /* Footer */
+        .footer {
+            background: linear-gradient(180deg, var(--primary) 0%, #0f1f3a 100%);
+            color: rgba(255,255,255,0.85);
+            padding: 48px 24px 32px;
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+            margin-top: 24px;
+        }
+
+        .footer-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .footer-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 32px;
+            margin-bottom: 32px;
+            padding-bottom: 32px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .footer-brand {
+            max-width: 400px;
+        }
+
+        .footer-brand h3 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.5rem;
+            color: var(--white);
+            margin-bottom: 8px;
+        }
+
+        .footer-brand p {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            line-height: 1.6;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 32px;
+            flex-wrap: wrap;
+        }
+
+        .footer-link {
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .footer-link:hover {
+            color: var(--accent);
+        }
+
+        .footer-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .footer-info {
+            font-size: 0.85rem;
+            opacity: 0.7;
+        }
+
+        .footer-supporters {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            font-size: 0.85rem;
+        }
+
+        .footer-supporters span {
+            opacity: 0.7;
+        }
+
+        .menorah {
+            color: var(--accent);
+            font-size: 1.1rem;
+        }
+
+        .language-switch {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 999px;
+            padding: 8px 14px;
+        }
+
+        .language-switch label {
+            font-size: 0.85rem;
+            opacity: 0.8;
+        }
+
+        .language-switch select {
+            background: transparent;
+            border: none;
+            color: var(--white);
+            font-family: inherit;
+            font-size: 0.85rem;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .language-switch select option {
+            background: var(--primary);
+            color: var(--white);
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero, .text-section, .image-section, .button {
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+
+        .text-section { animation-delay: 0.1s; }
+        .image-section { animation-delay: 0.2s; }
+        .button:nth-child(1) { animation-delay: 0.1s; }
+        .button:nth-child(2) { animation-delay: 0.2s; }
+        .button:nth-child(3) { animation-delay: 0.3s; }
+        .button:nth-child(4) { animation-delay: 0.4s; }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .buttons-section {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 900px) {
+            .hamburger {
+                display: block;
+            }
+
+            .nav-menu {
+                display: none;
+                position: absolute;
+                top: 72px;
+                left: 0;
+                width: 100%;
+                background: var(--primary);
+                flex-direction: column;
+                padding: 16px 24px;
+                gap: 4px;
+                box-shadow: var(--shadow-lg);
+            }
+
+            .nav-menu.active {
+                display: flex;
+            }
+
+            .nav-link {
+                width: 100%;
+                padding: 12px 16px;
+                border-radius: var(--radius-sm);
+            }
+
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .image-section {
+                order: -1;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                padding: 24px 16px;
+            }
+
+            .hero {
+                padding: 32px 24px;
+            }
+
+            .text-section {
+                padding: 24px;
+            }
+
+            .buttons-section {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-top {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .footer-links {
+                justify-content: center;
+            }
+
+            .footer-bottom {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation: none !important;
+                transition: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="shabbat-banner" id="shabbat-banner" role="status" aria-live="polite">
+        ✨ Heute ist Schabbat – Schabbat Schalom!
+    </div>
+
+    <nav class="main-nav">
+        <div class="nav-inner">
+            <a href="/" class="nav-brand">
+                <i class="fas fa-landmark nav-icon"></i>
+                <div class="nav-title-group">
+                    <span class="nav-title">CJD Braunschweig</span>
+                    <span class="nav-subtitle">„Mit eigener Stimme…" und unseren Augen betrachtet</span>
+                </div>
+            </a>
+
+            <button class="hamburger" id="hamburger" aria-label="Menü">
+                <i class="fas fa-bars"></i>
+            </button>
+            
+            <ul class="nav-menu" id="nav-menu">
+                <li><a href="/" class="nav-link active"><i class="fas fa-home"></i> Startseite</a></li>
+                <li><a href="/spiele" class="nav-link"><i class="fas fa-gamepad"></i> Alle Spiele</a></li>
+                <li><a href="/lernenundwerte" class="nav-link"><i class="fas fa-book-open"></i> Lernen & Werte</a></li>
+                <li><a href="/juedischeralltag" class="nav-link"><i class="fas fa-menorah"></i> Jüdischer Alltag</a></li>
+                <li><a href="/einblicke" class="nav-link"><i class="fas fa-eye"></i> Einblicke & Erkenntnisse</a></li>
+                <li><a href="/inspiration" class="nav-link"><i class="fas fa-torah"></i> Inspiration & Lehre</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="hero">
+            <p class="kicker">Interaktive Bildungsausstellung</p>
+            <h1>
+                <span class="title-lead">CJD Braunschweig präsentiert:</span>
+                <span class="title-main">„Mit eigener Stimme…" und unseren Augen betrachtet</span>
+            </h1>
+            <p class="subtitle">Eine immersive Ausstellung über jüdische Geschichte, Kultur und Traditionen</p>
+            <div class="feature-pills">
+                <span class="feature-pill"><i class="fas fa-ticket"></i> Eintritt frei</span>
+                <span class="feature-pill"><i class="fas fa-layer-group"></i> 4 Themenbereiche</span>
+                <span class="feature-pill"><i class="fas fa-gamepad"></i> Interaktive Spiele</span>
+            </div>
+        </header>
+
+        <div class="content-grid">
+            <div class="text-section">
+                <p>Willkommen zur Ausstellung <span class="highlight">„Mit eigener Stimme…" und unseren Augen betrachtet</span>, die vom CJD Braunschweig kuratiert wurde. Diese einzigartige Erfahrung lädt Sie ein, die reiche und vielfältige Welt des Judentums durch interaktive Installationen, historische Artefakte und persönliche Geschichten zu entdecken.</p>
+                
+                <p>Die Ausstellung beleuchtet verschiedene Aspekte jüdischen Lebens: von den Wurzeln in der Antike über die Blütezeit in Mittelalter und Neuzeit bis hin zu den Herausforderungen und dem Wiederaufleben in der Gegenwart.</p>
+                
+                <p>Unser Ziel ist es, Vorurteile abzubauen und Verständnis zu fördern, indem wir Besuchern ermöglichen, <span class="highlight">„Mit eigener Stimme…" und unseren Augen betrachtet</span> zu sehen, was jüdische Identität ausmacht.</p>
+                
+                <p>Die Ausstellung ist vom <strong>15. März bis 30. Juni 2026</strong> im Kulturhaus Braunschweig zu sehen. Gefördert durch die Stiftung Erinnerung, Verantwortung und Zukunft.</p>
+            </div>
+            
+            <div class="image-section">
+                <img src="/api/placeholder/800/500" alt="Ausstellung „Mit eigener Stimme…" und unseren Augen betrachtet" class="exhibition-image">
+                <span class="image-caption">Einblick in die Ausstellung</span>
+            </div>
+        </div>
+
+        <h2 class="section-title">Entdecken Sie unsere Themenbereiche</h2>
+        
+        <div class="buttons-section">
+            <a href="/lernenundwerte" class="button button-1">
+                <div class="button-icon"><i class="fas fa-book-open"></i></div>
+                <div class="button-title">Lernen & Werte</div>
+                <div class="button-desc">Pädagogische Ansätze und Wertevermittlung im CJD Braunschweig</div>
+            </a>
+            
+            <a href="/juedischeralltag" class="button button-2">
+                <div class="button-icon"><i class="fas fa-menorah"></i></div>
+                <div class="button-title">Jüdischer Alltag</div>
+                <div class="button-desc">Traditionen, Rituale und das tägliche Leben in der jüdischen Gemeinschaft</div>
+            </a>
+            
+            <a href="/einblicke" class="button button-3">
+                <div class="button-icon"><i class="fas fa-eye"></i></div>
+                <div class="button-title">Einblicke & Erkenntnisse</div>
+                <div class="button-desc">Persönliche Geschichten und historische Einordnungen</div>
+            </a>
+            
+            <a href="/inspiration" class="button button-4">
+                <div class="button-icon"><i class="fas fa-torah"></i></div>
+                <div class="button-title">Inspiration & Lehre</div>
+                <div class="button-desc">Bildungsimpulse und Lehren für die Gegenwart</div>
+            </a>
+        </div>
+
+        <div class="games-overview-cta">
+            <a href="/spiele" class="games-overview-button">
+                <i class="fas fa-gamepad"></i>
+                Zur Übersicht aller Spiele
+            </a>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-inner">
+            <div class="footer-top">
+                <div class="footer-brand">
+                    <h3>CJD Braunschweig</h3>
+                    <p>Christophorusschule · 38102 Braunschweig<br>Tel: 0531 123456 · Öffnungszeiten: Di–So 10–18 Uhr, Do bis 20 Uhr</p>
+                </div>
+                <div class="footer-links">
+                    <a href="/impressum/" class="footer-link"><i class="fas fa-file-alt"></i> Impressum</a>
+                    <a href="/datenschutz/" class="footer-link"><i class="fas fa-shield-alt"></i> Datenschutz</a>
+                    <a href="/kontakt/" class="footer-link"><i class="fas fa-envelope"></i> Kontakt</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <div class="footer-info">
+                    <p>© 2026 CJD Braunschweig. Alle Rechte vorbehalten.</p>
+                </div>
+                <div class="footer-supporters">
+                    <span>Unterstützt von:</span>
+                    <span class="menorah">✡</span> Stiftung EVZ
+                    <span class="menorah">✡</span> Zentralrat der Juden
+                    <span class="menorah">✡</span> Stadt Braunschweig
+                </div>
+                <div class="language-switch">
+                    <label for="language-select">Sprache:</label>
+                    <select id="language-select" aria-label="Sprache auswählen">
+                        <option value="de" selected>Deutsch</option>
+                        <option value="en">English</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Shabbat Banner
+            const isShabbatNow = () => {
+                const nowBerlin = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Berlin' }));
+                const weekday = nowBerlin.getDay();
+                const hour = nowBerlin.getHours();
+                return weekday === 6 || (weekday === 5 && hour >= 18);
+            };
+
+            const shabbatBanner = document.getElementById('shabbat-banner');
+            if (shabbatBanner && isShabbatNow()) {
+                shabbatBanner.classList.add('is-visible');
+            }
+
+            // Hamburger Menu
+            const hamburger = document.getElementById('hamburger');
+            const navMenu = document.getElementById('nav-menu');
+
+            if (hamburger && navMenu) {
+                hamburger.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    navMenu.classList.toggle('active');
+                    const icon = hamburger.querySelector('i');
+                    icon.classList.toggle('fa-bars');
+                    icon.classList.toggle('fa-times');
+                });
+
+                navMenu.querySelectorAll('.nav-link').forEach(link => {
+                    link.addEventListener('click', function() {
+                        navMenu.classList.remove('active');
+                        const icon = hamburger.querySelector('i');
+                        icon.classList.remove('fa-times');
+                        icon.classList.add('fa-bars');
+                    });
+                });
+
+                document.addEventListener('click', function(event) {
+                    if (!navMenu.contains(event.target) && !hamburger.contains(event.target)) {
+                        navMenu.classList.remove('active');
+                        const icon = hamburger.querySelector('i');
+                        icon.classList.remove('fa-times');
+                        icon.classList.add('fa-bars');
+                    }
+                });
+            }
+
+            // Language Switch
+            const languageSelect = document.getElementById('language-select');
+            if (languageSelect) {
+                languageSelect.addEventListener('change', function() {
+                    window.location.href = this.value === 'en' ? '/en/' : '/';
+                });
+            }
+        });
+    </script>
+</body>
+</html>
