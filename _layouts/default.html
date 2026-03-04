@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+{% assign current_path = page.permalink | default: page.url | default: "" %}
+{% assign is_en = false %}
+{% if current_path contains "/en/" %}{% assign is_en = true %}{% endif %}
+<html lang="{% if is_en %}en{% else %}de{% endif %}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page.title | default: site.title }}</title>
+    <link rel="icon" href="/Logo.jpeg" type="image/jpeg">
+    <link rel="shortcut icon" href="/Logo.jpeg" type="image/jpeg">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Light Mode (Default) */
+            --primary: #1a365d;
+            --primary-light: #2c5282;
+            --accent: #c9a227;
+            --accent-soft: #e8d5a3;
+            --bg-warm: #faf8f3;
+            --bg-cream: #f5f1e8;
+            --surface: #ffffff;
+            --surface-elevated: #ffffff;
+            --text-primary: #1a202c;
+            --text-secondary: #4a5568;
+            --text-muted: #718096;
+            --border: rgba(0,0,0,0.06);
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+            --shadow-lg: 0 12px 32px rgba(0,0,0,0.12);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 20px;
+            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        [data-theme="dark"] {
+            /* Dark Mode */
+            --primary: #63b3ed;
+            --primary-light: #4299e1;
+            --accent: #ecc94b;
+            --accent-soft: #d69e2e;
+            --bg-warm: #0d1117;
+            --bg-cream: #161b22;
+            --surface: #1c2128;
+            --surface-elevated: #21262d;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --text-muted: #6e7681;
+            --border: rgba(255,255,255,0.08);
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+            --shadow-lg: 0 12px 32px rgba(0,0,0,0.5);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-warm);
+            color: var(--text-primary);
+            line-height: 1.7;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: 
+                radial-gradient(ellipse at 20% 30%, rgba(201, 162, 39, 0.04) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 70%, rgba(26, 54, 93, 0.03) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+            transition: opacity 0.3s ease;
+        }
+
+        [data-theme="dark"] body::before {
+            background: 
+                radial-gradient(ellipse at 20% 30%, rgba(236, 201, 75, 0.03) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 70%, rgba(99, 179, 237, 0.02) 0%, transparent 50%);
+        }
+
+        /* Shabbat Banner */
+        .shabbat-banner {
+            display: none;
+            width: 100%;
+            background: linear-gradient(90deg, var(--accent) 0%, var(--accent-soft) 50%, var(--accent) 100%);
+            color: #3d2914;
+            text-align: center;
+            padding: 0.875rem 1rem;
+            font-weight: 600;
+            font-size: 0.95rem;
+            letter-spacing: 0.02em;
+        }
+
+        [data-theme="dark"] .shabbat-banner {
+            color: #1a202c;
+        }
+
+        .shabbat-banner.is-visible {
+            display: block;
+        }
+
+        /* Navigation */
+        .site-nav {
+            background: rgba(26, 54, 93, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 1px solid rgba(201, 162, 39, 0.2);
+            transition: background-color 0.3s ease;
+        }
+
+        [data-theme="dark"] .site-nav {
+            background: rgba(13, 17, 23, 0.95);
+            border-bottom-color: rgba(236, 201, 75, 0.2);
+        }
+
+        .nav-container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 72px;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            text-decoration: none;
+            color: #ffffff;
+            transition: var(--transition);
+        }
+
+        .nav-brand:hover {
+            opacity: 0.9;
+        }
+
+        .brand-icon {
+            font-size: 1.6rem;
+            color: var(--accent);
+            width: 44px;
+            height: 44px;
+            display: grid;
+            place-items: center;
+            background: rgba(201, 162, 39, 0.15);
+            border-radius: var(--radius-sm);
+            transition: var(--transition);
+        }
+
+        [data-theme="dark"] .brand-icon {
+            background: rgba(236, 201, 75, 0.15);
+        }
+
+        .brand-title-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .brand-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.35rem;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+            line-height: 1.2;
+        }
+
+        .brand-subtitle {
+            font-size: 0.8rem;
+            opacity: 0.75;
+            font-weight: 400;
+            letter-spacing: 0.02em;
+        }
+
+        /* Theme Toggle */
+        .theme-toggle {
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.85);
+            font-size: 1.25rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: var(--radius-sm);
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+        }
+
+        .theme-toggle:hover {
+            background: rgba(255,255,255,0.1);
+            color: var(--accent);
+        }
+
+        .theme-toggle i {
+            transition: transform 0.3s ease;
+        }
+
+        .theme-toggle:hover i {
+            transform: rotate(15deg);
+        }
+
+        .hamburger {
+            display: none;
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            transition: var(--transition);
+            border-radius: var(--radius-sm);
+        }
+
+        .hamburger:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 8px;
+            list-style: none;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: rgba(255,255,255,0.85);
+            text-decoration: none;
+            padding: 0.6rem 1rem;
+            border-radius: var(--radius-sm);
+            transition: var(--transition);
+            font-weight: 500;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .nav-link:hover {
+            color: #ffffff;
+            background: rgba(255,255,255,0.1);
+        }
+
+        .nav-link.active {
+            background: var(--accent);
+            color: #1a202c;
+            font-weight: 600;
+        }
+
+        [data-theme="dark"] .nav-link.active {
+            color: #0d1117;
+        }
+
+        .nav-link i {
+            font-size: 1rem;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            width: 100%;
+            padding: 40px 24px;
+        }
+
+        .content-wrapper {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .content-container {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            padding: 48px;
+            position: relative;
+            overflow: hidden;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .content-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 50%, var(--primary-light) 100%);
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 32px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .page-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(1.75rem, 4vw, 2.5rem);
+            color: var(--primary);
+            margin-bottom: 12px;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .page-subtitle {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+            max-width: 640px;
+            margin: 0 auto;
+        }
+
+        .page-content {
+            font-size: 1.05rem;
+            line-height: 1.8;
+            color: var(--text-secondary);
+        }
+
+        .page-content h2 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin: 32px 0 16px;
+            font-weight: 600;
+        }
+
+        .page-content h3 {
+            font-size: 1.2rem;
+            color: var(--text-primary);
+            margin: 24px 0 12px;
+            font-weight: 600;
+        }
+
+        .page-content p {
+            margin-bottom: 1.25rem;
+        }
+
+        .page-content a {
+            color: var(--primary);
+            font-weight: 500;
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: var(--transition);
+        }
+
+        .page-content a:hover {
+            border-bottom-color: var(--accent);
+        }
+
+        .page-content ul, .page-content ol {
+            margin: 16px 0;
+            padding-left: 24px;
+        }
+
+        .page-content li {
+            margin-bottom: 8px;
+        }
+
+        .page-content blockquote {
+            border-left: 3px solid var(--accent);
+            padding-left: 20px;
+            margin: 24px 0;
+            font-style: italic;
+            color: var(--text-muted);
+        }
+
+        .page-content code {
+            background: var(--bg-cream);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 0.9em;
+        }
+
+        [data-theme="dark"] .page-content code {
+            background: var(--surface-elevated);
+        }
+
+        /* Footer */
+        .site-footer {
+            background: linear-gradient(180deg, #1a365d 0%, #0f1f3a 100%);
+            color: rgba(255,255,255,0.85);
+            padding: 48px 24px 32px;
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+            margin-top: auto;
+            transition: background 0.3s ease;
+        }
+
+        [data-theme="dark"] .site-footer {
+            background: linear-gradient(180deg, #161b22 0%, #0d1117 100%);
+        }
+
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .footer-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 32px;
+            margin-bottom: 32px;
+            padding-bottom: 32px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .footer-brand {
+            max-width: 400px;
+        }
+
+        .footer-brand h3 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.5rem;
+            color: #ffffff;
+            margin-bottom: 8px;
+        }
+
+        .footer-brand p {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            line-height: 1.6;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 32px;
+            flex-wrap: wrap;
+        }
+
+        .footer-link {
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .footer-link:hover {
+            color: var(--accent);
+        }
+
+        .footer-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .footer-info {
+            font-size: 0.85rem;
+            opacity: 0.7;
+        }
+
+        .footer-supporters {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            font-size: 0.85rem;
+        }
+
+        .footer-supporters span {
+            opacity: 0.7;
+        }
+
+        .footer-menorah {
+            color: var(--accent);
+            font-size: 1.1rem;
+        }
+
+        .language-switch {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 999px;
+            padding: 8px 14px;
+        }
+
+        .language-switch label {
+            font-size: 0.85rem;
+            opacity: 0.8;
+        }
+
+        .language-switch select {
+            background: transparent;
+            border: none;
+            color: #ffffff;
+            font-family: inherit;
+            font-size: 0.85rem;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .language-switch select option {
+            background: #1a365d;
+            color: #ffffff;
+        }
+
+        [data-theme="dark"] .language-switch select option {
+            background: #161b22;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .content-container {
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .hamburger {
+                display: block;
+            }
+
+            .nav-menu {
+                display: none;
+                position: absolute;
+                top: 72px;
+                left: 0;
+                width: 100%;
+                background: #1a365d;
+                flex-direction: column;
+                padding: 16px 24px;
+                gap: 4px;
+                box-shadow: var(--shadow-lg);
+            }
+
+            [data-theme="dark"] .nav-menu {
+                background: #0d1117;
+            }
+
+            .nav-menu.active {
+                display: flex;
+            }
+
+            .nav-link {
+                width: 100%;
+                padding: 12px 16px;
+                border-radius: var(--radius-sm);
+            }
+
+            .content-container {
+                padding: 32px 24px;
+            }
+
+            .theme-toggle {
+                order: -1;
+                margin-left: auto;
+                margin-right: 8px;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .main-content {
+                padding: 24px 16px;
+            }
+
+            .footer-top {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .footer-links {
+                justify-content: center;
+            }
+
+            .footer-bottom {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation: none !important;
+                transition: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="shabbat-banner" id="shabbat-banner" role="status" aria-live="polite">
+        {% if is_en %}✨ Today is Shabbat – Shabbat Shalom!{% else %}✨ Heute ist Schabbat – Schabbat Schalom!{% endif %}
+    </div>
+
+    <nav class="site-nav">
+        <div class="nav-container">
+            <a href="{% if is_en %}/en/{% else %}/{% endif %}" class="nav-brand">
+                <i class="fas fa-landmark brand-icon"></i>
+                <div class="brand-title-group">
+                    <span class="brand-title">CJD Braunschweig</span>
+                    <span class="brand-subtitle">{% if is_en %}"In Our Own Voice…" Seen Through Our Eyes{% else %}„Mit eigener Stimme…" und unseren Augen betrachtet{% endif %}</span>
+                </div>
+            </a>
+
+            <button class="theme-toggle" id="theme-toggle" aria-label="{% if is_en %}Toggle dark mode{% else %}Dark Mode umschalten{% endif %}">
+                <i class="fas fa-moon"></i>
+            </button>
+
+            <button class="hamburger" id="hamburger" aria-label="{% if is_en %}Menu{% else %}Menü{% endif %}">
+                <i class="fas fa-bars"></i>
+            </button>
+            
+            <ul class="nav-menu" id="nav-menu">
+                <li><a href="{% if is_en %}/en/{% else %}/{% endif %}" class="nav-link" data-nav="home">
+                    <i class="fas fa-home"></i>
+                    <span>{% if is_en %}Home{% else %}Startseite{% endif %}</span>
+                </a></li>
+                <li><a href="{% if is_en %}/en/spiele{% else %}/spiele{% endif %}" class="nav-link" data-nav="spiele">
+                    <i class="fas fa-gamepad"></i>
+                    <span>{% if is_en %}All Games{% else %}Alle Spiele{% endif %}</span>
+                </a></li>
+                <li><a href="{% if is_en %}/en/lernenundwerte{% else %}/lernenundwerte{% endif %}" class="nav-link" data-nav="lernenundwerte">
+                    <i class="fas fa-book-open"></i>
+                    <span>{% if is_en %}Learning & Values{% else %}Lernen & Werte{% endif %}</span>
+                </a></li>
+                <li><a href="{% if is_en %}/en/juedischeralltag{% else %}/juedischeralltag{% endif %}" class="nav-link" data-nav="juedischeralltag">
+                    <i class="fas fa-menorah"></i>
+                    <span>{% if is_en %}Jewish Everyday Life{% else %}Jüdischer Alltag{% endif %}</span>
+                </a></li>
+                <li><a href="{% if is_en %}/en/einblicke{% else %}/einblicke{% endif %}" class="nav-link" data-nav="einblicke">
+                    <i class="fas fa-eye"></i>
+                    <span>{% if is_en %}Insights & Findings{% else %}Einblicke & Erkenntnisse{% endif %}</span>
+                </a></li>
+                <li><a href="{% if is_en %}/en/inspiration{% else %}/inspiration{% endif %}" class="nav-link" data-nav="inspiration">
+                    <i class="fas fa-torah"></i>
+                    <span>{% if is_en %}Inspiration & Teaching{% else %}Inspiration & Lehre{% endif %}</span>
+                </a></li>
+            </ul>
+        </div>
+    </nav>
+    
+    <main class="main-content">
+        <div class="content-wrapper">
+            <div class="content-container">
+                <header class="page-header">
+                    <h1 class="page-title">{{ page.title | default: site.title }}</h1>
+                    {% if page.subtitle %}
+                    <p class="page-subtitle">{{ page.subtitle }}</p>
+                    {% endif %}
+                </header>
+                
+                <div class="page-content">
+                    {{ content }}
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <footer class="site-footer">
+        <div class="footer-container">
+            <div class="footer-top">
+                <div class="footer-brand">
+                    <h3>CJD Braunschweig</h3>
+                    <p>Christophorusschule · 38102 Braunschweig<br>
+                    {% if is_en %}Opening hours: Tue–Sun 10–18h, Thu until 20h{% else %}Öffnungszeiten: Di–So 10–18 Uhr, Do bis 20 Uhr{% endif %}</p>
+                </div>
+                <div class="footer-links">
+                    <a href="{% if is_en %}/en/impressum/{% else %}/impressum/{% endif %}" class="footer-link">
+                        <i class="fas fa-file-alt"></i> {% if is_en %}Legal Notice{% else %}Impressum{% endif %}
+                    </a>
+                    <a href="{% if is_en %}/en/datenschutz/{% else %}/datenschutz/{% endif %}" class="footer-link">
+                        <i class="fas fa-shield-alt"></i> {% if is_en %}Privacy{% else %}Datenschutz{% endif %}
+                    </a>
+                    <a href="{% if is_en %}/en/kontakt/{% else %}/kontakt/{% endif %}" class="footer-link">
+                        <i class="fas fa-envelope"></i> {% if is_en %}Contact{% else %}Kontakt{% endif %}
+                    </a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <div class="footer-info">
+                    <p>© <span id="current-year"></span> CJD Braunschweig. {% if is_en %}All rights reserved.{% else %}Alle Rechte vorbehalten.{% endif %}</p>
+                </div>
+                <div class="footer-supporters">
+                    <span>{% if is_en %}Supported by:{% else %}Unterstützt von:{% endif %}</span>
+                    <span class="footer-menorah">✡</span> Stiftung EVZ
+                    <span class="footer-menorah">✡</span> Zentralrat der Juden
+                    <span class="footer-menorah">✡</span> Stadt Braunschweig
+                </div>
+                <div class="language-switch">
+                    <label for="language-select">{% if is_en %}Language:{% else %}Sprache:{% endif %}</label>
+                    <select id="language-select" aria-label="{% if is_en %}Select language{% else %}Sprache auswählen{% endif %}">
+                        <option value="de" {% unless is_en %}selected{% endunless %}>Deutsch</option>
+                        <option value="en" {% if is_en %}selected{% endif %}>English</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </footer>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Theme Toggle
+            const themeToggle = document.getElementById('theme-toggle');
+            const themeIcon = themeToggle.querySelector('i');
+            const html = document.documentElement;
+            
+            // Check for saved theme preference or default to light
+            const currentTheme = localStorage.getItem('theme') || 'light';
+            html.setAttribute('data-theme', currentTheme);
+            updateThemeIcon(currentTheme);
+            
+            themeToggle.addEventListener('click', function() {
+                const currentTheme = html.getAttribute('data-theme');
+                const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+                
+                html.setAttribute('data-theme', newTheme);
+                localStorage.setItem('theme', newTheme);
+                updateThemeIcon(newTheme);
+            });
+            
+            function updateThemeIcon(theme) {
+                if (theme === 'dark') {
+                    themeIcon.classList.remove('fa-moon');
+                    themeIcon.classList.add('fa-sun');
+                } else {
+                    themeIcon.classList.remove('fa-sun');
+                    themeIcon.classList.add('fa-moon');
+                }
+            }
+
+            // Shabbat Banner
+            const isShabbatNow = () => {
+                const nowBerlin = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Berlin' }));
+                const weekday = nowBerlin.getDay();
+                const hour = nowBerlin.getHours();
+                return weekday === 6 || (weekday === 5 && hour >= 18);
+            };
+
+            const shabbatBanner = document.getElementById('shabbat-banner');
+            if (shabbatBanner && isShabbatNow()) {
+                shabbatBanner.classList.add('is-visible');
+            }
+
+            // Active Navigation
+            const currentPath = window.location.pathname;
+            const navLinks = document.querySelectorAll('.nav-link[data-nav]');
+            
+            navLinks.forEach(link => {
+                const linkPath = link.getAttribute('href');
+                if (currentPath === linkPath || 
+                   (currentPath.startsWith(linkPath) && linkPath !== '/')) {
+                    link.classList.add('active');
+                }
+            });
+            
+            // Current Year
+            const yearEl = document.getElementById('current-year');
+            if (yearEl) {
+                yearEl.textContent = new Date().getFullYear();
+            }
+
+            // Language Switch
+            const languageSelect = document.getElementById('language-select');
+            if (languageSelect) {
+                languageSelect.addEventListener('change', function() {
+                    window.location.href = this.value === 'en' ? '/en/' : '/';
+                });
+            }
+
+            // Hamburger Menu
+            const hamburger = document.getElementById('hamburger');
+            const navMenu = document.getElementById('nav-menu');
+
+            if (hamburger && navMenu) {
+                hamburger.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    navMenu.classList.toggle('active');
+                    const icon = hamburger.querySelector('i');
+                    icon.classList.toggle('fa-bars');
+                    icon.classList.toggle('fa-times');
+                });
+
+                navMenu.querySelectorAll('.nav-link').forEach(link => {
+                    link.addEventListener('click', function() {
+                        navMenu.classList.remove('active');
+                        const icon = hamburger.querySelector('i');
+                        icon.classList.remove('fa-times');
+                        icon.classList.add('fa-bars');
+                    });
+                });
+
+                document.addEventListener('click', function(event) {
+                    if (!navMenu.contains(event.target) && !hamburger.contains(event.target)) {
+                        navMenu.classList.remove('active');
+                        const icon = hamburger.querySelector('i');
+                        icon.classList.remove('fa-times');
+                        icon.classList.add('fa-bars');
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
