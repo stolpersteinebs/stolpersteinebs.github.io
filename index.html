@@ -11,7 +11,7 @@
 
             const preferredLanguage = ((navigator.languages && navigator.languages[0]) || navigator.language || '').toLowerCase();
             if (preferredLanguage && !preferredLanguage.startsWith('de')) {
-                window.location.replace('/en/');
+                window.location.replace('/?lang=en');
             }
         })();
     </script>
@@ -874,11 +874,11 @@
 
     <nav class="main-nav">
         <div class="nav-inner">
-            <a href="/" class="nav-brand">
+            <a href="/" class="nav-brand" data-href-de="/" data-href-en="/?lang=en">
                 <i class="fas fa-landmark nav-icon"></i>
                 <div class="nav-title-group">
                     <span class="nav-title">CJD Braunschweig</span>
-                    <span class="nav-subtitle">„Mit eigener Stimme…"</span>
+                    <span class="nav-subtitle" id="nav-subtitle">„Mit eigener Stimme…"</span>
                 </div>
             </a>
 
@@ -893,28 +893,28 @@
             </div>
             
             <ul class="nav-menu" id="nav-menu">
-                <li><a href="/" class="nav-link active"><i class="fas fa-home"></i> Startseite</a></li>
-                <li><a href="/spiele" class="nav-link"><i class="fas fa-gamepad"></i> Alle Spiele</a></li>
-                <li><a href="/lernenundwerte" class="nav-link"><i class="fas fa-book-open"></i> Lernen & Werte</a></li>
-                <li><a href="/juedischeralltag" class="nav-link"><i class="fas fa-menorah"></i> Jüdischer Alltag</a></li>
-                <li><a href="/einblicke" class="nav-link"><i class="fas fa-eye"></i> Einblicke & Erkenntnisse</a></li>
-                <li><a href="/inspiration" class="nav-link"><i class="fas fa-torah"></i> Inspiration & Lehre</a></li>
+                <li><a href="/" class="nav-link active" id="nav-home" data-href-de="/" data-href-en="/?lang=en"><i class="fas fa-home"></i> Startseite</a></li>
+                <li><a href="/spiele" class="nav-link" id="nav-games" data-href-de="/spiele" data-href-en="/en/spiele/"><i class="fas fa-gamepad"></i> Alle Spiele</a></li>
+                <li><a href="/lernenundwerte" class="nav-link" id="nav-learning" data-href-de="/lernenundwerte" data-href-en="/en/lernenundwerte/"><i class="fas fa-book-open"></i> Lernen & Werte</a></li>
+                <li><a href="/juedischeralltag" class="nav-link" id="nav-daily" data-href-de="/juedischeralltag" data-href-en="/en/juedischeralltag/"><i class="fas fa-menorah"></i> Jüdischer Alltag</a></li>
+                <li><a href="/einblicke" class="nav-link" id="nav-insights" data-href-de="/einblicke" data-href-en="/en/einblicke/"><i class="fas fa-eye"></i> Einblicke & Erkenntnisse</a></li>
+                <li><a href="/inspiration" class="nav-link" id="nav-inspiration" data-href-de="/inspiration" data-href-en="/en/inspiration/"><i class="fas fa-torah"></i> Inspiration & Lehre</a></li>
             </ul>
         </div>
     </nav>
 
     <div class="container">
         <header class="hero">
-            <p class="kicker">Interaktive Bildungsausstellung</p>
+            <p class="kicker" id="kicker">Interaktive Bildungsausstellung</p>
             <h1>
-                <span class="title-lead">CJD Braunschweig präsentiert:</span>
-                <span class="title-main">„Mit eigener Stimme…" und unseren Augen betrachtet</span>
+                <span class="title-lead" id="title-lead">CJD Braunschweig präsentiert:</span>
+                <span class="title-main" id="title-main">„Mit eigener Stimme…" und unseren Augen betrachtet</span>
             </h1>
-            <p class="subtitle">Eine immersive Ausstellung über jüdische Geschichte, Kultur und Traditionen</p>
+            <p class="subtitle" id="subtitle">Eine immersive Ausstellung über jüdische Geschichte, Kultur und Traditionen</p>
             <div class="feature-pills">
-                <span class="feature-pill"><i class="fas fa-ticket"></i> Eintritt frei</span>
-                <span class="feature-pill"><i class="fas fa-layer-group"></i> 4 Themenbereiche</span>
-                <span class="feature-pill"><i class="fas fa-gamepad"></i> Interaktive Spiele</span>
+                <span class="feature-pill" id="pill-free"><i class="fas fa-ticket"></i> Eintritt frei</span>
+                <span class="feature-pill" id="pill-topics"><i class="fas fa-layer-group"></i> 4 Themenbereiche</span>
+                <span class="feature-pill" id="pill-games"><i class="fas fa-gamepad"></i> Interaktive Spiele</span>
             </div>
         </header>
 
@@ -935,7 +935,7 @@
             </div>
         </div>
 
-        <h2 class="section-title">Entdecken Sie unsere Themenbereiche</h2>
+        <h2 class="section-title" id="section-title">Entdecken Sie unsere Themenbereiche</h2>
         
         <div class="buttons-section">
             <a href="/lernenundwerte" class="button button-1">
@@ -964,9 +964,9 @@
         </div>
 
         <div class="games-overview-cta">
-            <a href="/spiele" class="games-overview-button">
+            <a href="/spiele" class="games-overview-button" id="games-overview-button" data-href-de="/spiele" data-href-en="/en/spiele/">
                 <i class="fas fa-gamepad"></i>
-                Zur Übersicht aller Spiele
+                <span id="games-overview-label">Zur Übersicht aller Spiele</span>
             </a>
         </div>
     </div>
@@ -979,9 +979,9 @@
                     <p>Christophorusschule · 38102 Braunschweig<br>Tel: 0531 123456 · Öffnungszeiten: Di–So 10–18 Uhr, Do bis 20 Uhr</p>
                 </div>
                 <div class="footer-links">
-                    <a href="/impressum/" class="footer-link"><i class="fas fa-file-alt"></i> Impressum</a>
-                    <a href="/datenschutz/" class="footer-link"><i class="fas fa-shield-alt"></i> Datenschutz</a>
-                    <a href="/kontakt/" class="footer-link"><i class="fas fa-envelope"></i> Kontakt</a>
+                    <a href="/impressum/" class="footer-link" id="footer-impressum" data-href-de="/impressum/" data-href-en="/en/impressum/"><i class="fas fa-file-alt"></i> Impressum</a>
+                    <a href="/datenschutz/" class="footer-link" id="footer-privacy" data-href-de="/datenschutz/" data-href-en="/en/datenschutz/"><i class="fas fa-shield-alt"></i> Datenschutz</a>
+                    <a href="/kontakt/" class="footer-link" id="footer-contact" data-href-de="/kontakt/" data-href-en="/en/kontakt/"><i class="fas fa-envelope"></i> Kontakt</a>
                 </div>
             </div>
             <div class="footer-bottom">
@@ -989,15 +989,15 @@
                     <p>© 2026 CJD Braunschweig. Alle Rechte vorbehalten.</p>
                 </div>
                 <div class="footer-supporters">
-                    <span>Unterstützt von:</span>
+                    <span id="supporters-label">Unterstützt von:</span>
                     <span class="menorah">✡</span> Stiftung EVZ
                     <span class="menorah">✡</span> Zentralrat der Juden
                     <span class="menorah">✡</span> Stadt Braunschweig
                 </div>
                 <div class="language-switch">
-                    <label for="language-select">Sprache:</label>
+                    <label for="language-select" id="language-label">Sprache:</label>
                     <select id="language-select" aria-label="Sprache auswählen">
-                        <option value="de" selected>Deutsch</option>
+                        <option value="de">Deutsch</option>
                         <option value="en">English</option>
                     </select>
                 </div>
@@ -1083,9 +1083,45 @@
 
             // Language Switch
             const languageSelect = document.getElementById('language-select');
+            const params = new URLSearchParams(window.location.search);
+            const currentLanguage = params.get('lang') === 'en' ? 'en' : 'de';
+            const translations = {
+                de: { navSubtitle: '„Mit eigener Stimme…"', navHome: 'Startseite', navGames: 'Alle Spiele', navLearning: 'Lernen & Werte', navDaily: 'Jüdischer Alltag', navInsights: 'Einblicke & Erkenntnisse', navInspiration: 'Inspiration & Lehre', kicker: 'Interaktive Bildungsausstellung', titleLead: 'CJD Braunschweig präsentiert:', titleMain: '„Mit eigener Stimme…" und unseren Augen betrachtet', subtitle: 'Eine immersive Ausstellung über jüdische Geschichte, Kultur und Traditionen', pillFree: 'Eintritt frei', pillTopics: '4 Themenbereiche', pillGames: 'Interaktive Spiele', sectionTitle: 'Entdecken Sie unsere Themenbereiche', gamesOverview: 'Zur Übersicht aller Spiele', languageLabel: 'Sprache:', supportersLabel: 'Unterstützt von:', footerImpressum: 'Impressum', footerPrivacy: 'Datenschutz', footerContact: 'Kontakt', shabbat: '✨ Heute ist Schabbat – Schabbat Schalom!' },
+                en: { navSubtitle: '“In Our Own Voice…”', navHome: 'Home', navGames: 'All Games', navLearning: 'Learning & Values', navDaily: 'Jewish Daily Life', navInsights: 'Insights & Discoveries', navInspiration: 'Inspiration & Teachings', kicker: 'Interactive educational exhibition', titleLead: 'CJD Braunschweig presents:', titleMain: '“In Our Own Voice…” Seen Through Our Eyes', subtitle: 'An immersive exhibition on Jewish history, culture and traditions', pillFree: 'Free admission', pillTopics: '4 thematic areas', pillGames: 'Interactive games', sectionTitle: 'Discover our thematic areas', gamesOverview: 'Go to all games', languageLabel: 'Language:', supportersLabel: 'Supported by:', footerImpressum: 'Legal notice', footerPrivacy: 'Privacy policy', footerContact: 'Contact', shabbat: '✨ Today is Shabbat – Shabbat Shalom!' }
+            };
+            const i18n = translations[currentLanguage];
+            document.title = currentLanguage === 'en' ? 'CJD Braunschweig: “In Our Own Voice…” Seen Through Our Eyes' : 'CJD Braunschweig: „Mit eigener Stimme…" und unseren Augen betrachtet';
+            document.documentElement.lang = currentLanguage;
+            document.getElementById('nav-subtitle').textContent = i18n.navSubtitle;
+            document.getElementById('nav-home').lastChild.textContent = ` ${i18n.navHome}`;
+            document.getElementById('nav-games').lastChild.textContent = ` ${i18n.navGames}`;
+            document.getElementById('nav-learning').lastChild.textContent = ` ${i18n.navLearning}`;
+            document.getElementById('nav-daily').lastChild.textContent = ` ${i18n.navDaily}`;
+            document.getElementById('nav-insights').lastChild.textContent = ` ${i18n.navInsights}`;
+            document.getElementById('nav-inspiration').lastChild.textContent = ` ${i18n.navInspiration}`;
+            document.getElementById('kicker').textContent = i18n.kicker;
+            document.getElementById('title-lead').textContent = i18n.titleLead;
+            document.getElementById('title-main').textContent = i18n.titleMain;
+            document.getElementById('subtitle').textContent = i18n.subtitle;
+            document.getElementById('pill-free').lastChild.textContent = ` ${i18n.pillFree}`;
+            document.getElementById('pill-topics').lastChild.textContent = ` ${i18n.pillTopics}`;
+            document.getElementById('pill-games').lastChild.textContent = ` ${i18n.pillGames}`;
+            document.getElementById('section-title').textContent = i18n.sectionTitle;
+            document.getElementById('games-overview-label').textContent = i18n.gamesOverview;
+            document.getElementById('language-label').textContent = i18n.languageLabel;
+            languageSelect.setAttribute('aria-label', currentLanguage === 'en' ? 'Select language' : 'Sprache auswählen');
+            document.getElementById('supporters-label').textContent = i18n.supportersLabel;
+            document.getElementById('footer-impressum').lastChild.textContent = ` ${i18n.footerImpressum}`;
+            document.getElementById('footer-privacy').lastChild.textContent = ` ${i18n.footerPrivacy}`;
+            document.getElementById('footer-contact').lastChild.textContent = ` ${i18n.footerContact}`;
+            shabbatBanner.textContent = i18n.shabbat;
+            document.querySelectorAll('[data-href-de][data-href-en]').forEach((link) => {
+                link.href = currentLanguage === 'en' ? link.dataset.hrefEn : link.dataset.hrefDe;
+            });
+            languageSelect.value = currentLanguage;
             if (languageSelect) {
                 languageSelect.addEventListener('change', function() {
-                    window.location.href = this.value === 'en' ? '/en/' : '/';
+                    window.location.href = this.value === 'en' ? '/?lang=en' : '/';
                 });
             }
         });
