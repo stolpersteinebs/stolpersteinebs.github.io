@@ -200,6 +200,7 @@
 
         /* Theme Toggle */
         .theme-toggle {
+            flex-shrink: 0;
             background: none;
             border: none;
             color: rgba(255,255,255,0.85);
@@ -229,6 +230,7 @@
         }
 
         .hamburger {
+            flex-shrink: 0;
             display: none;
             background: none;
             border: none;
@@ -558,6 +560,17 @@
 
         /* Responsive */
         @media (max-width: 1200px) {
+            .nav-brand {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .brand-subtitle {
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
             .hamburger {
                 display: block;
             }
