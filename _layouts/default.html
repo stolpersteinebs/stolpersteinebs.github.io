@@ -139,7 +139,11 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            height: 72px;
+            min-height: 72px;
+            padding-top: 10px;
+            padding-bottom: 10px;
+            gap: 12px;
+            position: relative;
         }
 
         .nav-brand {
@@ -174,6 +178,8 @@
         .brand-title-group {
             display: flex;
             flex-direction: column;
+            justify-content: center;
+            min-height: 44px;
         }
 
         .brand-title {
@@ -189,6 +195,7 @@
             opacity: 0.75;
             font-weight: 400;
             letter-spacing: 0.02em;
+            line-height: 1.25;
         }
 
         /* Theme Toggle */
@@ -550,7 +557,7 @@
         }
 
         /* Responsive */
-        @media (max-width: 900px) {
+        @media (max-width: 1200px) {
             .hamburger {
                 display: block;
             }
@@ -558,7 +565,7 @@
             .nav-menu {
                 display: none;
                 position: absolute;
-                top: 72px;
+                top: 100%;
                 left: 0;
                 width: 100%;
                 background: #1a365d;
