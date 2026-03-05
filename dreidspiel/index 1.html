@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="dreid-supabase-url" content="https://twehohdgzrbikuaiptfh.supabase.co">
+    <meta name="dreid-supabase-key" content="sb_publishable_CDnbNX7X82lPgC69kfvSqw_rmtRkwrn">
+    <meta name="dreid-supabase-table" content="dreidleaderboard">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>3D Lernwelt Judentum</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="/assets/game-polish.css">
+</head>
+<body>
+<nav class="site-nav game-site-nav">
+    <div class="nav-container">
+        <a href="/" class="nav-brand">
+            <i class="fas fa-landmark brand-icon"></i>
+            <div class="brand-title-group">
+                <span class="brand-title">CJD Braunschweig</span>
+                <span class="brand-subtitle">„Mit eigener Stimme…"</span>
+            </div>
+        </a>
+
+        <div class="nav-actions">
+            <button class="theme-toggle" id="theme-toggle" aria-label="Dark Mode umschalten">
+                <i class="fas fa-moon"></i>
+            </button>
+
+            <button class="hamburger" id="hamburger" aria-label="Menü">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+
+        <ul class="nav-menu" id="nav-menu">
+            <li><a href="/" class="nav-link" data-nav="home"><i class="fas fa-home"></i> Startseite</a></li>
+            <li><a href="/spiele" class="nav-link" data-nav="spiele"><i class="fas fa-gamepad"></i> Alle Spiele</a></li>
+            <li><a href="/lernenundwerte" class="nav-link" data-nav="lernenundwerte"><i class="fas fa-book-open"></i> Lernen & Werte</a></li>
+            <li><a href="/juedischeralltag" class="nav-link" data-nav="juedischeralltag"><i class="fas fa-menorah"></i> Jüdischer Alltag</a></li>
+            <li><a href="/einblicke" class="nav-link" data-nav="einblicke"><i class="fas fa-eye"></i> Einblicke & Erkenntnisse</a></li>
+            <li><a href="/inspiration" class="nav-link" data-nav="inspiration"><i class="fas fa-torah"></i> Inspiration & Lehre</a></li>
+        </ul>
+    </div>
+</nav>
+<main class="page">
+    <header class="top">
+        <h1>3D Lernwelt Judentum</h1>
+        <p>Laufe durch die Welt, finde Stationen und beweise dein Wissen durch richtige Entscheidungen.</p>
+    </header>
+
+    <nav class="quick-links" aria-label="Spiele-Navigation">
+        <a href="/">Startseite</a>
+        <a href="/koscherspiel/">Koscher Sammelspiel</a>
+        <a href="/feiertagsquiz/">Feiertags-Quiz</a>
+        <a href="/schabbattischspiel/">Schabbat-Tisch</a>
+    </nav>
+
+    <section id="startScreen" class="card start-screen" aria-live="polite">
+        <h2>Mission starten</h2>
+        <p>Steuerung: <strong>WASD</strong> zum Laufen, <strong>Pfeil links/rechts</strong> zum Drehen, <strong>E</strong> zum Interagieren.</p>
+        <p>Auf Touch-Geraten nutzt du unten zwei Joysticks: links zum Bewegen, rechts zum Lenken, plus den Interagieren-Button.</p>
+        <p>Auf Smartphones startet die Lernwelt automatisch im Vollbild und im Querformat fur die beste Steuerung.</p>
+        <p>Du hast 4 Minuten, um alle Wissens-Stationen zu finden.</p>
+        <p class="start-highscore">Bester Score: <span id="startHighscore">0</span></p>
+        <button id="startButton" type="button">Lernwelt starten</button>
+        <section class="leaderboard leaderboard-box start-leaderboard" aria-label="Bestenliste vor Spielstart">
+            <h3>Bestenliste</h3>
+            <ol id="startLeaderboardList"></ol>
+        </section>
+    </section>
+
+    <section id="gamePanel" class="hidden" aria-live="polite">
+        <section class="card scene-card" aria-label="3D-Lernwelt">
+            <div class="render-frame">
+                <canvas id="view" aria-label="3D Ansicht"></canvas>
+                <section class="hud hud-inside" aria-label="Spielstand im Spiel">
+                    <div class="hud-lives" aria-label="Leben"><span class="hud-heart" aria-hidden="true">❤️</span><span id="lives">3</span></div>
+                    <div class="hud-score">Punkte: <span id="score">0</span></div>
+                    <div class="hud-meta">Zeit: <span id="timeLeft">240</span>s · Nächstes Ziel: <span id="stationDeadline">45</span>s · Serie: <span id="streak">0</span> · Stationen: <span id="solved">0</span>/<span id="total">6</span> · Highscore: <span id="highscore">0</span></div>
+                </section>
+                <button id="jumpButton" type="button" class="jump-btn" aria-label="Über eine Wand springen">
+                    <span class="jump-btn-title">Sprung</span>
+                    <span class="jump-btn-sub">oder Enter drücken</span>
+                </button>
+                <button id="interactButton" type="button" class="interact-btn" aria-label="Interagieren">
+                    <span class="interact-btn-title">Interagieren</span>
+                    <span class="interact-btn-sub">oder E drucken</span>
+                </button>
+                <div id="mobileFullscreenGate" class="mobile-gate hidden" aria-live="assertive">
+                    <p id="mobileFullscreenText">Auf dem Smartphone ist dieses Spiel nur im Vollbild verfugbar.</p>
+                    <button id="mobileFullscreenButton" type="button" class="touch-btn">Vollbild aktivieren</button>
+                </div>
+                <button id="fullscreenButton" type="button" class="fullscreen-btn" aria-label="Vollbildmodus umschalten">Vollbild</button>
+                <div class="touch-controls" aria-label="Touch-Steuerung">
+                    <div class="touch-stick-group" aria-label="Bewegen">
+                        <span class="touch-stick-label">Bewegen</span>
+                        <div id="moveStick" class="touch-stick" role="application" aria-label="Bewegungsstick">
+                            <div id="moveStickKnob" class="touch-stick-knob" aria-hidden="true"></div>
+                        </div>
+                    </div>
+                    <div class="touch-stick-group" aria-label="Lenken">
+                        <span class="touch-stick-label">Lenken</span>
+                        <div id="turnStick" class="touch-stick" role="application" aria-label="Lenkstick">
+                            <div id="turnStickKnob" class="touch-stick-knob" aria-hidden="true"></div>
+                        </div>
+                    </div>
+                </div>
+                <section id="questionModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="questionTitle">
+                    <div class="modal-card">
+                        <h2 id="questionTitle">Station</h2>
+                        <p id="questionText"></p>
+                        <div id="answerButtons" class="answers"></div>
+                        <button id="laterButton" type="button" class="later">Spater</button>
+                    </div>
+                </section>
+            </div>
+            <p class="controls-hint">Hinweis: Erkunde die Gange und suche reale Orte und Gegenstande im Labyrinth.</p>
+            <p id="feedbackBanner" class="feedback hidden" aria-live="polite"></p>
+        </section>
+    </section>
+
+    <section id="result" class="card result hidden">
+        <h2>Auswertung</h2>
+        <div class="score-wheel" aria-live="polite">
+            <div id="scoreWheelValue" class="score-wheel-value">0</div>
+            <div class="score-wheel-label">Punkte</div>
+        </div>
+        <p id="resultMotto" class="result-motto"></p>
+        <p id="resultMeta" class="result-meta"></p>
+        <p id="resultText"></p>
+
+        <div id="leaderboardOptIn" class="leaderboard-optin hidden">
+            <p>Mochtest du deinen Score in die Bestenliste eintragen?</p>
+            <label for="playerName">Dein Name</label>
+            <input id="playerName" type="text" maxlength="20" placeholder="Name eingeben" autocomplete="nickname">
+            <div class="leaderboard-actions">
+                <button id="saveLeaderboardButton" type="button">Ja, eintragen</button>
+                <button id="skipLeaderboardButton" type="button" class="secondary">Nein danke</button>
+            </div>
+            <p id="leaderboardStatus" class="leaderboard-status" role="status" aria-live="polite"></p>
+        </div>
+
+        <section class="leaderboard leaderboard-box" aria-label="Bestenliste">
+            <h3>Bestenliste</h3>
+            <ol id="leaderboardList"></ol>
+        </section>
+
+        <button id="restartButton" type="button">Nochmal spielen</button>
+    </section>
+</main>
+
+<script>
+(function () {
+  const lang = new URLSearchParams(window.location.search).get("lang");
+  if (lang !== "en") return;
+  document.documentElement.lang = "en";
+
+  const setText = (selector, text) => {
+    const el = document.querySelector(selector);
+    if (el) el.textContent = text;
+  };
+
+
+  const setEnglishGameLinks = () => {
+    document.querySelectorAll('.quick-links a').forEach((link, index) => {
+      if (index === 0) {
+        link.setAttribute('href', '/en/');
+        return;
+      }
+
+      const url = new URL(link.getAttribute('href'), window.location.origin);
+      if (!url.pathname.endsWith('/')) {
+        url.pathname += '/';
+      }
+      url.searchParams.set('lang', 'en');
+      link.setAttribute('href', `${url.pathname}${url.search}`);
+    });
+  };
+
+  const map = {
+    "feiertagsquiz/index.html": () => {
+      setText("h1", "Holiday Quiz");
+      setText(".top p", "Test your knowledge of Jewish holidays, symbols, and terms.");
+      setText(".hint", "Note: Some traditions are practiced differently across communities.");
+      setText("#startScreen h2", "Ready for the Holiday Quiz?");
+      setText("#startScreen p", "You play against the clock, collect points, and build streak bonuses.");
+      setText("#startButton", "Start Quiz");
+      setText("#result h2", "Result");
+      setText("#restartButton", "Play Again");
+      setText("#nextButton", "Next Question");
+      setText("#celebrationText", "Correct! 🎉");
+      document.querySelectorAll('.quick-links a')[0].textContent='Home';
+      document.querySelectorAll('.quick-links a')[1].textContent='Kosher Game';
+      document.querySelectorAll('.quick-links a')[2].textContent='3D Learning World';
+      document.querySelectorAll('.quick-links a')[3].textContent='Shabbat Table';
+      const snd=document.getElementById('soundToggle'); if(snd) snd.textContent='Sound: On';
+    },
+    "menoraquiz/index.html": () => {
+      setText("h1", "Menorah Quiz");
+      setText(".top p", "Test your knowledge of the Menorah, its history, and meaning.");
+      setText(".hint", "Note: Some depictions and interpretations vary by tradition.");
+      setText("#startScreen h2", "Ready for the Menorah Quiz?");
+      setText("#startScreen p", "You play against the clock, collect points, and build streak bonuses.");
+      setText("#startButton", "Start Quiz");
+      setText("#result h2", "Result");
+      setText("#restartButton", "Play Again");
+      setText("#nextButton", "Next Question");
+      setText("#celebrationText", "Correct! 🎉");
+      document.querySelectorAll('.quick-links a')[0].textContent='Home';
+      document.querySelectorAll('.quick-links a')[1].textContent='Holiday Quiz';
+      document.querySelectorAll('.quick-links a')[2].textContent='Kosher Game';
+      document.querySelectorAll('.quick-links a')[3].textContent='Shabbat Table';
+      const snd=document.getElementById('soundToggle'); if(snd) snd.textContent='Sound: On';
+    },
+    "koscherspiel/index.html": () => {
+      setText("h1", "Kosher Collection Game");
+      setText(".instructions", "Collect kosher foods with the cart and avoid non-kosher items. Move left/right with arrow keys or A/D.");
+      setText("#startTitle", "Ready to collect?");
+      setText("#startScreen p", "Start when you are ready and collect as many kosher foods as possible.");
+      setText("#startButton", "Start Game");
+      setText("#gameOverTitle", "Game Over");
+      setText("#restartButton", "Restart");
+      const labels=document.querySelectorAll('.hud-item');
+      if(labels[0]) labels[0].childNodes[0].textContent='Score: ';
+      if(labels[1]) labels[1].childNodes[0].textContent='Lives: ';
+      if(labels[2]) labels[2].childNodes[0].textContent='Level: ';
+      if(labels[3]) labels[3].childNodes[0].textContent='High Score: ';
+      if(labels[4]) labels[4].childNodes[0].textContent='Power-Up: ';
+      setText('.leaderboard h2','Leaderboard');
+      document.querySelectorAll('.quick-links a')[0].textContent='Home';
+      document.querySelectorAll('.quick-links a')[1].textContent='Holiday Quiz';
+      document.querySelectorAll('.quick-links a')[2].textContent='3D Learning World';
+      document.querySelectorAll('.quick-links a')[3].textContent='Shabbat Table';
+    },
+    "schabbattischspiel/index.html": () => {
+      setText("h1", "Set the Shabbat Table Correctly");
+      setText(".top p", "Place the items in the right order, as they are traditionally prepared before Shabbat begins.");
+      setText(".instructions h2", "Instructions");
+      const lis=document.querySelectorAll('.instructions li');
+      if(lis[0]) lis[0].textContent='Click the item that belongs on the table next.';
+      if(lis[1]) lis[1].textContent='When correct, your prepared table grows on the right.';
+      if(lis[2]) lis[2].textContent='Mistakes are allowed — you get immediate feedback.';
+      setText("#hint", "Tip: Start with the basic table setup.");
+      setText("#trayTitle", "Available Items");
+      setText("#tableTitle", "Your Prepared Table");
+      setText("#tableCaption", "Empty table — now set it step by step.");
+      setText("#restartButton", "Restart");
+      const hud=document.querySelectorAll('.hud-item');
+      if(hud[0]) hud[0].childNodes[0].textContent='Score: ';
+      if(hud[1]) hud[1].childNodes[0].textContent='Steps: ';
+      if(hud[2]) hud[2].childNodes[0].textContent='Mistakes: ';
+      document.querySelectorAll('.quick-links a')[0].textContent='Home';
+      document.querySelectorAll('.quick-links a')[1].textContent='Kosher Game';
+      document.querySelectorAll('.quick-links a')[2].textContent='Holiday Quiz';
+      document.querySelectorAll('.quick-links a')[3].textContent='3D Learning World';
+    },
+    "dreidspiel/index.html": () => {
+      setText("h1", "3D Learning World: Judaism");
+      setText(".top p", "Explore the world, find stations, and prove your knowledge through the right choices.");
+      setText("#startScreen h2", "Start Mission");
+      setText("#startScreen p", "Controls: WASD to move, left/right arrows to turn, E to interact.");
+      setText("#startButton", "Start Learning World");
+      setText(".leaderboard h3", "Leaderboard");
+      document.querySelectorAll('.quick-links a')[0].textContent='Home';
+      document.querySelectorAll('.quick-links a')[1].textContent='Kosher Game';
+      document.querySelectorAll('.quick-links a')[2].textContent='Holiday Quiz';
+      document.querySelectorAll('.quick-links a')[3].textContent='Shabbat Table';
+    }
+  };
+  const key = window.location.pathname.replace(/^\//, "") + "index.html";
+  const entry = Object.keys(map).find(k => key.includes(k));
+  setEnglishGameLinks();
+  if (entry) map[entry]();
+})();
+</script>
+<script src="/assets/game-theme.js"></script>
+<script src="script.js"></script>
+<script src="/assets/easteregg.js"></script>
+</body>
+</html>
