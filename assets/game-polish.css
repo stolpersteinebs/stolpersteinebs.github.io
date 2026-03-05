@@ -260,18 +260,41 @@ h1 {
 .game-site-nav .hamburger:hover { background: rgba(255,255,255,0.1); color:var(--accent); }
 
 .game-site-nav .hamburger { display:none; font-size:1.4rem; }
-.game-site-nav .nav-menu { display:flex; list-style:none; gap:8px; align-items:center; }
+.game-site-nav .nav-menu { display:flex; list-style:none; gap:8px; align-items:center; margin:0; padding-left:0; }
 .game-site-nav .nav-link { color:rgba(255,255,255,.85); text-decoration:none; padding:.55rem .85rem; border-radius:8px; font-size:.9rem; font-weight:500; white-space:nowrap; }
 .game-site-nav .nav-link:hover { background: rgba(255,255,255,0.1); color:#fff; }
 .game-site-nav .nav-link.active { background: var(--accent); color: #1a202c; font-weight:600; }
 
 @media (max-width: 1200px) {
+  body {
+    display: block;
+    padding-top: 0 !important;
+  }
+
+  .game-site-nav + .page {
+    margin-inline: auto;
+  }
+
   .game-site-nav .hamburger { display:block; }
+  .game-site-nav {
+    margin-top: 0;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+  }
+
   .game-site-nav .nav-menu {
-    display:none; position:absolute; top:100%; left:0; width:100%;
-    background:#1a365d; flex-direction:column; padding:16px 24px; box-shadow:0 12px 32px rgba(0,0,0,.35);
+    display:flex; position:absolute; top:100%; left:0; width:100%;
+    background:#1a365d; flex-direction:column; align-items:stretch; text-align:left;
+    padding:10px 16px; gap:2px; box-shadow:0 12px 32px rgba(0,0,0,.35);
+    opacity:0; transform: translateY(-8px) scaleY(.98); transform-origin: top center;
+    max-height:0; overflow:hidden; pointer-events:none;
+    transition: opacity .24s ease, transform .28s cubic-bezier(.22,1,.36,1), max-height .28s ease;
   }
   [data-theme="dark"] .game-site-nav .nav-menu { background:#0d1117; }
-  .game-site-nav .nav-menu.active { display:flex; }
-  .game-site-nav .nav-link { width:100%; }
+  .game-site-nav .nav-menu.active {
+    opacity:1; transform: translateY(0) scaleY(1); max-height:75vh; pointer-events:auto;
+  }
+  .game-site-nav .nav-link {
+    width:100%; font-size:1rem; line-height:1.35; padding:13px 14px;
+  }
 }
