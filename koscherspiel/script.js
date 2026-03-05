@@ -129,6 +129,17 @@ const coinRatePerPoint = 0.5;
 const maxStoredCoins = 9999;
 const abilityDefs = [
     {
+        key: "powerupMastery",
+        label: "Power-Up-Meisterschaft",
+        description: "Power-Ups halten pro Upgrade 10% länger an.",
+        maxLevel: 6,
+        costPerLevel: 20,
+        statLabel: "Dauer-Bonus",
+        valuePerLevel: 0.1,
+        maxValue: 0.6,
+        valueFormatter: (value) => `+${Math.round(value * 100)}%`
+    },
+    {
         key: "nonKosherShield",
         label: "Nicht-koscher Schutz",
         description: "5% mehr Wahrscheinlichkeit, dass kein Herz abgezogen wird, wenn du nicht-koschere Dinge einfängst.",
@@ -592,7 +603,7 @@ function createInitialState() {
         items: [],
         highscore: getStoredHighscore(),
         abilities: getStoredAbilities(),
-        currentShopTab: "carts",
+        currentShopTab: "abilities",
         selectedCart,
         unlockedCarts,
         cartSecondChancesUsed: 0,
