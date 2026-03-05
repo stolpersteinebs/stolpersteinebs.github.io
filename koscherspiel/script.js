@@ -160,6 +160,17 @@ const abilityDefs = [
         valuePerLevel: 0.1,
         maxValue: 0.5,
         valueFormatter: (value) => `${Math.round(value * 100)}%`
+    },
+    {
+        key: "powerupMastery",
+        label: "Power-Up-Meisterschaft",
+        description: "Power-Ups halten pro Upgrade 10% länger an.",
+        maxLevel: 6,
+        costPerLevel: 20,
+        statLabel: "Dauer-Bonus",
+        valuePerLevel: 0.1,
+        maxValue: 0.6,
+        valueFormatter: (value) => `+${Math.round(value * 100)}%`
     }
 ];
 
@@ -991,7 +1002,9 @@ function intersects(a, b) {
 }
 
 function activatePowerup(powerupKey) {
-    state.activePowerups[powerupKey] = Date.now() + powerupDurationMs;
+    const durationBonus = getAbilityValue("powerupMastery");
+    const powerupDuration = powerupDurationMs * (1 + durationBonus);
+    state.activePowerups[powerupKey] = Date.now() + powerupDuration;
     const powerup = powerupTypes.find((type) => type.key === powerupKey);
     setStatus(`Power-Up aktiv: ${powerup.label}`);
     updateHUD();
