@@ -185,6 +185,10 @@ const abilityDefs = [
     }
 ];
 
+const uniqueAbilityDefs = abilityDefs.filter((ability, index, list) => {
+    return list.findIndex((entry) => entry.key === ability.key) === index;
+});
+
 const powerupTypes = [
     { key: "shield", label: "Schutz", icon: "🛡️", colorClass: "powerup-shield" },
     { key: "slow", label: "Zeitlupe", icon: "⏱️", colorClass: "powerup-slow" },
@@ -547,7 +551,7 @@ function renderLeaderboard(scores = getStoredLeaderboard()) {
 }
 
 function getStoredAbilities() {
-    const defaults = abilityDefs.reduce((acc, ability) => {
+    const defaults = uniqueAbilityDefs.reduce((acc, ability) => {
         acc[ability.key] = 0;
         return acc;
     }, {});
@@ -557,7 +561,7 @@ function getStoredAbilities() {
             return defaults;
         }
 
-        return abilityDefs.reduce((acc, ability) => {
+        return uniqueAbilityDefs.reduce((acc, ability) => {
             const rawLevel = Number(parsed[ability.key]);
             acc[ability.key] = clamp(Math.floor(Number.isFinite(rawLevel) ? rawLevel : 0), 0, ability.maxLevel);
             return acc;
@@ -568,7 +572,7 @@ function getStoredAbilities() {
 }
 
 function persistAbilities(abilities) {
-    const normalized = abilityDefs.reduce((acc, ability) => {
+    const normalized = uniqueAbilityDefs.reduce((acc, ability) => {
         const rawLevel = Number(abilities[ability.key]);
         acc[ability.key] = clamp(Math.floor(Number.isFinite(rawLevel) ? rawLevel : 0), 0, ability.maxLevel);
         return acc;
@@ -630,7 +634,7 @@ function clamp(value, min, max) {
 }
 
 function abilityByKey(key) {
-    return abilityDefs.find((ability) => ability.key === key);
+    return uniqueAbilityDefs.find((ability) => ability.key === key);
 }
 
 function getAbilityLevel(key) {
@@ -725,7 +729,7 @@ function renderShop() {
     });
 
     abilityShopList.innerHTML = "";
-    abilityDefs.forEach((ability) => {
+    uniqueAbilityDefs.forEach((ability) => {
         const currentLevel = getAbilityLevel(ability.key);
         const currentValue = getAbilityValue(ability.key, currentLevel);
         const nextValue = getAbilityValue(ability.key, currentLevel + 1);
