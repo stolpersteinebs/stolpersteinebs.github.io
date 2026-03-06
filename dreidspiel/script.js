@@ -137,6 +137,7 @@ const JUMP_DISTANCE = 2.25;
 const JUMP_COOLDOWN_MS = 2200;
 const JUMP_DURATION_MS = 340;
 const JUMP_WALL_SCAN_LIMIT = 1.2;
+const WALL_TOP_HEIGHT_FACTOR = 0.64;
 const MAX_LIVES = 3;
 const SCORE_BASE = 220;
 const SCORE_TIME_FACTOR = 2;
@@ -271,7 +272,8 @@ function createInitialState() {
         player: {
             x: 1.8,
             y: 1.8,
-            angle: 0.28
+            angle: 0.28,
+            onWallTop: false
         },
         // Suchtfaktor: XP und Level-System
         xp: 0,
@@ -525,7 +527,7 @@ function isWallCell(cellX, cellY) {
     return MAP[cellY][cellX] === "1";
 }
 
-function isBlocked(x, y) {
+function isBlocked(x, y, onWallTop = false) {
     const minX = Math.floor(x - PLAYER_RADIUS);
     const maxX = Math.floor(x + PLAYER_RADIUS);
     const minY = Math.floor(y - PLAYER_RADIUS);
@@ -533,12 +535,27 @@ function isBlocked(x, y) {
 
     for (let cy = minY; cy <= maxY; cy += 1) {
         for (let cx = minX; cx <= maxX; cx += 1) {
-            if (isWallCell(cx, cy)) {
+            const wall = isWallCell(cx, cy);
+            if (onWallTop) {
+                if (!wall) {
+                    return true;
+                }
+            } else if (wall) {
                 return true;
             }
         }
     }
     return false;
+}
+
+function getWallTopLanding(x, y) {
+    const cellX = Math.floor(x);
+    const cellY = Math.floor(y);
+    if (!isWallCell(cellX, cellY)) return null;
+    return {
+        x: Math.min(mapWidth() - 0.51, Math.max(0.51, cellX + 0.5)),
+        y: Math.min(mapHeight() - 0.51, Math.max(0.51, cellY + 0.5))
+    };
 }
 
 function resizeCanvasIfNeeded() {
@@ -882,7 +899,8 @@ function renderWorld() {
     const stripWidth = width / rays;
     const depth = new Array(rays);
 
-    const viewOffsetY = -Math.round((state.jumpLift || 0) * height * 0.08);
+    const baseLift = (state.jumpLift || 0) + (state.player.onWallTop ? 0.62 : 0);
+    const viewOffsetY = -Math.round(baseLift * height * 0.08);
 
     drawBackground(width, height, viewOffsetY);
 
@@ -890,7 +908,7 @@ function renderWorld() {
         const rayAngle = state.player.angle - FOV / 2 + (i / rays) * FOV;
         const hit = castRay(rayAngle);
         const correctedDist = hit.dist * Math.cos(rayAngle - state.player.angle);
-        const wallHeight = Math.min(height, (height / correctedDist) * 0.92);
+        const wallHeight = Math.min(height, (height / correctedDist) * WALL_TOP_HEIGHT_FACTOR);
         const wallY = (height - wallHeight) / 2 + viewOffsetY;
 
         depth[i] = correctedDist;
@@ -905,6 +923,13 @@ function renderWorld() {
 
         ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
         ctx.fillRect(i * stripWidth, wallY, Math.ceil(stripWidth) + 1, wallHeight);
+
+        const edge = Math.max(1.2, wallHeight * 0.04);
+        const tr = Math.min(255, r + 28);
+        const tg = Math.min(255, g + 26);
+        const tb = Math.min(255, b + 20);
+        ctx.fillStyle = `rgb(${tr}, ${tg}, ${tb})`;
+        ctx.fillRect(i * stripWidth, wallY, Math.ceil(stripWidth) + 1, edge);
     }
 
     state.stations.forEach((station) => {
@@ -1259,12 +1284,13 @@ function tryJump() {
     const facingY = Math.sin(state.player.angle);
     const stepSize = 0.08;
 
-    let beforeWallX = state.player.x;
-    let beforeWallY = state.player.y;
+    const startsOnWallTop = state.player.onWallTop;
     let jumpTargetX = state.player.x;
     let jumpTargetY = state.player.y;
+    let willBeOnWallTop = startsOnWallTop;
     let hitWall = false;
     let wallStartDist = 0;
+    let lastWallPoint = null;
 
     for (let dist = stepSize; dist <= JUMP_DISTANCE; dist += stepSize) {
         const testX = state.player.x + facingX * dist;
@@ -1272,12 +1298,24 @@ function tryJump() {
         const inBounds = testX >= 0.5 && testX < mapWidth() - 0.5 && testY >= 0.5 && testY < mapHeight() - 0.5;
         if (!inBounds) break;
 
-        const blocked = isBlocked(testX, testY);
+        const wallHere = isWallCell(Math.floor(testX), Math.floor(testY));
+
+        if (startsOnWallTop) {
+            if (wallHere) {
+                jumpTargetX = testX;
+                jumpTargetY = testY;
+                continue;
+            }
+
+            // From wall top: allow dropping to ground when free cell appears.
+            willBeOnWallTop = false;
+            jumpTargetX = testX;
+            jumpTargetY = testY;
+            break;
+        }
 
         if (!hitWall) {
-            if (!blocked) {
-                beforeWallX = testX;
-                beforeWallY = testY;
+            if (!wallHere) {
                 jumpTargetX = testX;
                 jumpTargetY = testY;
                 continue;
@@ -1285,33 +1323,48 @@ function tryJump() {
 
             hitWall = true;
             wallStartDist = dist;
+            lastWallPoint = { x: testX, y: testY };
             continue;
         }
 
-        if (blocked) {
-            if (dist - wallStartDist > JUMP_WALL_SCAN_LIMIT) {
-                break;
-            }
+        if (wallHere) {
+            lastWallPoint = { x: testX, y: testY };
+            if (dist - wallStartDist > JUMP_WALL_SCAN_LIMIT) break;
             continue;
         }
 
+        // Found free space behind wall: classic vault.
         jumpTargetX = testX;
         jumpTargetY = testY;
+        willBeOnWallTop = false;
         break;
+    }
+
+    if (!startsOnWallTop && hitWall && lastWallPoint) {
+        const landing = getWallTopLanding(lastWallPoint.x, lastWallPoint.y);
+        if (landing && Math.hypot(jumpTargetX - state.player.x, jumpTargetY - state.player.y) < 0.12) {
+            jumpTargetX = landing.x;
+            jumpTargetY = landing.y;
+            willBeOnWallTop = true;
+        }
     }
 
     const movedDistance = Math.hypot(jumpTargetX - state.player.x, jumpTargetY - state.player.y);
     if (movedDistance < 0.1) {
-        const fallbackDistance = Math.hypot(beforeWallX - state.player.x, beforeWallY - state.player.y);
-        if (fallbackDistance >= 0.1) {
-            jumpTargetX = beforeWallX;
-            jumpTargetY = beforeWallY;
+        const forceWallLanding = !startsOnWallTop && hitWall && lastWallPoint ? getWallTopLanding(lastWallPoint.x, lastWallPoint.y) : null;
+        if (forceWallLanding) {
+            jumpTargetX = forceWallLanding.x;
+            jumpTargetY = forceWallLanding.y;
+            willBeOnWallTop = true;
         } else {
-            showFeedback(isEnglish ? "No jump path in that direction." : "In diese Richtung gibt es keinen Sprungpfad.", "bad");
+            // keep jump responsive: tiny hop in place + cooldown, no hard error text
+            showFeedback(isEnglish ? "Hop!" : "Hopp!", "ok");
+            state.jumpReadyAt = Date.now() + Math.floor(JUMP_COOLDOWN_MS * 0.55);
             return;
         }
     }
 
+    state.player.onWallTop = willBeOnWallTop;
     startJumpAnimation(jumpTargetX, jumpTargetY);
     state.jumpReadyAt = Date.now() + JUMP_COOLDOWN_MS;
 
@@ -1322,12 +1375,10 @@ function tryJump() {
     }
 
     addXP(10, "jump");
-    showFeedback(
-        hitWall
-            ? (isEnglish ? "Wall vault! 🦘" : "Wandsprung! 🦘")
-            : (isEnglish ? "Jump! 🦘" : "Sprung! 🦘"),
-        "ok"
-    );
+    const msg = willBeOnWallTop
+        ? (isEnglish ? "Landed on wall top! 🧱" : "Auf der Mauer gelandet! 🧱")
+        : (hitWall ? (isEnglish ? "Wall vault! 🦘" : "Wandsprung! 🦘") : (isEnglish ? "Jump! 🦘" : "Sprung! 🦘"));
+    showFeedback(msg, "ok");
     updateHud();
 }
 
@@ -1365,10 +1416,10 @@ function movePlayer(delta) {
         const nextX = state.player.x + moveX * step;
         const nextY = state.player.y + moveY * step;
 
-        if (!isBlocked(nextX, state.player.y)) {
+        if (!isBlocked(nextX, state.player.y, state.player.onWallTop)) {
             state.player.x = nextX;
         }
-        if (!isBlocked(state.player.x, nextY)) {
+        if (!isBlocked(state.player.x, nextY, state.player.onWallTop)) {
             state.player.y = nextY;
         }
     }
@@ -1854,6 +1905,9 @@ function loop(timestamp) {
     if (!state.questionOpen && !gateBlocksInput) {
         if (!jumpAnimating) {
             movePlayer(delta);
+        }
+        if (state.player.onWallTop && !isWallCell(Math.floor(state.player.x), Math.floor(state.player.y))) {
+            state.player.onWallTop = false;
         }
         updateStations(delta, elapsedSeconds);
         updatePowerups(delta);
