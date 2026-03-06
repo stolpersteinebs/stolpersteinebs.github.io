@@ -539,7 +539,12 @@ function isBlocked(x, y, onWallTop = false) {
 
     for (let cy = minY; cy <= maxY; cy += 1) {
         for (let cx = minX; cx <= maxX; cx += 1) {
-            if (isWallCell(cx, cy)) {
+            const wall = isWallCell(cx, cy);
+            if (onWallTop) {
+                if (!wall) {
+                    return true;
+                }
+            } else if (wall) {
                 return true;
             }
         }
