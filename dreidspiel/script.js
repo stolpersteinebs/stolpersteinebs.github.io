@@ -528,6 +528,10 @@ function isWallCell(cellX, cellY) {
 }
 
 function isBlocked(x, y, onWallTop = false) {
+    if (onWallTop) {
+        return !isWallCell(Math.floor(x), Math.floor(y));
+    }
+
     const minX = Math.floor(x - PLAYER_RADIUS);
     const maxX = Math.floor(x + PLAYER_RADIUS);
     const minY = Math.floor(y - PLAYER_RADIUS);
@@ -546,6 +550,46 @@ function isBlocked(x, y, onWallTop = false) {
         }
     }
     return false;
+}
+
+function findNearestFreeGroundPosition(startX, startY, maxRadius = 1.25) {
+    if (!isBlocked(startX, startY, false)) {
+        return { x: startX, y: startY };
+    }
+
+    const radialStep = 0.07;
+    const angleStep = Math.PI / 12;
+    for (let radius = radialStep; radius <= maxRadius; radius += radialStep) {
+        for (let a = 0; a < Math.PI * 2; a += angleStep) {
+            const x = startX + Math.cos(a) * radius;
+            const y = startY + Math.sin(a) * radius;
+            if (x < 0.5 || x >= mapWidth() - 0.5 || y < 0.5 || y >= mapHeight() - 0.5) continue;
+            if (!isBlocked(x, y, false)) {
+                return { x, y };
+            }
+        }
+    }
+
+    return null;
+}
+
+function resolvePlayerStuck() {
+    if (!state || !state.player) return;
+
+    if (state.player.onWallTop) {
+        if (!isWallCell(Math.floor(state.player.x), Math.floor(state.player.y))) {
+            state.player.onWallTop = false;
+        }
+        return;
+    }
+
+    if (!isBlocked(state.player.x, state.player.y, false)) return;
+
+    const rescued = findNearestFreeGroundPosition(state.player.x, state.player.y, 1.6);
+    if (rescued) {
+        state.player.x = rescued.x;
+        state.player.y = rescued.y;
+    }
 }
 
 function getWallTopLanding(x, y) {
@@ -1232,6 +1276,9 @@ function updateJumpAnimation(timestamp) {
         state.player.y = anim.toY;
         state.player.onWallTop = Boolean(anim.landingOnWallTop);
         state.jumpAnim = null;
+        if (!state.player.onWallTop) {
+            resolvePlayerStuck();
+        }
         state.jumpLift = 0;
         return false;
     }
@@ -1908,8 +1955,8 @@ function loop(timestamp) {
         if (!jumpAnimating) {
             movePlayer(delta);
         }
-        if (!jumpAnimating && state.player.onWallTop && !isWallCell(Math.floor(state.player.x), Math.floor(state.player.y))) {
-            state.player.onWallTop = false;
+        if (!jumpAnimating) {
+            resolvePlayerStuck();
         }
         updateStations(delta, elapsedSeconds);
         updatePowerups(delta);
