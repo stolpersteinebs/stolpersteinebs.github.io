@@ -267,7 +267,8 @@
       const startHigh = document.querySelector('.start-highscore');
       if (startHigh) startHigh.childNodes[0].textContent = 'Best score: ';
       setText("#startButton", "Start Learning World");
-      setText(".hud-score", "Score: 0");
+      const hudScore = document.querySelector('.hud-score');
+      if (hudScore && hudScore.childNodes[0]) hudScore.childNodes[0].textContent = "Score: ";
       const hudMeta = document.querySelector('.hud-meta');
       if (hudMeta) hudMeta.innerHTML = 'Time: <span id="timeLeft">240</span>s · Next target: <span id="stationDeadline">45</span>s · Streak: <span id="streak">0</span> · Stations: <span id="solved">0</span>/<span id="total">6</span> · High score: <span id="highscore">0</span>';
       const jumpTitle = document.querySelector('.jump-btn-title');

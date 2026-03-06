@@ -135,6 +135,8 @@ const MAX_TIME = 240;
 const STATION_DEADLINE_SECONDS = 45;
 const JUMP_DISTANCE = 2.25;
 const JUMP_COOLDOWN_MS = 2200;
+const JUMP_DURATION_MS = 340;
+const JUMP_WALL_SCAN_LIMIT = 1.2;
 const MAX_LIVES = 3;
 const SCORE_BASE = 220;
 const SCORE_TIME_FACTOR = 2;
@@ -311,6 +313,8 @@ function createInitialState() {
         finishReason: "",
         stationDeadlineLeft: STATION_DEADLINE_SECONDS,
         jumpReadyAt: 0,
+        jumpAnim: null,
+        jumpLift: 0,
         actionPulseLeft: randomBetween(ACTION_EVENT_INTERVAL_MIN, ACTION_EVENT_INTERVAL_MAX)
     };
 }
@@ -855,18 +859,18 @@ function drawStationSprite(x, y, spriteWidth, spriteHeight, station) {
     }
 }
 
-function drawBackground(width, height) {
+function drawBackground(width, height, viewOffsetY = 0) {
     const sky = ctx.createLinearGradient(0, 0, 0, height * 0.58);
     sky.addColorStop(0, "#2f6fcc");
     sky.addColorStop(1, "#152b52");
     ctx.fillStyle = sky;
-    ctx.fillRect(0, 0, width, height * 0.58);
+    ctx.fillRect(0, viewOffsetY, width, height * 0.58);
 
     const floor = ctx.createLinearGradient(0, height * 0.5, 0, height);
     floor.addColorStop(0, "#6a4a2f");
     floor.addColorStop(1, "#332318");
     ctx.fillStyle = floor;
-    ctx.fillRect(0, height * 0.5, width, height * 0.5);
+    ctx.fillRect(0, height * 0.5 + viewOffsetY, width, height * 0.5);
 }
 
 function renderWorld() {
@@ -878,14 +882,16 @@ function renderWorld() {
     const stripWidth = width / rays;
     const depth = new Array(rays);
 
-    drawBackground(width, height);
+    const viewOffsetY = -Math.round((state.jumpLift || 0) * height * 0.08);
+
+    drawBackground(width, height, viewOffsetY);
 
     for (let i = 0; i < rays; i += 1) {
         const rayAngle = state.player.angle - FOV / 2 + (i / rays) * FOV;
         const hit = castRay(rayAngle);
         const correctedDist = hit.dist * Math.cos(rayAngle - state.player.angle);
         const wallHeight = Math.min(height, (height / correctedDist) * 0.92);
-        const wallY = (height - wallHeight) / 2;
+        const wallY = (height - wallHeight) / 2 + viewOffsetY;
 
         depth[i] = correctedDist;
 
@@ -919,19 +925,19 @@ function renderWorld() {
         if (dist > depth[rayIndex] + 0.15) return;
 
         const x = screenX - spriteWidth * 0.5;
-        const y = height * 0.5 - spriteHeight * 0.5;
+        const y = height * 0.5 - spriteHeight * 0.5 + viewOffsetY;
 
         drawStationSprite(x, y, spriteWidth, spriteHeight, station);
     });
 
-    drawPowerupsInWorld(depth, stripWidth, width, height);
+    drawPowerupsInWorld(depth, stripWidth, width, height, viewOffsetY);
     drawMinimap(width);
-    drawCrosshair(width, height);
+    drawCrosshair(width, height, viewOffsetY);
 }
 
-function drawCrosshair(width, height) {
+function drawCrosshair(width, height, viewOffsetY = 0) {
     const x = width / 2;
-    const y = height / 2;
+    const y = height / 2 + viewOffsetY * 0.6;
     ctx.strokeStyle = "rgba(255, 255, 255, 0.82)";
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -942,7 +948,7 @@ function drawCrosshair(width, height) {
     ctx.stroke();
 }
 
-function drawPowerupsInWorld(depth, stripWidth, width, height) {
+function drawPowerupsInWorld(depth, stripWidth, width, height, viewOffsetY = 0) {
     state.powerups.forEach((powerup) => {
         if (!powerup.active) return;
 
@@ -962,7 +968,7 @@ function drawPowerupsInWorld(depth, stripWidth, width, height) {
         if (dist > depth[rayIndex] + 0.08) return;
 
         const x = screenX - spriteWidth * 0.5;
-        const y = height * 0.5 - spriteHeight * 0.5;
+        const y = height * 0.5 - spriteHeight * 0.5 + viewOffsetY;
 
         drawRoundedRect(x, y, spriteWidth, spriteHeight, 8);
         ctx.fillStyle = powerup.color;
@@ -1169,6 +1175,43 @@ function consumeStationDeadline(delta) {
     }
 }
 
+function startJumpAnimation(targetX, targetY) {
+    const now = performance.now();
+    state.jumpAnim = {
+        startTime: now,
+        duration: JUMP_DURATION_MS,
+        fromX: state.player.x,
+        fromY: state.player.y,
+        toX: targetX,
+        toY: targetY
+    };
+}
+
+function updateJumpAnimation(timestamp) {
+    if (!state || !state.jumpAnim) {
+        if (state) state.jumpLift = 0;
+        return false;
+    }
+
+    const anim = state.jumpAnim;
+    const t = Math.max(0, Math.min(1, (timestamp - anim.startTime) / anim.duration));
+    const smooth = t * (2 - t);
+
+    state.player.x = anim.fromX + (anim.toX - anim.fromX) * smooth;
+    state.player.y = anim.fromY + (anim.toY - anim.fromY) * smooth;
+    state.jumpLift = 4 * t * (1 - t);
+
+    if (t >= 1) {
+        state.player.x = anim.toX;
+        state.player.y = anim.toY;
+        state.jumpAnim = null;
+        state.jumpLift = 0;
+        return false;
+    }
+
+    return true;
+}
+
 function triggerActionEvent() {
     if (!state || !state.running) return;
 
@@ -1209,46 +1252,82 @@ function updateActionFlow(delta) {
 
 function tryJump() {
     if (!state || !state.running || state.questionOpen) return;
+    if (state.jumpAnim) return;
     if (Date.now() < state.jumpReadyAt) return;
 
     const facingX = Math.cos(state.player.angle);
     const facingY = Math.sin(state.player.angle);
     const stepSize = 0.08;
 
-    let finalX = state.player.x;
-    let finalY = state.player.y;
+    let beforeWallX = state.player.x;
+    let beforeWallY = state.player.y;
+    let jumpTargetX = state.player.x;
+    let jumpTargetY = state.player.y;
+    let hitWall = false;
+    let wallStartDist = 0;
 
     for (let dist = stepSize; dist <= JUMP_DISTANCE; dist += stepSize) {
         const testX = state.player.x + facingX * dist;
         const testY = state.player.y + facingY * dist;
         const inBounds = testX >= 0.5 && testX < mapWidth() - 0.5 && testY >= 0.5 && testY < mapHeight() - 0.5;
-        if (!inBounds || isBlocked(testX, testY)) {
-            break;
+        if (!inBounds) break;
+
+        const blocked = isBlocked(testX, testY);
+
+        if (!hitWall) {
+            if (!blocked) {
+                beforeWallX = testX;
+                beforeWallY = testY;
+                jumpTargetX = testX;
+                jumpTargetY = testY;
+                continue;
+            }
+
+            hitWall = true;
+            wallStartDist = dist;
+            continue;
         }
-        finalX = testX;
-        finalY = testY;
+
+        if (blocked) {
+            if (dist - wallStartDist > JUMP_WALL_SCAN_LIMIT) {
+                break;
+            }
+            continue;
+        }
+
+        jumpTargetX = testX;
+        jumpTargetY = testY;
+        break;
     }
 
-    if (Math.hypot(finalX - state.player.x, finalY - state.player.y) < 0.1) {
-        showFeedback(isEnglish ? "Jump blocked by a wall." : "Sprung von einer Wand blockiert.", "bad");
-        return;
+    const movedDistance = Math.hypot(jumpTargetX - state.player.x, jumpTargetY - state.player.y);
+    if (movedDistance < 0.1) {
+        const fallbackDistance = Math.hypot(beforeWallX - state.player.x, beforeWallY - state.player.y);
+        if (fallbackDistance >= 0.1) {
+            jumpTargetX = beforeWallX;
+            jumpTargetY = beforeWallY;
+        } else {
+            showFeedback(isEnglish ? "No jump path in that direction." : "In diese Richtung gibt es keinen Sprungpfad.", "bad");
+            return;
+        }
     }
 
-    state.player.x = finalX;
-    state.player.y = finalY;
+    startJumpAnimation(jumpTargetX, jumpTargetY);
     state.jumpReadyAt = Date.now() + JUMP_COOLDOWN_MS;
-    
-    // Visual jump effect
+
     const viewEl = document.getElementById("view");
     if (viewEl) {
         viewEl.classList.add("jump-effect");
-        setTimeout(() => viewEl.classList.remove("jump-effect"), 300);
+        setTimeout(() => viewEl.classList.remove("jump-effect"), JUMP_DURATION_MS);
     }
-    
-    // Add XP for jumping
+
     addXP(10, "jump");
-    
-    showFeedback(isEnglish ? "Jump! 🦘" : "Sprung! 🦘", "ok");
+    showFeedback(
+        hitWall
+            ? (isEnglish ? "Wall vault! 🦘" : "Wandsprung! 🦘")
+            : (isEnglish ? "Jump! 🦘" : "Sprung! 🦘"),
+        "ok"
+    );
     updateHud();
 }
 
@@ -1771,8 +1850,11 @@ function loop(timestamp) {
     const elapsedSeconds = timestamp / 1000;
 
     const gateBlocksInput = mobileFullscreenGateEl && !mobileFullscreenGateEl.classList.contains("hidden");
+    const jumpAnimating = updateJumpAnimation(timestamp);
     if (!state.questionOpen && !gateBlocksInput) {
-        movePlayer(delta);
+        if (!jumpAnimating) {
+            movePlayer(delta);
+        }
         updateStations(delta, elapsedSeconds);
         updatePowerups(delta);
         consumeStationDeadline(delta);
