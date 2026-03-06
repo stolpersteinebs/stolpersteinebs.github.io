@@ -135,6 +135,8 @@ const MAX_TIME = 240;
 const STATION_DEADLINE_SECONDS = 45;
 const JUMP_DISTANCE = 2.25;
 const JUMP_COOLDOWN_MS = 2200;
+const JUMP_DURATION_MS = 340;
+const JUMP_WALL_SCAN_LIMIT = 1.2;
 const MAX_LIVES = 3;
 const SCORE_BASE = 220;
 const SCORE_TIME_FACTOR = 2;
@@ -147,10 +149,13 @@ const POWERUP_MOVE_SPEED = 1.2;
 const LEADERBOARD_SIZE = 5;
 
 const POWERUP_TYPES = [
-    { id: "life", icon: "❤️", color: "#ff7b8b", points: 0, life: 1, time: 0, message: "+1 Leben" },
-    { id: "score", icon: "✨", color: "#ffd76f", points: 260, life: 0, time: 0, message: "+260 Punkte" },
-    { id: "time", icon: "⏳", color: "#85d2ff", points: 0, life: 0, time: 20, message: "+20 Sekunden" }
+    { id: "life", icon: "❤️", color: "#ff7b8b", points: 0, life: 1, time: 0, message: "+1 Leben", messageEn: "+1 life" },
+    { id: "score", icon: "✨", color: "#ffd76f", points: 260, life: 0, time: 0, message: "+260 Punkte", messageEn: "+260 points" },
+    { id: "time", icon: "⏳", color: "#85d2ff", points: 0, life: 0, time: 20, message: "+20 Sekunden", messageEn: "+20 seconds" }
 ];
+
+const ACTION_EVENT_INTERVAL_MIN = 9;
+const ACTION_EVENT_INTERVAL_MAX = 15;
 
 const startScreenEl = document.getElementById("startScreen");
 const gamePanelEl = document.getElementById("gamePanel");
@@ -307,7 +312,10 @@ function createInitialState() {
         powerups: [],
         finishReason: "",
         stationDeadlineLeft: STATION_DEADLINE_SECONDS,
-        jumpReadyAt: 0
+        jumpReadyAt: 0,
+        jumpAnim: null,
+        jumpLift: 0,
+        actionPulseLeft: randomBetween(ACTION_EVENT_INTERVAL_MIN, ACTION_EVENT_INTERVAL_MAX)
     };
 }
 
@@ -319,7 +327,7 @@ function normalizeAngle(angle) {
 }
 
 function formatPoints(value) {
-    return new Intl.NumberFormat("de-DE").format(Math.max(0, Math.round(value)));
+    return new Intl.NumberFormat(isEnglish ? "en-US" : "de-DE").format(Math.max(0, Math.round(value)));
 }
 
 function normalizeLeaderboard(rawEntries) {
@@ -336,7 +344,7 @@ function normalizeLeaderboard(rawEntries) {
 
             const trimmedName = typeof entry.name === "string" ? entry.name.trim() : "";
             return {
-                name: trimmedName || "Anonym",
+                name: trimmedName || (isEnglish ? "Anonymous" : "Anonym"),
                 score
             };
         })
@@ -345,7 +353,7 @@ function normalizeLeaderboard(rawEntries) {
     const bestScoresByName = new Map();
 
     normalized.forEach((entry) => {
-        const key = entry.name.toLocaleLowerCase("de-DE");
+        const key = entry.name.toLocaleLowerCase(isEnglish ? "en-US" : "de-DE");
         const existing = bestScoresByName.get(key);
         if (!existing || entry.score > existing.score) {
             bestScoresByName.set(key, entry);
@@ -396,7 +404,7 @@ async function loadLeaderboardFromSupabase(config) {
     });
 
     if (!response.ok) {
-        throw new Error("Supabase GET fehlgeschlagen");
+        throw new Error(isEnglish ? "Supabase GET failed" : "Supabase GET fehlgeschlagen");
     }
 
     const payload = await parseJsonSafely(response);
@@ -417,7 +425,7 @@ async function saveLeaderboardToSupabase(config, name, score) {
     });
 
     if (!response.ok) {
-        throw new Error("Supabase POST fehlgeschlagen");
+        throw new Error(isEnglish ? "Supabase POST failed" : "Supabase POST fehlgeschlagen");
     }
 
     return loadLeaderboardFromSupabase(config);
@@ -634,10 +642,10 @@ function setInteractButtonState(isNearby, stationLabel = "") {
 
     if (isNearby && stationLabel) {
         interactButton.dataset.stationName = stationLabel;
-        interactButton.setAttribute("aria-label", `Interagieren mit ${stationLabel}`);
+        interactButton.setAttribute("aria-label", isEnglish ? `Interact with ${stationLabel}` : `Interagieren mit ${stationLabel}`);
     } else {
         interactButton.removeAttribute("data-station-name");
-        interactButton.setAttribute("aria-label", "Interagieren");
+        interactButton.setAttribute("aria-label", isEnglish ? "Interact" : "Interagieren");
     }
 }
 
@@ -851,18 +859,18 @@ function drawStationSprite(x, y, spriteWidth, spriteHeight, station) {
     }
 }
 
-function drawBackground(width, height) {
+function drawBackground(width, height, viewOffsetY = 0) {
     const sky = ctx.createLinearGradient(0, 0, 0, height * 0.58);
     sky.addColorStop(0, "#2f6fcc");
     sky.addColorStop(1, "#152b52");
     ctx.fillStyle = sky;
-    ctx.fillRect(0, 0, width, height * 0.58);
+    ctx.fillRect(0, viewOffsetY, width, height * 0.58);
 
     const floor = ctx.createLinearGradient(0, height * 0.5, 0, height);
     floor.addColorStop(0, "#6a4a2f");
     floor.addColorStop(1, "#332318");
     ctx.fillStyle = floor;
-    ctx.fillRect(0, height * 0.5, width, height * 0.5);
+    ctx.fillRect(0, height * 0.5 + viewOffsetY, width, height * 0.5);
 }
 
 function renderWorld() {
@@ -874,14 +882,16 @@ function renderWorld() {
     const stripWidth = width / rays;
     const depth = new Array(rays);
 
-    drawBackground(width, height);
+    const viewOffsetY = -Math.round((state.jumpLift || 0) * height * 0.08);
+
+    drawBackground(width, height, viewOffsetY);
 
     for (let i = 0; i < rays; i += 1) {
         const rayAngle = state.player.angle - FOV / 2 + (i / rays) * FOV;
         const hit = castRay(rayAngle);
         const correctedDist = hit.dist * Math.cos(rayAngle - state.player.angle);
         const wallHeight = Math.min(height, (height / correctedDist) * 0.92);
-        const wallY = (height - wallHeight) / 2;
+        const wallY = (height - wallHeight) / 2 + viewOffsetY;
 
         depth[i] = correctedDist;
 
@@ -915,19 +925,19 @@ function renderWorld() {
         if (dist > depth[rayIndex] + 0.15) return;
 
         const x = screenX - spriteWidth * 0.5;
-        const y = height * 0.5 - spriteHeight * 0.5;
+        const y = height * 0.5 - spriteHeight * 0.5 + viewOffsetY;
 
         drawStationSprite(x, y, spriteWidth, spriteHeight, station);
     });
 
-    drawPowerupsInWorld(depth, stripWidth, width, height);
+    drawPowerupsInWorld(depth, stripWidth, width, height, viewOffsetY);
     drawMinimap(width);
-    drawCrosshair(width, height);
+    drawCrosshair(width, height, viewOffsetY);
 }
 
-function drawCrosshair(width, height) {
+function drawCrosshair(width, height, viewOffsetY = 0) {
     const x = width / 2;
-    const y = height / 2;
+    const y = height / 2 + viewOffsetY * 0.6;
     ctx.strokeStyle = "rgba(255, 255, 255, 0.82)";
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -938,7 +948,7 @@ function drawCrosshair(width, height) {
     ctx.stroke();
 }
 
-function drawPowerupsInWorld(depth, stripWidth, width, height) {
+function drawPowerupsInWorld(depth, stripWidth, width, height, viewOffsetY = 0) {
     state.powerups.forEach((powerup) => {
         if (!powerup.active) return;
 
@@ -958,7 +968,7 @@ function drawPowerupsInWorld(depth, stripWidth, width, height) {
         if (dist > depth[rayIndex] + 0.08) return;
 
         const x = screenX - spriteWidth * 0.5;
-        const y = height * 0.5 - spriteHeight * 0.5;
+        const y = height * 0.5 - spriteHeight * 0.5 + viewOffsetY;
 
         drawRoundedRect(x, y, spriteWidth, spriteHeight, 8);
         ctx.fillStyle = powerup.color;
@@ -1026,11 +1036,9 @@ function drawMinimap(canvasWidth) {
     ctx.fillStyle = "rgba(7, 14, 25, 0.78)";
     ctx.fill();
 
-    const legend = [
-        ["#f2b84b", "offen"],
-        ["#1ea38b", "gelöst"],
-        ["#c93a49", "falsch"]
-    ];
+    const legend = isEnglish
+        ? [["#f2b84b", "open"], ["#1ea38b", "solved"], ["#c93a49", "wrong"]]
+        : [["#f2b84b", "offen"], ["#1ea38b", "gelöst"], ["#c93a49", "falsch"]];
 
     ctx.font = `${Math.max(9, cell * 0.42)}px Arial`;
     ctx.textAlign = "left";
@@ -1063,7 +1071,7 @@ function applyPowerup(powerup) {
         state.timeLeft = Math.min(MAX_TIME, state.timeLeft + type.time);
     }
 
-    showFeedback(`Power-up gefunden: ${type.message}.`, "ok");
+    showFeedback(isEnglish ? `Power-up found: ${type.messageEn || type.message}.` : `Power-up gefunden: ${type.message}.`, "ok");
     updateHud();
 
     powerup.active = false;
@@ -1167,67 +1175,159 @@ function consumeStationDeadline(delta) {
     }
 }
 
+function startJumpAnimation(targetX, targetY) {
+    const now = performance.now();
+    state.jumpAnim = {
+        startTime: now,
+        duration: JUMP_DURATION_MS,
+        fromX: state.player.x,
+        fromY: state.player.y,
+        toX: targetX,
+        toY: targetY
+    };
+}
+
+function updateJumpAnimation(timestamp) {
+    if (!state || !state.jumpAnim) {
+        if (state) state.jumpLift = 0;
+        return false;
+    }
+
+    const anim = state.jumpAnim;
+    const t = Math.max(0, Math.min(1, (timestamp - anim.startTime) / anim.duration));
+    const smooth = t * (2 - t);
+
+    state.player.x = anim.fromX + (anim.toX - anim.fromX) * smooth;
+    state.player.y = anim.fromY + (anim.toY - anim.fromY) * smooth;
+    state.jumpLift = 4 * t * (1 - t);
+
+    if (t >= 1) {
+        state.player.x = anim.toX;
+        state.player.y = anim.toY;
+        state.jumpAnim = null;
+        state.jumpLift = 0;
+        return false;
+    }
+
+    return true;
+}
+
+function triggerActionEvent() {
+    if (!state || !state.running) return;
+
+    const roll = Math.random();
+    if (roll < 0.5) {
+        state.powerups.push(createPowerup());
+        showFeedback(isEnglish ? "Action event: bonus orb appeared!" : "Action-Event: Bonus-Orb ist erschienen!", "ok");
+        addXP(18, "event");
+        return;
+    }
+
+    if (roll < 0.8) {
+        state.timeLeft = Math.min(MAX_TIME, state.timeLeft + 8);
+        state.score += 90;
+        showFeedback(isEnglish ? "Action event: time and score boost!" : "Action-Event: Zeit- und Punkte-Boost!", "ok");
+        addXP(20, "event");
+        updateHud();
+        return;
+    }
+
+    state.streak += 1;
+    state.maxStreak = Math.max(state.maxStreak, state.streak);
+    state.score += 70;
+    showFeedback(isEnglish ? "Action event: combo charge!" : "Action-Event: Komboladung!", "ok");
+    addXP(22, "event");
+    updateHud();
+}
+
+function updateActionFlow(delta) {
+    if (!state || !state.running || state.questionOpen) return;
+
+    state.actionPulseLeft -= delta;
+    if (state.actionPulseLeft <= 0) {
+        triggerActionEvent();
+        state.actionPulseLeft = randomBetween(ACTION_EVENT_INTERVAL_MIN, ACTION_EVENT_INTERVAL_MAX);
+    }
+}
+
 function tryJump() {
     if (!state || !state.running || state.questionOpen) return;
+    if (state.jumpAnim) return;
     if (Date.now() < state.jumpReadyAt) return;
 
     const facingX = Math.cos(state.player.angle);
     const facingY = Math.sin(state.player.angle);
-    
-    // SPRUNGFIX: Spieler kann jetzt ÜBERALL hinspringen
-    // including über Stationen, Wände, etc.
-    // Wir suchen die nächste gültige Position in Blickrichtung
-    
-    const jumpDistance = JUMP_DISTANCE;
-    let targetX = state.player.x + facingX * jumpDistance;
-    let targetY = state.player.y + facingY * jumpDistance;
-    
-    // Map-Grenzen prüfen
-    targetX = Math.max(0.5, Math.min(mapWidth() - 0.5, targetX));
-    targetY = Math.max(0.5, Math.min(mapHeight() - 0.5, targetY));
-    
-    // Prüfen ob Zielposition in einer Wand ist - wenn ja, suche nächste freie Position
-    // ABER: Wir lassen jetzt auch Wandsprünge zu!
-    // Stattdessen: Wir teleportieren immer zum Ziel, egal ob Wand oder nicht
-    // Das gibt dem Spieler volle Freiheit
-    
-    // Für besseres Gameplay: Wenn Ziel in Wand, finde nächste freie Position
-    // aber bleibe in Blickrichtung
-    let finalX = targetX;
-    let finalY = targetY;
-    
-    // Suche rückwärts bis zur nächsten freien Position
-    for (let dist = 0; dist <= jumpDistance; dist += 0.1) {
-        const testX = state.player.x + facingX * (jumpDistance - dist);
-        const testY = state.player.y + facingY * (jumpDistance - dist);
-        
-        // Check map bounds
-        if (testX < 0.5 || testX >= mapWidth() - 0.5 || 
-            testY < 0.5 || testY >= mapHeight() - 0.5) {
+    const stepSize = 0.08;
+
+    let beforeWallX = state.player.x;
+    let beforeWallY = state.player.y;
+    let jumpTargetX = state.player.x;
+    let jumpTargetY = state.player.y;
+    let hitWall = false;
+    let wallStartDist = 0;
+
+    for (let dist = stepSize; dist <= JUMP_DISTANCE; dist += stepSize) {
+        const testX = state.player.x + facingX * dist;
+        const testY = state.player.y + facingY * dist;
+        const inBounds = testX >= 0.5 && testX < mapWidth() - 0.5 && testY >= 0.5 && testY < mapHeight() - 0.5;
+        if (!inBounds) break;
+
+        const blocked = isBlocked(testX, testY);
+
+        if (!hitWall) {
+            if (!blocked) {
+                beforeWallX = testX;
+                beforeWallY = testY;
+                jumpTargetX = testX;
+                jumpTargetY = testY;
+                continue;
+            }
+
+            hitWall = true;
+            wallStartDist = dist;
             continue;
         }
-        
-        finalX = testX;
-        finalY = testY;
+
+        if (blocked) {
+            if (dist - wallStartDist > JUMP_WALL_SCAN_LIMIT) {
+                break;
+            }
+            continue;
+        }
+
+        jumpTargetX = testX;
+        jumpTargetY = testY;
         break;
     }
-    
-    // Spieler teleportieren
-    state.player.x = finalX;
-    state.player.y = finalY;
+
+    const movedDistance = Math.hypot(jumpTargetX - state.player.x, jumpTargetY - state.player.y);
+    if (movedDistance < 0.1) {
+        const fallbackDistance = Math.hypot(beforeWallX - state.player.x, beforeWallY - state.player.y);
+        if (fallbackDistance >= 0.1) {
+            jumpTargetX = beforeWallX;
+            jumpTargetY = beforeWallY;
+        } else {
+            showFeedback(isEnglish ? "No jump path in that direction." : "In diese Richtung gibt es keinen Sprungpfad.", "bad");
+            return;
+        }
+    }
+
+    startJumpAnimation(jumpTargetX, jumpTargetY);
     state.jumpReadyAt = Date.now() + JUMP_COOLDOWN_MS;
-    
-    // Visual jump effect
+
     const viewEl = document.getElementById("view");
     if (viewEl) {
         viewEl.classList.add("jump-effect");
-        setTimeout(() => viewEl.classList.remove("jump-effect"), 300);
+        setTimeout(() => viewEl.classList.remove("jump-effect"), JUMP_DURATION_MS);
     }
-    
-    // Add XP for jumping
-    addXP(10, "Gesprungen!");
-    
-    showFeedback(isEnglish ? "Jump! 🦘" : "Sprung! 🦘", "ok");
+
+    addXP(10, "jump");
+    showFeedback(
+        hitWall
+            ? (isEnglish ? "Wall vault! 🦘" : "Wandsprung! 🦘")
+            : (isEnglish ? "Jump! 🦘" : "Sprung! 🦘"),
+        "ok"
+    );
     updateHud();
 }
 
@@ -1410,7 +1510,7 @@ function setPseudoFullscreen(active) {
 
 function updateFullscreenButtonLabel() {
     if (!fullscreenButton) return;
-    fullscreenButton.textContent = isAnyFullscreenModeActive() ? "Vollbild verlassen" : "Vollbild";
+    fullscreenButton.textContent = isAnyFullscreenModeActive() ? (isEnglish ? "Exit fullscreen" : "Vollbild verlassen") : (isEnglish ? "Fullscreen" : "Vollbild");
 }
 
 function updateMobileGateVisibility(active, message) {
@@ -1446,7 +1546,7 @@ async function ensureGameplayFullscreen() {
         try {
             await renderFrameEl.requestFullscreen();
         } catch (error) {
-            console.warn("Nativer Fullscreen fehlgeschlagen, Fenster-Fullscreen bleibt aktiv.", error);
+            console.warn(isEnglish ? "Native fullscreen failed, windowed fullscreen stays active." : "Nativer Fullscreen fehlgeschlagen, Fenster-Fullscreen bleibt aktiv.", error);
         }
     }
 
@@ -1475,8 +1575,8 @@ function enforceMobileFullscreen() {
     }
 
     const message = portraitOrientation
-        ? "Bitte ins Querformat drehen und Vollbild aktivieren, um weiterzuspielen."
-        : "Zum Spielen auf Smartphones ist Vollbild erforderlich. Du kannst es oben links jederzeit verlassen.";
+        ? (isEnglish ? "Rotate to landscape and enable fullscreen to keep playing." : "Bitte ins Querformat drehen und Vollbild aktivieren, um weiterzuspielen.")
+        : (isEnglish ? "Fullscreen is required on smartphones to play. You can exit it anytime from the top left." : "Zum Spielen auf Smartphones ist Vollbild erforderlich. Du kannst es oben links jederzeit verlassen.");
 
     updateMobileGateVisibility(true, message);
 }
@@ -1554,7 +1654,7 @@ function closeQuestion() {
     }
 
     if (state.solved >= state.stations.length) {
-        void endGame("Alle Orte im Labyrinth erkundet.");
+        void endGame(isEnglish ? "All stations explored." : "Alle Orte im Labyrinth erkundet.");
     }
 }
 
@@ -1575,14 +1675,14 @@ function answerStation(stationId, selectedIndex) {
         state.maxStreak = Math.max(state.maxStreak, state.streak);
         state.correct += 1;
 
-        showFeedback(`Richtig. +${formatPoints(gained)} Punkte. ${station.fact}`, "ok");
+        showFeedback(isEnglish ? `Correct. +${formatPoints(gained)} points. ${station.fact}` : `Richtig. +${formatPoints(gained)} Punkte. ${station.fact}`, "ok");
     } else {
         state.score = Math.max(0, state.score - SCORE_WRONG_PENALTY);
         state.streak = 0;
         state.lives = Math.max(0, state.lives - 1);
         station.failed = true;
 
-        showFeedback(`Falsch. -${formatPoints(SCORE_WRONG_PENALTY)} Punkte. Richtige Losung: ${station.options[station.correctIndex]}.`, "bad");
+        showFeedback(isEnglish ? `Wrong. -${formatPoints(SCORE_WRONG_PENALTY)} points. Correct answer: ${station.options[station.correctIndex]}.` : `Falsch. -${formatPoints(SCORE_WRONG_PENALTY)} Punkte. Richtige Losung: ${station.options[station.correctIndex]}.`, "bad");
     }
 
     station.solved = true;
@@ -1591,13 +1691,13 @@ function answerStation(stationId, selectedIndex) {
     updateHud();
 
     questionTextEl.textContent = correct
-        ? `Richtig beantwortet. ${station.successAction}`
-        : `Falsch beantwortet. Richtige Losung: ${station.options[station.correctIndex]}. ${station.fact}`;
+        ? (isEnglish ? `Correct. ${station.successAction}` : `Richtig beantwortet. ${station.successAction}`)
+        : (isEnglish ? `Wrong. Correct answer: ${station.options[station.correctIndex]}. ${station.fact}` : `Falsch beantwortet. Richtige Losung: ${station.options[station.correctIndex]}. ${station.fact}`);
 
     answerButtonsEl.innerHTML = "";
     const continueButton = document.createElement("button");
     continueButton.type = "button";
-    continueButton.textContent = "Weiter";
+    continueButton.textContent = isEnglish ? "Continue" : "Weiter";
     continueButton.addEventListener("click", () => {
         closeQuestion();
         if (state.lives <= 0) {
@@ -1605,7 +1705,7 @@ function answerStation(stationId, selectedIndex) {
             return;
         }
         if (state.solved >= state.stations.length) {
-            void endGame("Alle Orte im Labyrinth erkundet.");
+            void endGame(isEnglish ? "All stations explored." : "Alle Orte im Labyrinth erkundet.");
         }
     });
     answerButtonsEl.appendChild(continueButton);
@@ -1618,7 +1718,7 @@ function answerStation(stationId, selectedIndex) {
             return;
         }
         if (state.solved >= state.stations.length) {
-            void endGame("Alle Orte im Labyrinth erkundet.");
+            void endGame(isEnglish ? "All stations explored." : "Alle Orte im Labyrinth erkundet.");
         }
     }, 2200);
 }
@@ -1627,15 +1727,23 @@ function getResultMotto(score, correctCount, totalStations) {
     const ratio = totalStations > 0 ? correctCount / totalStations : 0;
 
     if (score >= 1800 && ratio >= 0.83) {
-        return "Hervorragend: sehr sicheres Wissen und starke Orientierung in der Lernwelt.";
+        return isEnglish
+            ? "Excellent: strong knowledge and outstanding orientation in the learning world."
+            : "Hervorragend: sehr sicheres Wissen und starke Orientierung in der Lernwelt.";
     }
     if (score >= 1200 && ratio >= 0.6) {
-        return "Sehr gut: du kennst viele Inhalte und triffst oft die richtigen Entscheidungen.";
+        return isEnglish
+            ? "Very good: you know many topics and often make the right choices."
+            : "Sehr gut: du kennst viele Inhalte und triffst oft die richtigen Entscheidungen.";
     }
     if (score >= 700) {
-        return "Guter Anfang: die Grundlagen sitzen, mit einer weiteren Runde geht noch mehr.";
+        return isEnglish
+            ? "Good start: the basics are there, and another run will push you further."
+            : "Guter Anfang: die Grundlagen sitzen, mit einer weiteren Runde geht noch mehr.";
     }
-    return "Solider Start: erkunde die Stationen in Ruhe noch einmal fur mehr Sicherheit.";
+    return isEnglish
+        ? "Solid start: explore the stations again calmly to build more confidence."
+        : "Solider Start: erkunde die Stationen in Ruhe noch einmal fur mehr Sicherheit.";
 }
 
 async function refreshLeaderboard() {
@@ -1693,11 +1801,12 @@ async function endGame(reason) {
     const percent = Math.round((state.correct / total) * 100);
     resultMottoEl.textContent = getResultMotto(state.score, state.correct, total);
     scoreWheelValueEl.textContent = formatPoints(state.score);
-    resultMetaEl.textContent = `Richtige Antworten: ${state.correct}/${total} · Verbleibende Leben: ${state.lives}/${MAX_LIVES}`;
-    resultTextEl.textContent =
-        `${state.finishReason} Score: ${formatPoints(state.score)}. ` +
-        `Richtige Antworten: ${state.correct}/${total} (${percent}%). ` +
-        `Beste Serie: x${state.maxStreak}. Highscore: ${formatPoints(state.highscore)}.`;
+    resultMetaEl.textContent = isEnglish
+        ? `Correct answers: ${state.correct}/${total} · Remaining lives: ${state.lives}/${MAX_LIVES}`
+        : `Richtige Antworten: ${state.correct}/${total} · Verbleibende Leben: ${state.lives}/${MAX_LIVES}`;
+    resultTextEl.textContent = isEnglish
+        ? `${state.finishReason} Score: ${formatPoints(state.score)}. Correct answers: ${state.correct}/${total} (${percent}%). Best streak: x${state.maxStreak}. High score: ${formatPoints(state.highscore)}.`
+        : `${state.finishReason} Score: ${formatPoints(state.score)}. Richtige Antworten: ${state.correct}/${total} (${percent}%). Beste Serie: x${state.maxStreak}. Highscore: ${formatPoints(state.highscore)}.`;
 
     startHighscoreEl.textContent = formatPoints(state.highscore);
 
@@ -1724,7 +1833,7 @@ function startTimer() {
         if (state.timeLeft <= 0) {
             state.timeLeft = 0;
             updateHud();
-            void endGame("Zeit abgelaufen.");
+            void endGame(isEnglish ? "Time is up." : "Zeit abgelaufen.");
             return;
         }
 
@@ -1741,11 +1850,15 @@ function loop(timestamp) {
     const elapsedSeconds = timestamp / 1000;
 
     const gateBlocksInput = mobileFullscreenGateEl && !mobileFullscreenGateEl.classList.contains("hidden");
+    const jumpAnimating = updateJumpAnimation(timestamp);
     if (!state.questionOpen && !gateBlocksInput) {
-        movePlayer(delta);
+        if (!jumpAnimating) {
+            movePlayer(delta);
+        }
         updateStations(delta, elapsedSeconds);
         updatePowerups(delta);
         consumeStationDeadline(delta);
+        updateActionFlow(delta);
         updateNearbyPrompt();
     }
 
@@ -1812,7 +1925,7 @@ if (saveLeaderboardButton) {
     saveLeaderboardButton.addEventListener("click", async () => {
         if (!state || !leaderboardOptInEl) return;
 
-        const name = playerNameInput?.value?.trim() || "Anonym";
+        const name = playerNameInput?.value?.trim() || (isEnglish ? "Anonymous" : "Anonym");
         const optimisticEntries = normalizeLeaderboard([...leaderboardEntries, { name, score: state.score }]);
         leaderboardEntries = optimisticEntries;
         renderLeaderboard(leaderboardEntries);
@@ -1820,20 +1933,20 @@ if (saveLeaderboardButton) {
         const config = getSupabaseConfig();
         if (!config) {
             leaderboardOptInEl.classList.add("hidden");
-            setLeaderboardStatus("Lokal gespeichert (Supabase-Konfiguration fehlt).", false);
+            setLeaderboardStatus(isEnglish ? "Saved locally (Supabase configuration missing)." : "Lokal gespeichert (Supabase-Konfiguration fehlt).", false);
             return;
         }
 
         saveLeaderboardButton.disabled = true;
-        setLeaderboardStatus("Speichere Eintrag ...", false);
+        setLeaderboardStatus(isEnglish ? "Saving entry ..." : "Speichere Eintrag ...", false);
 
         try {
             leaderboardEntries = await saveLeaderboardToSupabase(config, name, state.score);
             renderLeaderboard(leaderboardEntries);
             leaderboardOptInEl.classList.add("hidden");
-            setLeaderboardStatus("Eintrag erfolgreich gespeichert.", false);
+            setLeaderboardStatus(isEnglish ? "Entry saved successfully." : "Eintrag erfolgreich gespeichert.", false);
         } catch {
-            setLeaderboardStatus("Server nicht erreichbar: Eintrag nur lokal angezeigt.", true);
+            setLeaderboardStatus(isEnglish ? "Server unreachable: entry shown locally only." : "Server nicht erreichbar: Eintrag nur lokal angezeigt.", true);
         } finally {
             saveLeaderboardButton.disabled = false;
         }
