@@ -173,6 +173,17 @@ const abilityDefs = [
         valueFormatter: (value) => `${Math.round(value * 100)}%`
     },
     {
+        key: "scoreMultiplier",
+        label: "Multiplikator",
+        description: "Jedes Upgrade erhöht deinen Punkte-Multiplikator um 0,1 bis maximal x2,0.",
+        maxLevel: 10,
+        costPerLevel: 1000,
+        statLabel: "Punkte-Multiplikator",
+        valuePerLevel: 0.1,
+        maxValue: 1,
+        valueFormatter: (value) => `x${(1 + value).toFixed(1).replace(".", ",")}`
+    },
+    {
         key: "powerupMastery",
         label: "Power-Up-Meisterschaft",
         description: "Power-Ups halten pro Upgrade 10% länger an.",
@@ -1081,12 +1092,15 @@ function handleCatch(item, index) {
     }
 
     if (item.isKosher) {
+        const scoreMultiplier = 1 + getAbilityValue("scoreMultiplier");
         const basePoints = hasPowerup("double") ? 2 : 1;
         const points = hasCartPower("ultimate") ? basePoints * 2.5 : basePoints + (hasCartPower("mint") ? 1 : 0);
         const focusChance = getAbilityValue("kosherFocus");
         const bonusPoint = focusChance > 0 && Math.random() < focusChance ? 1 : 0;
-        state.score += points + bonusPoint;
-        setStatus(`+${points + bonusPoint} Koscher${bonusPoint ? " (Fokus-Bonus!)" : ""}!`);
+        const gainedScore = (points + bonusPoint) * scoreMultiplier;
+        state.score += gainedScore;
+        const multiplierText = scoreMultiplier > 1 ? ` (Multiplikator x${scoreMultiplier.toFixed(1).replace(".", ",")})` : "";
+        setStatus(`+${gainedScore} Koscher${bonusPoint ? " (Fokus-Bonus!)" : ""}${multiplierText}!`);
     } else if (!consumeShieldIfActive() && !cartSavedDamage() && !abilitySavedDamage()) {
         state.lives -= 1;
         state.score = Math.max(0, state.score - 1);
