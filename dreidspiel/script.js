@@ -1200,7 +1200,7 @@ function consumeStationDeadline(delta) {
     }
 }
 
-function startJumpAnimation(targetX, targetY) {
+function startJumpAnimation(targetX, targetY, landingOnWallTop = false) {
     const now = performance.now();
     state.jumpAnim = {
         startTime: now,
@@ -1208,7 +1208,8 @@ function startJumpAnimation(targetX, targetY) {
         fromX: state.player.x,
         fromY: state.player.y,
         toX: targetX,
-        toY: targetY
+        toY: targetY,
+        landingOnWallTop
     };
 }
 
@@ -1229,6 +1230,7 @@ function updateJumpAnimation(timestamp) {
     if (t >= 1) {
         state.player.x = anim.toX;
         state.player.y = anim.toY;
+        state.player.onWallTop = Boolean(anim.landingOnWallTop);
         state.jumpAnim = null;
         state.jumpLift = 0;
         return false;
@@ -1365,7 +1367,7 @@ function tryJump() {
     }
 
     state.player.onWallTop = willBeOnWallTop;
-    startJumpAnimation(jumpTargetX, jumpTargetY);
+    startJumpAnimation(jumpTargetX, jumpTargetY, willBeOnWallTop);
     state.jumpReadyAt = Date.now() + JUMP_COOLDOWN_MS;
 
     const viewEl = document.getElementById("view");
@@ -1906,7 +1908,7 @@ function loop(timestamp) {
         if (!jumpAnimating) {
             movePlayer(delta);
         }
-        if (state.player.onWallTop && !isWallCell(Math.floor(state.player.x), Math.floor(state.player.y))) {
+        if (!jumpAnimating && state.player.onWallTop && !isWallCell(Math.floor(state.player.x), Math.floor(state.player.y))) {
             state.player.onWallTop = false;
         }
         updateStations(delta, elapsedSeconds);
