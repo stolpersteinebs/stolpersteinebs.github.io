@@ -18,3 +18,4 @@ layout: default
 - [x] In den englischen Versionen der Spiele die Links zu den anderen Spielen ebenfalls zu den englischen Spielen führen lassen
 - [x] auch in den Unterseiten das Drop-Down-Menü für die Sprachenauswahl machen
 - [x] vertikaler cooldown der powerups
+- multiplikator im Koscherspiel überarbeiten, sodass keine langen Kommerzahlen rauskommen
