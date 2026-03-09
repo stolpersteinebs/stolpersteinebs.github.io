@@ -1,5 +1,7 @@
 #!/bin/bash
-# codex-autosync.sh – Automatisches Commit & Push von Codex-Änderungen
+# codex-autosync.sh – Verbesserte Version mit strengerer Fehlerkontrolle
+
+set -e  # Skript beenden, wenn ein Befehl fehlschlägt
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -10,19 +12,25 @@ echo -e "${YELLOW}=== Codex Auto-Sync gestartet ===${NC}"
 
 # Prüfen, ob wir in einem Git-Repo sind
 if ! git rev-parse --git-dir > /dev/null 2>&1; then
-    echo -e "${RED}Fehler: Das aktuelle Verzeichnis ist kein Git-Repository.${NC}"
+    echo -e "${RED}Fehler: Kein Git-Repository im aktuellen Verzeichnis.${NC}"
+    exit 1
+fi
+
+# Prüfen, ob Benutzeridentität gesetzt ist (sonst bricht git commit später ab)
+if [ -z "$(git config user.name)" ] || [ -z "$(git config user.email)" ]; then
+    echo -e "${RED}Fehler: Git-Benutzeridentität nicht gesetzt.${NC}"
+    echo "Bitte führe folgende Befehle aus (mit deinen Daten):"
+    echo '  git config user.name "Dein Name"'
+    echo '  git config user.email "deine.email@example.com"'
+    echo "Oder global: mit --global"
     exit 1
 fi
 
 BRANCH=$(git branch --show-current)
 echo -e "Aktueller Branch: ${GREEN}$BRANCH${NC}"
 
-# Neueste Änderungen von GitHub holen (verhindert Konflikte)
+# Neueste Änderungen holen
 git pull --ff-only
-if [ $? -ne 0 ]; then
-    echo -e "${RED}Fehler beim git pull. Bitte manuell prüfen.${NC}"
-    exit 1
-fi
 
 # Prüfen, ob es lokale Änderungen gibt
 if [ -z "$(git status --porcelain)" ]; then
@@ -37,11 +45,5 @@ git add .
 git commit -m "Auto-Sync von Codex am $(date '+%Y-%m-%d %H:%M:%S')"
 git push origin $BRANCH
 
-if [ $? -eq 0 ]; then
-    echo -e "${GREEN}Erfolgreich gepusht!${NC}"
-else
-    echo -e "${RED}Fehler beim Push. Bitte Zugang prüfen.${NC}"
-    exit 1
-fi
-
+echo -e "${GREEN}Erfolgreich gepusht!${NC}"
 echo -e "${GREEN}=== Codex Auto-Sync abgeschlossen ===${NC}"
