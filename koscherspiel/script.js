@@ -281,6 +281,11 @@ function sanitizeCoinValue(value) {
     return Math.max(0, Math.min(maxStoredCoins, Math.round(value * 10) / 10));
 }
 
+function sanitizeScoreValue(value) {
+    if (!Number.isFinite(value)) return 0;
+    return Math.max(0, Math.round(value));
+}
+
 function getStoredCoins() {
     try {
         const parsed = Number(localStorage.getItem("koscher_coins") || 0);
@@ -365,7 +370,7 @@ function normalizeLeaderboard(rawEntries) {
                 return null;
             }
 
-            const score = Number(entry.score);
+            const score = sanitizeScoreValue(Number(entry.score));
             if (!Number.isFinite(score)) {
                 return null;
             }
@@ -513,8 +518,9 @@ async function loadLeaderboard() {
 
 async function saveLeaderboard(name, score) {
     const cleanedName = (name || "Anonym").trim() || "Anonym";
+    const normalizedScore = sanitizeScoreValue(score);
     const leaderboard = getStoredLeaderboard();
-    leaderboard.push({ name: cleanedName, score });
+    leaderboard.push({ name: cleanedName, score: normalizedScore });
     const topScores = normalizeLeaderboard(leaderboard);
 
     persistLeaderboardLocally(topScores);
@@ -522,7 +528,7 @@ async function saveLeaderboard(name, score) {
     const supabaseConfig = getSupabaseConfig();
     if (supabaseConfig) {
         try {
-            const supabaseEntries = await saveLeaderboardToSupabase(supabaseConfig, cleanedName, score);
+            const supabaseEntries = await saveLeaderboardToSupabase(supabaseConfig, cleanedName, normalizedScore);
 
             if (supabaseEntries.length > 0) {
                 persistLeaderboardLocally(supabaseEntries);
@@ -1303,6 +1309,8 @@ function endGame(reason) {
         statusTimeoutId = null;
     }
     if (statusDisplay) statusDisplay.classList.add("hidden");
+
+    state.score = sanitizeScoreValue(state.score);
 
     if (state.score > state.highscore) {
         state.highscore = state.score;
