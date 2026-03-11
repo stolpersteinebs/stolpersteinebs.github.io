@@ -19,3 +19,4 @@ layout: default
 - [x] auch in den Unterseiten das Drop-Down-Menü für die Sprachenauswahl machen
 - [x] vertikaler cooldown der powerups
 - multiplikator im Koscherspiel überarbeiten, sodass keine langen Kommerzahlen rauskommen
+- rest der englich website fixen sodass auch wirklich alles übersetzt ist.
