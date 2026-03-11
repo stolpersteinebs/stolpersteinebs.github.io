@@ -4,4 +4,6 @@ permalink: /impressum/
 ---
 
 # Impressum
-# hallo welt
+### Verantwortlich:
+##### Ilka Warstat-Schibilak
+##### info@kinderklassik.com
