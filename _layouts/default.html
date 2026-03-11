@@ -836,8 +836,34 @@
             // Language Switch
             const languageSelect = document.getElementById('language-select');
             if (languageSelect) {
+                const normalizedPath = window.location.pathname.replace(/\/+$/, '') || '/';
+                const routePairs = {
+                    '/': '/en/',
+                    '/spiele': '/en/spiele/',
+                    '/lernenundwerte': '/en/lernenundwerte/',
+                    '/juedischeralltag': '/en/juedischeralltag/',
+                    '/einblicke': '/en/einblicke/',
+                    '/inspiration': '/en/inspiration/',
+                    '/impressum': '/en/impressum/',
+                    '/datenschutz': '/en/datenschutz/',
+                    '/kontakt': '/en/kontakt/',
+                    '/en': '/',
+                    '/en/spiele': '/spiele/',
+                    '/en/lernenundwerte': '/lernenundwerte/',
+                    '/en/juedischeralltag': '/juedischeralltag/',
+                    '/en/einblicke': '/einblicke/',
+                    '/en/inspiration': '/inspiration/',
+                    '/en/impressum': '/impressum/',
+                    '/en/datenschutz': '/datenschutz/',
+                    '/en/kontakt': '/kontakt/'
+                };
+
                 languageSelect.addEventListener('change', function() {
-                    window.location.href = this.value === 'en' ? '/en/' : '/';
+                    if (this.value === 'en') {
+                        window.location.href = routePairs[normalizedPath] || '/en/';
+                    } else {
+                        window.location.href = routePairs[normalizedPath] || '/';
+                    }
                 });
             }
 
