@@ -261,13 +261,15 @@ const itemWidth = 40;
 const powerupDurationMs = 6000;
 const growMultiplier = 1.45;
 const magnetPullSpeed = 280;
-const leaderboardSize = 5;
+const leaderboardSize = 20;
 const gravity = 1200;
 const jumpVelocity = 500;
+const leagueRotationDays = 3;
+const promotionSlots = 5;
+const demotionSlots = 5;
 const ultimateRequiredCarts = ["sky", "mint", "rose", "violet", "jumper"];
 const unlockAllCartsCheatSequence = "koscherwagen";
-const leaderboardStorageKey = "koscher_leaderboard_v2";
-const legacyLeaderboardStorageKey = "koscher_leaderboard";
+const guestLeagueDef = { key: "guest", label: "Gast" };
 const leagueDefs = [
     { key: "bronze", label: "Bronze", minScore: 0 },
     { key: "silver", label: "Silber", minScore: 10 },
@@ -303,7 +305,8 @@ let state = null;
 let loopId = null;
 let lastTime = 0;
 let statusTimeoutId = null;
-let activeLeagueKey = leagueDefs[0].key;
+let activeLeagueKey = guestLeagueDef.key;
+let currentLeagueSnapshot = null;
 
 function getStoredHighscore() {
     try {
@@ -335,6 +338,113 @@ function sanitizeScoreValue(value) {
 
 function getLeagueByKey(leagueKey) {
     return leagueDefs.find((league) => league.key === leagueKey) || leagueDefs[0];
+}
+
+function getLeagueLabel(leagueKey) {
+    if (leagueKey === guestLeagueDef.key) {
+        return guestLeagueDef.label;
+    }
+
+    return getLeagueByKey(leagueKey).label;
+}
+
+function normalizeLeagueSnapshotEntry(entry, index = 0) {
+    if (!entry || typeof entry !== "object") {
+        return null;
+    }
+
+    const rank = Math.max(1, Math.floor(Number(entry.rank) || index + 1));
+    const score = sanitizeScoreValue(Number(entry.score));
+    const nameSource = typeof entry.username === "string"
+        ? entry.username
+        : (typeof entry.name === "string" ? entry.name : "");
+    const userId = typeof entry.user_id === "string"
+        ? entry.user_id
+        : (typeof entry.userId === "string" ? entry.userId : "");
+
+    return {
+        rank,
+        score,
+        name: sanitizeGuestName(nameSource),
+        userId,
+        isCurrentUser: Boolean(entry.is_current_user ?? entry.isCurrentUser)
+    };
+}
+
+function createEmptyLeagueSnapshot(overrides = {}) {
+    const entriesSource = Array.isArray(overrides.entries) ? overrides.entries : [];
+    const guest = Boolean(overrides.guest ?? true);
+    const leagueKey = guest
+        ? guestLeagueDef.key
+        : getLeagueByKey(overrides.leagueKey || leagueDefs[0].key).key;
+
+    return {
+        leagueKey,
+        leagueGroup: Math.max(1, Math.floor(Number(overrides.leagueGroup) || 1)),
+        cycleId: Math.max(0, Math.floor(Number(overrides.cycleId) || 0)),
+        cycleEndsAt: typeof overrides.cycleEndsAt === "string" ? overrides.cycleEndsAt : "",
+        guest,
+        entries: entriesSource
+            .map((entry, index) => normalizeLeagueSnapshotEntry(entry, index))
+            .filter(Boolean)
+            .slice(0, leaderboardSize)
+    };
+}
+
+function normalizeLeagueSnapshot(rawSnapshot, fallback = {}) {
+    if (!rawSnapshot || typeof rawSnapshot !== "object") {
+        return createEmptyLeagueSnapshot(fallback);
+    }
+
+    const rawLeagueKey = typeof rawSnapshot.leagueKey === "string"
+        ? rawSnapshot.leagueKey
+        : (typeof rawSnapshot.league_key === "string" ? rawSnapshot.league_key : "");
+    const guest = Boolean(
+        rawSnapshot.guest
+        ?? rawSnapshot.is_guest
+        ?? (rawLeagueKey === guestLeagueDef.key)
+        ?? fallback.guest
+    );
+    const entries = Array.isArray(rawSnapshot.entries) ? rawSnapshot.entries : [];
+
+    return createEmptyLeagueSnapshot({
+        leagueKey: guest ? guestLeagueDef.key : rawLeagueKey,
+        leagueGroup: rawSnapshot.leagueGroup ?? rawSnapshot.league_group ?? fallback.leagueGroup,
+        cycleId: rawSnapshot.cycleId ?? rawSnapshot.cycle_id ?? fallback.cycleId,
+        cycleEndsAt: rawSnapshot.cycleEndsAt ?? rawSnapshot.cycle_ends_at ?? fallback.cycleEndsAt,
+        guest,
+        entries
+    });
+}
+
+function getCurrentLeagueSnapshot() {
+    if (!currentLeagueSnapshot) {
+        currentLeagueSnapshot = createEmptyLeagueSnapshot({ guest: !authState.user });
+    }
+
+    return currentLeagueSnapshot;
+}
+
+function formatLeagueDeadline(timestamp) {
+    if (!timestamp) return "";
+
+    const date = new Date(timestamp);
+    if (Number.isNaN(date.getTime())) {
+        return "";
+    }
+
+    return date.toLocaleString("de-DE", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+    });
+}
+
+function setCurrentLeagueSnapshot(snapshot) {
+    currentLeagueSnapshot = normalizeLeagueSnapshot(snapshot, { guest: !authState.user });
+    activeLeagueKey = currentLeagueSnapshot.leagueKey;
 }
 
 function getLeagueForScore(score) {
@@ -635,41 +745,11 @@ function mergeLeaderboardEntries(...entrySets) {
 }
 
 function getStoredLeaderboardEntries() {
-    try {
-        const nextRaw = localStorage.getItem(leaderboardStorageKey);
-        if (nextRaw) {
-            const parsed = JSON.parse(nextRaw);
-            if (Array.isArray(parsed)) {
-                return normalizeLeaderboardEntries(parsed);
-            }
-        }
-
-        const legacyRaw = localStorage.getItem(legacyLeaderboardStorageKey);
-        if (!legacyRaw) {
-            return [];
-        }
-
-        const legacyParsed = JSON.parse(legacyRaw);
-        if (Array.isArray(legacyParsed)) {
-            return normalizeLeaderboardEntries(legacyParsed);
-        }
-
-        if (legacyParsed && typeof legacyParsed === "object") {
-            return normalizeLeaderboardEntries(Object.values(legacyParsed).flat());
-        }
-
-        return [];
-    } catch {
-        return [];
-    }
+    return [];
 }
 
 function persistLeaderboardLocally(entries) {
-    try {
-        localStorage.setItem(leaderboardStorageKey, JSON.stringify(normalizeLeaderboardEntries(entries)));
-    } catch {
-        // Ignorieren: Bestenliste bleibt dann nur temporär sichtbar.
-    }
+    return normalizeLeaderboardEntries(entries);
 }
 
 function leaderboardEntriesForLeague(entries, leagueKey = activeLeagueKey) {
@@ -752,36 +832,50 @@ function refreshPersistentViews() {
         renderShop();
     }
 
-    updateLeagueSummary(getStoredHighscore());
+    updateLeagueSummary();
 }
 
-function updateLeagueSummary(score = getStoredHighscore()) {
-    const league = getLeagueForScore(score);
-    activeLeagueKey = getLeagueByKey(activeLeagueKey).key;
+function updateLeagueSummary() {
+    const snapshot = getCurrentLeagueSnapshot();
+    const leagueLabel = getLeagueLabel(snapshot.leagueKey);
+    const formattedDeadline = formatLeagueDeadline(snapshot.cycleEndsAt);
+    const cycleHint = formattedDeadline
+        ? `Nächster Wechsel: ${formattedDeadline}.`
+        : `Wechselrhythmus: alle ${leagueRotationDays} Tage.`;
 
     if (currentLeagueBadge) {
-        currentLeagueBadge.textContent = league.label;
-        currentLeagueBadge.setAttribute("data-league", league.key);
+        currentLeagueBadge.textContent = leagueLabel;
+        currentLeagueBadge.setAttribute("data-league", snapshot.leagueKey);
     }
 
     if (currentLeagueRange) {
-        currentLeagueRange.textContent = getLeagueRangeLabel(league.key);
+        currentLeagueRange.textContent = snapshot.guest
+            ? `20 Plätze · Bereinigung alle ${leagueRotationDays} Tage`
+            : `Gruppe ${snapshot.leagueGroup} · 20 Plätze`;
     }
 
     if (leagueSummaryText) {
-        leagueSummaryText.textContent = `Mit ${sanitizeScoreValue(score)} Punkten spielst du aktuell in der ${league.label}-Liga.`;
+        leagueSummaryText.textContent = snapshot.guest
+            ? `Gäste spielen nur in der Gast-Liga. Sie wird alle ${leagueRotationDays} Tage bereinigt. ${cycleHint}`
+            : `Du siehst nur deine aktuelle ${leagueLabel}-Liga. Platz 1 bis ${promotionSlots} steigt auf, Platz ${leaderboardSize - demotionSlots + 1} bis ${leaderboardSize} steigt alle ${leagueRotationDays} Tage ab. ${cycleHint}`;
     }
 }
 
 function updateLeaderboardHeader() {
-    const league = getLeagueByKey(activeLeagueKey);
+    const snapshot = getCurrentLeagueSnapshot();
+    const leagueLabel = getLeagueLabel(snapshot.leagueKey);
+    const formattedDeadline = formatLeagueDeadline(snapshot.cycleEndsAt);
 
     if (leaderboardTitle) {
-        leaderboardTitle.textContent = `${league.label}-Liga`;
+        leaderboardTitle.textContent = snapshot.guest
+            ? "Gast-Liga"
+            : `${leagueLabel}-Liga`;
     }
 
     if (leaderboardDescription) {
-        leaderboardDescription.textContent = `Bestwerte mit ${getLeagueRangeLabel(league.key)}. Jede Liga hat ihre eigene Rangliste.`;
+        leaderboardDescription.textContent = snapshot.guest
+            ? `Nur für Gäste. Die Liste wird alle ${leagueRotationDays} Tage bereinigt${formattedDeadline ? `, nächste Bereinigung: ${formattedDeadline}` : ""}.`
+            : `Deine aktuelle 20er-Liga${formattedDeadline ? `, nächster Wechsel: ${formattedDeadline}` : ""}.`;
     }
 
     if (leaderboardMeta) {
@@ -790,35 +884,13 @@ function updateLeaderboardHeader() {
 }
 
 function renderLeagueTabs() {
-    if (!leagueTabs) return;
-
-    leagueTabs.innerHTML = "";
-    leagueDefs.forEach((league) => {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "league-tab";
-        button.textContent = league.label;
-        button.dataset.leagueKey = league.key;
-        button.setAttribute("data-league", league.key);
-        button.setAttribute("role", "tab");
-        button.setAttribute("aria-selected", String(activeLeagueKey === league.key));
-
-        if (activeLeagueKey === league.key) {
-            button.classList.add("active");
-        }
-
-        button.addEventListener("click", () => {
-            activeLeagueKey = league.key;
-            renderLeagueTabs();
-            updateLeaderboardHeader();
-            loadLeaderboard(activeLeagueKey);
-        });
-
-        leagueTabs.appendChild(button);
-    });
+    if (leagueTabs) {
+        leagueTabs.innerHTML = "";
+        leagueTabs.classList.add("hidden");
+    }
 }
 
-function renderLeaderboard(entries = leaderboardEntriesForLeague(getStoredLeaderboardEntries(), activeLeagueKey)) {
+function renderLeaderboard(entries = getCurrentLeagueSnapshot().entries) {
     if (!leaderboardList) return;
 
     leaderboardList.innerHTML = "";
@@ -826,23 +898,18 @@ function renderLeaderboard(entries = leaderboardEntriesForLeague(getStoredLeader
 
     if (entries.length === 0) {
         const emptyItem = document.createElement("li");
-        emptyItem.textContent = "Noch keine Einträge in dieser Liga";
+        emptyItem.textContent = getCurrentLeagueSnapshot().guest
+            ? "Noch keine Einträge in der Gast-Liga"
+            : "Noch keine Einträge in deiner Liga";
         leaderboardList.appendChild(emptyItem);
         return;
     }
 
-    const currentUsername = getAccountUsername();
-
     entries.slice(0, leaderboardSize).forEach((entry) => {
         const item = document.createElement("li");
-        item.textContent = `${entry.name}: ${entry.score} Punkte`;
+        item.textContent = `${entry.rank}. ${entry.name}: ${entry.score} Punkte`;
 
-        const isCurrentUser = Boolean(
-            (authState.user && entry.userId && entry.userId === authState.user.id) ||
-            (currentUsername && entry.name.toLocaleLowerCase("de-DE") === currentUsername.toLocaleLowerCase("de-DE"))
-        );
-
-        if (isCurrentUser) {
+        if (entry.isCurrentUser) {
             item.classList.add("current-user");
         }
 
@@ -977,7 +1044,6 @@ function applyAuthenticatedProfile(rawProfile) {
 
     authState.profile = mergedProfile;
     persistProfileSnapshotLocally(mergedProfile);
-    activeLeagueKey = getLeagueForScore(mergedProfile.highscore).key;
     renderLeagueTabs();
     refreshPersistentViews();
     requestProfileSync({ immediate: true });
@@ -990,7 +1056,7 @@ function renderAuthUI() {
 
     if (accountModeBadge) {
         accountModeBadge.classList.remove("online", "syncing");
-        accountModeBadge.textContent = supabaseConfigured ? "Gastmodus" : "Lokaler Modus";
+        accountModeBadge.textContent = supabaseConfigured ? "Gast-Liga" : "Offline";
 
         if (signedIn) {
             accountModeBadge.textContent = authState.syncInFlight ? "Synchronisiert..." : `Online: ${username}`;
@@ -1039,13 +1105,13 @@ function renderAuthUI() {
         authStatus.classList.toggle("error", authState.statusType === "error");
 
         if (!supabaseConfigured) {
-            authStatus.textContent = "Supabase ist noch nicht vollständig konfiguriert. Das Spiel läuft derzeit nur lokal.";
+            authStatus.textContent = "Supabase ist noch nicht vollständig konfiguriert. Die Ligafunktion ist deshalb derzeit nicht verfügbar.";
         } else if (authState.statusText) {
             authStatus.textContent = authState.statusText;
         } else if (signedIn) {
             authStatus.textContent = `Angemeldet als ${username}. Highscore, Münzen, Käufe und Liga werden mit Supabase geteilt.`;
         } else {
-            authStatus.textContent = "Nicht angemeldet. Als Gast werden Fortschritt und Rangliste nur lokal gespeichert.";
+            authStatus.textContent = `Nicht angemeldet. Gäste spielen in einer separaten Liga, die alle ${leagueRotationDays} Tage bereinigt wird.`;
         }
     }
 
@@ -1063,7 +1129,7 @@ async function handleAuthSession(session) {
         }
         renderAuthUI();
         renderLeagueTabs();
-        loadLeaderboard(activeLeagueKey);
+        loadLeaderboard();
         return;
     }
 
@@ -1079,7 +1145,7 @@ async function handleAuthSession(session) {
     }
 
     renderAuthUI();
-    loadLeaderboard(activeLeagueKey);
+    loadLeaderboard();
 }
 
 function initializeSupabase() {
@@ -1237,45 +1303,43 @@ async function signOutAccount() {
     }
 }
 
-async function loadLeaderboardFromSupabase(leagueKey = activeLeagueKey) {
+async function loadLeaderboardFromSupabase() {
     if (!canUseSupabaseClient()) {
-        return [];
+        return createEmptyLeagueSnapshot({ guest: !authState.user });
     }
 
-    const config = getSupabaseConfig();
-    const normalizedLeague = getLeagueByKey(leagueKey);
-    const { data, error } = await authState.client
-        .from(config.leaderboardTable)
-        .select("user_id, username, score, league_key, updated_at")
-        .eq("league_key", normalizedLeague.key)
-        .order("score", { ascending: false })
-        .limit(leaderboardSize);
+    const rpcName = authState.user
+        ? "koscher_get_my_league_snapshot"
+        : "koscher_get_guest_league_snapshot";
+    const { data, error } = await authState.client.rpc(rpcName);
 
     if (error) {
         throw error;
     }
 
-    return normalizeLeaderboardEntries(data);
+    return normalizeLeagueSnapshot(data, { guest: !authState.user });
 }
 
-async function loadLeaderboard(leagueKey = activeLeagueKey) {
-    activeLeagueKey = getLeagueByKey(leagueKey).key;
+async function loadLeaderboard() {
     renderLeagueTabs();
     updateLeaderboardHeader();
 
-    if (canUseSupabaseClient()) {
-        try {
-            const supabaseEntries = await loadLeaderboardFromSupabase(activeLeagueKey);
-            const mergedEntries = mergeLeaderboardEntries(getStoredLeaderboardEntries(), supabaseEntries);
-            persistLeaderboardLocally(mergedEntries);
-            renderLeaderboard(leaderboardEntriesForLeague(mergedEntries, activeLeagueKey));
-            return;
-        } catch {
-            // Fallback auf lokale Rangliste.
-        }
+    if (!canUseSupabaseClient()) {
+        setCurrentLeagueSnapshot(createEmptyLeagueSnapshot({ guest: !authState.user }));
+        renderLeaderboard([]);
+        return;
     }
 
-    renderLeaderboard(leaderboardEntriesForLeague(getStoredLeaderboardEntries(), activeLeagueKey));
+    try {
+        const snapshot = await loadLeaderboardFromSupabase();
+        setCurrentLeagueSnapshot(snapshot);
+        updateLeagueSummary();
+        renderLeaderboard(snapshot.entries);
+    } catch {
+        setCurrentLeagueSnapshot(createEmptyLeagueSnapshot({ guest: !authState.user, leagueKey: activeLeagueKey }));
+        updateLeagueSummary();
+        renderLeaderboard([]);
+    }
 }
 
 async function saveLeaderboardToSupabase(score) {
@@ -1283,75 +1347,58 @@ async function saveLeaderboardToSupabase(score) {
         throw new Error("Kein Supabase-Login vorhanden.");
     }
 
-    const config = getSupabaseConfig();
-    const username = getAccountUsername();
-    const normalizedScore = sanitizeScoreValue(score);
-    const { data: existingEntry, error: readError } = await authState.client
-        .from(config.leaderboardTable)
-        .select("score")
-        .eq("user_id", authState.user.id)
-        .maybeSingle();
-
-    if (readError) {
-        throw readError;
-    }
-
-    const bestScore = Math.max(sanitizeScoreValue(Number(existingEntry?.score)), normalizedScore);
-    const league = getLeagueForScore(bestScore);
-    const payload = {
-        user_id: authState.user.id,
-        username,
-        score: bestScore,
-        league_key: league.key,
-        updated_at: new Date().toISOString()
-    };
-
-    const { error } = await authState.client
-        .from(config.leaderboardTable)
-        .upsert(payload, { onConflict: "user_id" });
+    const { data, error } = await authState.client.rpc("koscher_submit_authenticated_score", {
+        input_score: sanitizeScoreValue(score)
+    });
 
     if (error) {
         throw error;
     }
 
-    return normalizeLeaderboardEntry(payload);
+    return normalizeLeagueSnapshot(data, { guest: false });
+}
+
+async function saveGuestLeaderboardToSupabase(name, score) {
+    if (!canUseSupabaseClient()) {
+        throw new Error("Keine Serververbindung verfügbar.");
+    }
+
+    const { data, error } = await authState.client.rpc("koscher_submit_guest_score", {
+        input_username: sanitizeGuestName(name),
+        input_score: sanitizeScoreValue(score)
+    });
+
+    if (error) {
+        throw error;
+    }
+
+    return normalizeLeagueSnapshot(data, { guest: true, leagueKey: guestLeagueDef.key });
 }
 
 async function saveLeaderboard(name, score) {
     const normalizedScore = sanitizeScoreValue(score);
 
-    if (authState.user && validateUsername(getAccountUsername())) {
-        try {
-            const savedEntry = await saveLeaderboardToSupabase(normalizedScore);
-            const mergedEntries = mergeLeaderboardEntries(getStoredLeaderboardEntries(), [savedEntry]);
-            persistLeaderboardLocally(mergedEntries);
-            activeLeagueKey = savedEntry.leagueKey;
-            await loadLeaderboard(activeLeagueKey);
-            return {
-                savedOnServer: true,
-                leagueKey: savedEntry.leagueKey
-            };
-        } catch {
-            // Fallback auf lokale Speicherung.
-        }
+    try {
+        const snapshot = authState.user && validateUsername(getAccountUsername())
+            ? await saveLeaderboardToSupabase(normalizedScore)
+            : await saveGuestLeaderboardToSupabase(name, normalizedScore);
+
+        setCurrentLeagueSnapshot(snapshot);
+        updateLeagueSummary();
+        renderLeaderboard(snapshot.entries);
+
+        return {
+            savedOnServer: true,
+            leagueKey: snapshot.leagueKey,
+            guest: snapshot.guest
+        };
+    } catch {
+        return {
+            savedOnServer: false,
+            leagueKey: authState.user ? activeLeagueKey : guestLeagueDef.key,
+            guest: !authState.user
+        };
     }
-
-    const localEntry = {
-        name: sanitizeGuestName(name),
-        score: normalizedScore,
-        leagueKey: getLeagueForScore(normalizedScore).key,
-        updatedAt: new Date().toISOString()
-    };
-    const mergedEntries = mergeLeaderboardEntries(getStoredLeaderboardEntries(), [localEntry]);
-    persistLeaderboardLocally(mergedEntries);
-    activeLeagueKey = localEntry.leagueKey;
-    renderLeagueTabs();
-    renderLeaderboard(leaderboardEntriesForLeague(mergedEntries, activeLeagueKey));
-
-    return {
-        savedOnServer: false,
-        leagueKey: localEntry.leagueKey
-    };
 }
 
 function getStoredAbilities() {
@@ -1672,14 +1719,15 @@ function renderIdleHUD() {
 function configureLeaderboardOptIn(score = state?.score || 0) {
     if (!leaderboardOptIn) return;
 
-    const league = getLeagueForScore(score);
+    const snapshot = getCurrentLeagueSnapshot();
+    const leagueLabel = getLeagueLabel(snapshot.leagueKey);
     const accountUsername = getAccountUsername();
     const signedIn = Boolean(authState.user && validateUsername(accountUsername));
 
     if (leaderboardPrompt) {
         leaderboardPrompt.textContent = signedIn
-            ? `Dein Lauf gehört in die ${league.label}-Liga. Möchtest du ihn als ${accountUsername} speichern?`
-            : `Dein Lauf gehört in die ${league.label}-Liga. Ohne Login wird er nur lokal in diesem Browser gespeichert.`;
+            ? `Dein Lauf wird in deiner aktuellen ${leagueLabel}-Liga gespeichert. Möchtest du ihn als ${accountUsername} eintragen?`
+            : `Ohne Login wird dein Lauf in der Gast-Liga gespeichert. Diese wird alle ${leagueRotationDays} Tage bereinigt.`;
     }
 
     if (playerNameLabel) {
@@ -1702,14 +1750,14 @@ function configureLeaderboardOptIn(score = state?.score || 0) {
     if (leaderboardAuthHint) {
         leaderboardAuthHint.classList.toggle("error", false);
         leaderboardAuthHint.textContent = signedIn
-            ? `Gespeichert wird immer dein bester Lauf. Damit wechselst du automatisch in höhere Ligen.`
-            : "Mit Supabase-Login erscheint dein Score in der globalen Ligarangliste. Ohne Login bleibt er lokal.";
+            ? `Es zählt dein bester Lauf im aktuellen ${leagueRotationDays}-Tage-Zyklus. Platz 1 bis ${promotionSlots} steigt auf, Platz ${leaderboardSize - demotionSlots + 1} bis ${leaderboardSize} steigt ab.`
+            : `Ohne Login spielst du nur in der Gast-Liga. Auch dort werden Einträge nicht lokal gespeichert.`;
     }
 
     if (saveLeaderboardButton) {
         saveLeaderboardButton.textContent = signedIn
-            ? `In ${league.label} speichern`
-            : "Lokal speichern";
+            ? `In ${leagueLabel} speichern`
+            : "In Gast-Liga speichern";
     }
 
     if (skipLeaderboardButton) {
@@ -2150,8 +2198,6 @@ function endGame(reason) {
     if (statusDisplay) statusDisplay.classList.add("hidden");
 
     state.score = sanitizeScoreValue(state.score);
-    const achievedLeague = getLeagueForScore(state.score);
-
     if (state.score > state.highscore) {
         state.highscore = state.score;
         persistHighscore(state.highscore);
@@ -2178,7 +2224,7 @@ function endGame(reason) {
     updateHUD();
     renderShop();
 
-    if (resultText) resultText.textContent = `${reason} Dein Ergebnis: ${state.score} Punkte. Das ist ${achievedLeague.label}-Liga.`;
+    if (resultText) resultText.textContent = `${reason} Dein Ergebnis: ${state.score} Punkte.`;
     if (coinResult) {
         const boostText = hasCartPower("ultimate")
             ? " (inkl. Ultimate-Bonus)"
@@ -2351,12 +2397,12 @@ if (saveLeaderboardButton && skipLeaderboardButton && playerNameInput && leaderb
         leaderboardOptIn.classList.add("hidden");
 
         if (result.savedOnServer) {
-            const savedLeague = getLeagueByKey(result.leagueKey);
-            setStatus(`In die ${savedLeague.label}-Liga eingetragen!`);
+            const savedLeagueLabel = getLeagueLabel(result.leagueKey);
+            setStatus(result.guest ? "In die Gast-Liga eingetragen!" : `In die ${savedLeagueLabel}-Liga eingetragen!`);
             return;
         }
 
-        setStatus("Nur lokal gespeichert. Für die globale Ligarangliste bitte anmelden.", "danger");
+        setStatus("Ligaplatz konnte gerade nicht gespeichert werden.", "danger");
     });
 
     skipLeaderboardButton.addEventListener("click", () => {
@@ -2473,7 +2519,7 @@ window.addEventListener("resize", () => {
     positionPlayer();
 });
 
-activeLeagueKey = getLeagueForScore(getStoredHighscore()).key;
+setCurrentLeagueSnapshot(createEmptyLeagueSnapshot({ guest: true, leagueKey: guestLeagueDef.key }));
 state = createInitialState();
 state.running = false;
 applyCartSkinClass();
@@ -2483,5 +2529,5 @@ renderLeagueTabs();
 configureLeaderboardOptIn();
 renderAuthUI();
 initializeSupabase();
-loadLeaderboard(activeLeagueKey);
+loadLeaderboard();
 centerPlayerIdle();

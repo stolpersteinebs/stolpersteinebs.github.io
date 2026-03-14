@@ -63,9 +63,9 @@
         <div class="account-header">
             <div>
                 <h2 id="accountTitle">Account-System</h2>
-                <p id="accountSubtitle">Mit Supabase werden Highscore, Münzen, Käufe und deine Liga synchronisiert.</p>
+                <p id="accountSubtitle">Mit Supabase werden Highscore, Münzen, Käufe und deine aktuelle Liga synchronisiert.</p>
             </div>
-            <span id="accountModeBadge" class="auth-badge">Gastmodus</span>
+            <span id="accountModeBadge" class="auth-badge">Gast-Liga</span>
         </div>
 
         <div class="auth-grid">
@@ -86,18 +86,18 @@
             </div>
         </div>
 
-        <p id="authStatus" class="auth-status">Nicht angemeldet. Als Gast werden Fortschritt und Rangliste nur lokal gespeichert.</p>
+        <p id="authStatus" class="auth-status">Nicht angemeldet. Gäste spielen in einer separaten Liga, die alle 3 Tage bereinigt wird.</p>
     </section>
 
     <section class="league-overview" aria-label="Ligastatus">
         <div class="league-current-card">
             <p class="league-eyebrow">Deine aktuelle Liga</p>
-            <div id="currentLeagueBadge" class="league-badge" data-league="bronze">Bronze</div>
-            <p id="currentLeagueRange" class="league-range">0 bis 9 Punkte</p>
+            <div id="currentLeagueBadge" class="league-badge" data-league="guest">Gast</div>
+            <p id="currentLeagueRange" class="league-range">20 Plätze · Bereinigung alle 3 Tage</p>
         </div>
         <div class="league-copy">
-            <h2 id="leagueOverviewTitle">Duolingo-Ligen</h2>
-            <p id="leagueSummaryText">Dein bester Lauf entscheidet darüber, in welcher Liga du in den Ranglisten auftauchst.</p>
+            <h2 id="leagueOverviewTitle">Deine Liga</h2>
+            <p id="leagueSummaryText">Du siehst nur deine aktuelle Liga. Platz 1 bis 5 steigt alle 3 Tage auf, Platz 16 bis 20 steigt ab.</p>
         </div>
     </section>
 
@@ -155,12 +155,11 @@
     <section class="leaderboard" aria-label="Ligaranglisten">
         <div class="leaderboard-head">
             <div>
-                <h2 id="leaderboardTitle">Ligaranglisten</h2>
-                <p id="leaderboardDescription">Jede Duolingo-Liga hat ihre eigene Bestenliste.</p>
+                <h2 id="leaderboardTitle">Deine Liga</h2>
+                <p id="leaderboardDescription">Du siehst nur die Rangliste deiner aktuellen 20er-Liga.</p>
             </div>
-            <span id="leaderboardMeta" class="leaderboard-meta">Top 5</span>
+            <span id="leaderboardMeta" class="leaderboard-meta">Top 20</span>
         </div>
-        <div id="leagueTabs" class="league-tabs" role="tablist" aria-label="Duolingo-Ligen"></div>
         <ol id="leaderboardList"></ol>
     </section>
 
@@ -253,10 +252,10 @@
       setText("h1", "Kosher Collection Game");
       setText(".instructions", "Collect kosher foods with the cart and avoid non-kosher items. Move left/right with arrow keys or A/D.");
       setText("#accountTitle", "Account System");
-      setText("#accountSubtitle", "Supabase syncs your high score, coins, purchases, and league.");
-      setText("#leagueOverviewTitle", "Duolingo Leagues");
-      setText("#leaderboardTitle", "League Leaderboards");
-      setText("#leaderboardDescription", "Each Duolingo league has its own leaderboard.");
+      setText("#accountSubtitle", "Supabase syncs your high score, coins, purchases, and current league.");
+      setText("#leagueOverviewTitle", "Your League");
+      setText("#leaderboardTitle", "Your League");
+      setText("#leaderboardDescription", "You only see the leaderboard for your current 20-player league.");
       setText("#startTitle", "Ready to collect?");
       setText("#startScreen p", "Start when you are ready and collect as many kosher foods as possible.");
       setText("#startButton", "Start Game");

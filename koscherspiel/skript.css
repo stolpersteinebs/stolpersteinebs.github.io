@@ -229,6 +229,11 @@ h1 {
     color: #fff8ef;
 }
 
+[data-league="guest"] {
+    background: linear-gradient(135deg, #2d7a6b, #8fdcc8);
+    color: #f4fffb;
+}
+
 [data-league="silver"] {
     background: linear-gradient(135deg, #9da7b4, #d9e0e7);
 }
