@@ -371,10 +371,10 @@ begin
         raise exception 'Kein angemeldeter Nutzer vorhanden.';
     end if;
 
-    select *
+    select p.*
     into profile_row
-    from public.profiles
-    where id = target_user_id;
+    from public.profiles as p
+    where p.id = target_user_id;
 
     if not found then
         raise exception 'Profil nicht gefunden.';
@@ -383,14 +383,14 @@ begin
     if coalesce(profile_row.league_cycle_id, 0) = current_cycle
        and coalesce(profile_row.league_key, '') <> ''
        and coalesce(profile_row.league_group, 0) > 0 then
-        update public.leaderboard
+        update public.leaderboard as lb
         set username = profile_row.username,
             league_key = profile_row.league_key,
             league_group = profile_row.league_group,
             cycle_id = current_cycle,
             is_guest = false
-        where user_id = profile_row.id
-          and cycle_id = current_cycle;
+        where lb.user_id = profile_row.id
+          and lb.cycle_id = current_cycle;
 
         if not found then
             insert into public.leaderboard (user_id, username, score, league_key, league_group, cycle_id, is_guest)
@@ -409,16 +409,16 @@ begin
         into previous_rank, previous_member_count
         from (
             select
-                user_id,
+                lb.user_id,
                 row_number() over (
-                    order by score desc, updated_at asc, username asc, coalesce(user_id::text, '')
+                    order by lb.score desc, lb.updated_at asc, lb.username asc, coalesce(lb.user_id::text, '')
                 ) as rank_position,
                 count(*) over () as member_count
-            from public.leaderboard
-            where cycle_id = profile_row.league_cycle_id
-              and league_key = target_league
-              and league_group = greatest(coalesce(profile_row.league_group, 1), 1)
-              and is_guest = false
+            from public.leaderboard as lb
+            where lb.cycle_id = profile_row.league_cycle_id
+              and lb.league_key = target_league
+              and lb.league_group = greatest(coalesce(profile_row.league_group, 1), 1)
+              and lb.is_guest = false
         ) ranked
         where ranked.user_id = profile_row.id;
 
@@ -433,23 +433,23 @@ begin
 
     target_group := public.koscher_pick_group(target_league, current_cycle);
 
-    update public.profiles
+    update public.profiles as p
     set league_key = target_league,
         league_group = target_group,
         league_cycle_id = current_cycle,
         updated_at = timezone('utc', now())
-    where id = profile_row.id
+    where p.id = profile_row.id
     returning *
     into profile_row;
 
-    update public.leaderboard
+    update public.leaderboard as lb
     set username = profile_row.username,
         league_key = profile_row.league_key,
         league_group = profile_row.league_group,
         cycle_id = current_cycle,
         is_guest = false
-    where user_id = profile_row.id
-      and cycle_id = current_cycle;
+    where lb.user_id = profile_row.id
+      and lb.cycle_id = current_cycle;
 
     if not found then
         insert into public.leaderboard (user_id, username, score, league_key, league_group, cycle_id, is_guest)
