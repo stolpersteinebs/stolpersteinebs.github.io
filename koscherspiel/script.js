@@ -457,15 +457,44 @@ function isMissingRpcError(error) {
 }
 
 function extractSupabaseErrorMessage(error, fallbackText) {
-    if (typeof error?.message === "string" && error.message.trim()) {
-        return error.message.trim();
+    const code = typeof error?.code === "string" ? error.code.trim() : "";
+    const message = typeof error?.message === "string" ? error.message.trim() : "";
+    const details = typeof error?.details === "string" ? error.details.trim() : "";
+    const hint = typeof error?.hint === "string" ? error.hint.trim() : "";
+    const description = typeof error?.error_description === "string" ? error.error_description.trim() : "";
+
+    const migrationHelpText = "Die Supabase-Liga-Migration fehlt oder ist veraltet. Führe `koscherspiel/supabase-setup.sql` im Supabase-SQL-Editor aus.";
+
+    if (
+        isMissingRpcError(error)
+        || /Could not find the function/i.test(message)
+        || /function .* does not exist/i.test(message)
+    ) {
+        return migrationHelpText;
     }
 
-    if (typeof error?.error_description === "string" && error.error_description.trim()) {
-        return error.error_description.trim();
+    if (
+        code === "42501"
+        || /row-level security/i.test(message)
+        || /permission denied/i.test(message)
+    ) {
+        return `Supabase blockiert das Speichern mit den aktuellen Rechten. ${migrationHelpText}`;
     }
 
-    return fallbackText;
+    if (
+        code === "PGRST204"
+        || /column .* does not exist/i.test(message)
+        || /structure of query does not match/i.test(message)
+        || /schema cache/i.test(message)
+    ) {
+        return migrationHelpText;
+    }
+
+    const combined = [message, details, hint, description]
+        .filter(Boolean)
+        .join(" ");
+
+    return combined || fallbackText;
 }
 
 function buildLeagueSnapshotFromEntries(entries, options = {}) {
@@ -1623,7 +1652,13 @@ async function saveLeaderboard(name, score) {
             guest: snapshot.guest
         };
     } catch (error) {
-        throw new Error(extractSupabaseErrorMessage(error, "Ligaplatz konnte gerade nicht gespeichert werden."));
+        const errorText = extractSupabaseErrorMessage(error, "Ligaplatz konnte gerade nicht gespeichert werden.");
+        if (error instanceof Error) {
+            error.message = errorText;
+            throw error;
+        }
+
+        throw new Error(errorText);
     }
 }
 
