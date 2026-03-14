@@ -447,6 +447,53 @@ function setCurrentLeagueSnapshot(snapshot) {
     activeLeagueKey = currentLeagueSnapshot.leagueKey;
 }
 
+function isMissingRpcError(error) {
+    const code = typeof error?.code === "string" ? error.code : "";
+    const message = typeof error?.message === "string" ? error.message : "";
+
+    return code === "PGRST202"
+        || /Could not find the function/i.test(message)
+        || /function .* does not exist/i.test(message);
+}
+
+function extractSupabaseErrorMessage(error, fallbackText) {
+    if (typeof error?.message === "string" && error.message.trim()) {
+        return error.message.trim();
+    }
+
+    if (typeof error?.error_description === "string" && error.error_description.trim()) {
+        return error.error_description.trim();
+    }
+
+    return fallbackText;
+}
+
+function buildLeagueSnapshotFromEntries(entries, options = {}) {
+    const guest = Boolean(options.guest);
+    const leagueKey = guest
+        ? guestLeagueDef.key
+        : getLeagueByKey(options.leagueKey || leagueDefs[0].key).key;
+
+    return createEmptyLeagueSnapshot({
+        guest,
+        leagueKey,
+        leagueGroup: options.leagueGroup || 1,
+        cycleEndsAt: options.cycleEndsAt || "",
+        entries: normalizeLeaderboardEntries(entries)
+            .slice(0, leaderboardSize)
+            .map((entry, index) => ({
+                rank: index + 1,
+                username: entry.name,
+                score: entry.score,
+                user_id: entry.userId,
+                is_current_user: Boolean(
+                    (authState.user && entry.userId && entry.userId === authState.user.id) ||
+                    (!authState.user && guest && options.currentName && entry.name.toLocaleLowerCase("de-DE") === options.currentName.toLocaleLowerCase("de-DE"))
+                )
+            }))
+    });
+}
+
 function getLeagueForScore(score) {
     const normalizedScore = sanitizeScoreValue(score);
     return leagueDefs.reduce((currentLeague, candidateLeague) => {
@@ -693,7 +740,10 @@ function normalizeLeaderboardEntry(entry) {
     }
 
     const score = sanitizeScoreValue(Number(entry.score));
-    const leagueKey = getLeagueByKey(entry.league_key || entry.leagueKey || getLeagueForScore(score).key).key;
+    const rawLeagueKey = entry.league_key || entry.leagueKey || getLeagueForScore(score).key;
+    const leagueKey = rawLeagueKey === guestLeagueDef.key
+        ? guestLeagueDef.key
+        : getLeagueByKey(rawLeagueKey).key;
     const userId = typeof entry.user_id === "string"
         ? entry.user_id
         : (typeof entry.userId === "string" ? entry.userId : "");
@@ -1303,6 +1353,172 @@ async function signOutAccount() {
     }
 }
 
+async function loadLegacyAuthenticatedLeaderboardFromSupabase() {
+    if (!authState.user || !canUseSupabaseClient()) {
+        throw new Error("Kein Supabase-Login vorhanden.");
+    }
+
+    const config = getSupabaseConfig();
+    const username = getAccountUsername();
+    const { data: existingEntry, error: existingError } = await authState.client
+        .from(config.leaderboardTable)
+        .select("user_id, username, score, league_key, updated_at")
+        .eq("user_id", authState.user.id)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+    if (existingError) {
+        throw existingError;
+    }
+
+    let leagueKey = getLeagueForScore(getStoredHighscore()).key;
+    if (existingEntry?.league_key) {
+        leagueKey = getLeagueByKey(existingEntry.league_key).key;
+    } else {
+        const { data: profileRow, error: profileError } = await authState.client
+            .from(config.profileTable)
+            .select("highscore")
+            .eq("id", authState.user.id)
+            .maybeSingle();
+
+        if (profileError) {
+            throw profileError;
+        }
+
+        leagueKey = getLeagueForScore(Number(profileRow?.highscore || 0)).key;
+    }
+
+    const { data: rows, error: leaderboardError } = await authState.client
+        .from(config.leaderboardTable)
+        .select("user_id, username, score, league_key, updated_at")
+        .eq("league_key", leagueKey)
+        .order("score", { ascending: false })
+        .limit(leaderboardSize);
+
+    if (leaderboardError) {
+        throw leaderboardError;
+    }
+
+    return buildLeagueSnapshotFromEntries(rows || [], {
+        guest: false,
+        leagueKey,
+        currentName: username
+    });
+}
+
+async function loadLegacyGuestLeaderboardFromSupabase() {
+    if (!canUseSupabaseClient()) {
+        throw new Error("Keine Serververbindung verfügbar.");
+    }
+
+    const config = getSupabaseConfig();
+    const { data: rows, error } = await authState.client
+        .from(config.leaderboardTable)
+        .select("user_id, username, score, league_key, updated_at")
+        .eq("league_key", guestLeagueDef.key)
+        .order("score", { ascending: false })
+        .limit(leaderboardSize);
+
+    if (error) {
+        throw error;
+    }
+
+    return buildLeagueSnapshotFromEntries(rows || [], {
+        guest: true
+    });
+}
+
+async function saveLegacyAuthenticatedLeaderboardToSupabase(score) {
+    if (!authState.user || !canUseSupabaseClient()) {
+        throw new Error("Kein Supabase-Login vorhanden.");
+    }
+
+    const config = getSupabaseConfig();
+    const username = getAccountUsername();
+    const normalizedScore = sanitizeScoreValue(score);
+    const { data: existingEntry, error: existingError } = await authState.client
+        .from(config.leaderboardTable)
+        .select("score")
+        .eq("user_id", authState.user.id)
+        .maybeSingle();
+
+    if (existingError) {
+        throw existingError;
+    }
+
+    const bestScore = Math.max(sanitizeScoreValue(Number(existingEntry?.score || 0)), normalizedScore);
+    const payload = {
+        user_id: authState.user.id,
+        username,
+        score: bestScore,
+        league_key: getLeagueForScore(bestScore).key,
+        updated_at: new Date().toISOString()
+    };
+
+    const { error } = await authState.client
+        .from(config.leaderboardTable)
+        .upsert(payload, { onConflict: "user_id" });
+
+    if (error) {
+        throw error;
+    }
+
+    return loadLegacyAuthenticatedLeaderboardFromSupabase();
+}
+
+async function saveLegacyGuestLeaderboardToSupabase(name, score) {
+    if (!canUseSupabaseClient()) {
+        throw new Error("Keine Serververbindung verfügbar.");
+    }
+
+    const config = getSupabaseConfig();
+    const normalizedName = sanitizeGuestName(name);
+    const normalizedScore = sanitizeScoreValue(score);
+    const { data: existingRows, error: existingError } = await authState.client
+        .from(config.leaderboardTable)
+        .select("username, score")
+        .eq("league_key", guestLeagueDef.key)
+        .ilike("username", normalizedName)
+        .order("score", { ascending: false })
+        .limit(1);
+
+    if (existingError) {
+        throw existingError;
+    }
+
+    const bestScore = Math.max(sanitizeScoreValue(Number(existingRows?.[0]?.score || 0)), normalizedScore);
+    if (Array.isArray(existingRows) && existingRows.length > 0) {
+        const { error: updateError } = await authState.client
+            .from(config.leaderboardTable)
+            .update({
+                score: bestScore,
+                updated_at: new Date().toISOString()
+            })
+            .eq("league_key", guestLeagueDef.key)
+            .ilike("username", normalizedName);
+
+        if (updateError) {
+            throw updateError;
+        }
+    } else {
+        const { error: insertError } = await authState.client
+            .from(config.leaderboardTable)
+            .insert({
+                username: normalizedName,
+                score: bestScore,
+                league_key: guestLeagueDef.key,
+                updated_at: new Date().toISOString()
+            });
+
+        if (insertError) {
+            throw insertError;
+        }
+    }
+
+    return loadLegacyGuestLeaderboardFromSupabase();
+}
+
 async function loadLeaderboardFromSupabase() {
     if (!canUseSupabaseClient()) {
         return createEmptyLeagueSnapshot({ guest: !authState.user });
@@ -1313,11 +1529,17 @@ async function loadLeaderboardFromSupabase() {
         : "koscher_get_guest_league_snapshot";
     const { data, error } = await authState.client.rpc(rpcName);
 
-    if (error) {
-        throw error;
+    if (!error) {
+        return normalizeLeagueSnapshot(data, { guest: !authState.user });
     }
 
-    return normalizeLeagueSnapshot(data, { guest: !authState.user });
+    if (isMissingRpcError(error)) {
+        return authState.user
+            ? loadLegacyAuthenticatedLeaderboardFromSupabase()
+            : loadLegacyGuestLeaderboardFromSupabase();
+    }
+
+    throw error;
 }
 
 async function loadLeaderboard() {
@@ -1351,11 +1573,15 @@ async function saveLeaderboardToSupabase(score) {
         input_score: sanitizeScoreValue(score)
     });
 
-    if (error) {
-        throw error;
+    if (!error) {
+        return normalizeLeagueSnapshot(data, { guest: false });
     }
 
-    return normalizeLeagueSnapshot(data, { guest: false });
+    if (isMissingRpcError(error)) {
+        return saveLegacyAuthenticatedLeaderboardToSupabase(score);
+    }
+
+    throw error;
 }
 
 async function saveGuestLeaderboardToSupabase(name, score) {
@@ -1368,11 +1594,15 @@ async function saveGuestLeaderboardToSupabase(name, score) {
         input_score: sanitizeScoreValue(score)
     });
 
-    if (error) {
-        throw error;
+    if (!error) {
+        return normalizeLeagueSnapshot(data, { guest: true, leagueKey: guestLeagueDef.key });
     }
 
-    return normalizeLeagueSnapshot(data, { guest: true, leagueKey: guestLeagueDef.key });
+    if (isMissingRpcError(error)) {
+        return saveLegacyGuestLeaderboardToSupabase(name, score);
+    }
+
+    throw error;
 }
 
 async function saveLeaderboard(name, score) {
@@ -1392,12 +1622,8 @@ async function saveLeaderboard(name, score) {
             leagueKey: snapshot.leagueKey,
             guest: snapshot.guest
         };
-    } catch {
-        return {
-            savedOnServer: false,
-            leagueKey: authState.user ? activeLeagueKey : guestLeagueDef.key,
-            guest: !authState.user
-        };
+    } catch (error) {
+        throw new Error(extractSupabaseErrorMessage(error, "Ligaplatz konnte gerade nicht gespeichert werden."));
     }
 }
 
@@ -2388,21 +2614,32 @@ if (saveLeaderboardButton && skipLeaderboardButton && playerNameInput && leaderb
         if (!state) return;
         if (state.leaderboardSubmitted) return;
 
-        state.leaderboardSubmitted = true;
         saveLeaderboardButton.disabled = true;
         skipLeaderboardButton.disabled = true;
         playerNameInput.disabled = true;
+        leaderboardAuthHint?.classList.remove("error");
         const playerName = authState.user ? getAccountUsername() : playerNameInput.value.trim();
-        const result = await saveLeaderboard(playerName || "Anonym", state.score);
-        leaderboardOptIn.classList.add("hidden");
 
-        if (result.savedOnServer) {
+        try {
+            const result = await saveLeaderboard(playerName || "Anonym", state.score);
+            state.leaderboardSubmitted = true;
+            leaderboardOptIn.classList.add("hidden");
+
             const savedLeagueLabel = getLeagueLabel(result.leagueKey);
             setStatus(result.guest ? "In die Gast-Liga eingetragen!" : `In die ${savedLeagueLabel}-Liga eingetragen!`);
-            return;
-        }
+        } catch (error) {
+            state.leaderboardSubmitted = false;
+            saveLeaderboardButton.disabled = false;
+            skipLeaderboardButton.disabled = false;
+            playerNameInput.disabled = Boolean(authState.user && getAccountUsername());
 
-        setStatus("Ligaplatz konnte gerade nicht gespeichert werden.", "danger");
+            const errorText = extractSupabaseErrorMessage(error, "Ligaplatz konnte gerade nicht gespeichert werden.");
+            if (leaderboardAuthHint) {
+                leaderboardAuthHint.classList.add("error");
+                leaderboardAuthHint.textContent = errorText;
+            }
+            setStatus(errorText, "danger");
+        }
     });
 
     skipLeaderboardButton.addEventListener("click", () => {
