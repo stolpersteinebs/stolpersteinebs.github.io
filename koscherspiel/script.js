@@ -17,6 +17,7 @@ const leagueSummaryText = document.getElementById("leagueSummaryText");
 const statusDisplay = document.getElementById("status");
 const startScreen = document.getElementById("startScreen");
 const startButton = document.getElementById("startButton");
+const shabbatModeToggle = document.getElementById("shabbatModeToggle");
 const gameOverScreen = document.getElementById("gameOver");
 const resultText = document.getElementById("resultText");
 const coinResult = document.getElementById("coinResult");
@@ -216,6 +217,17 @@ const abilityDefs = [
 const uniqueAbilityDefs = abilityDefs.filter((ability, index, list) => {
     return list.findIndex((entry) => entry.key === ability.key) === index;
 });
+
+const shabbatSpecialItems = {
+    a: [
+        { name: "Challa", emoji: "🥖", bonusScore: 3 },
+        { name: "Kiddusch-Becher", emoji: "🍷", bonusScore: 4 }
+    ],
+    b: [
+        { name: "Schabbat-Kerzen", emoji: "🕯️", bonusScore: 3 },
+        { name: "Chulent", emoji: "🍲", bonusScore: 4 }
+    ]
+};
 
 const powerupTypes = [
     { key: "shield", label: "Schutz", icon: "🛡️", colorClass: "powerup-shield" },
@@ -1725,6 +1737,9 @@ function createInitialState() {
         selectedCart,
         unlockedCarts,
         cartSecondChancesUsed: 0,
+        shabbatModeEnabled: Boolean(shabbatModeToggle?.checked),
+        shabbatModeActive: false,
+        shabbatVariant: null,
         activePowerups: {
             shield: 0,
             slow: 0,
@@ -1953,7 +1968,13 @@ function activePowerupLabel() {
         .filter((type) => state.activePowerups[type.key] > now)
         .map((type) => type.label);
 
-    return active.length > 0 ? active.join(", ") : "Keins";
+    const activeLabel = active.length > 0 ? active.join(", ") : "Keins";
+
+    if (state.shabbatModeActive) {
+        return `${activeLabel} · Schabbat ${String(state.shabbatVariant || "").toUpperCase()}`;
+    }
+
+    return activeLabel;
 }
 
 function updateHUD() {
@@ -2095,6 +2116,41 @@ function getFoodEmoji(name = "", isKosher = true) {
     return emojiList[Math.floor(Math.random() * emojiList.length)] || "🍽️";
 }
 
+function getCurrentShabbatItems() {
+    if (!state || !state.shabbatModeActive || !state.shabbatVariant) {
+        return [];
+    }
+
+    return shabbatSpecialItems[state.shabbatVariant] || [];
+}
+
+function maybeActivateShabbatMode() {
+    if (!state || !state.shabbatModeEnabled || state.shabbatModeActive || state.level < 10) {
+        return;
+    }
+
+    state.shabbatModeActive = true;
+    state.shabbatVariant = Math.random() < 0.5 ? "a" : "b";
+    setStatus(`Schabbat-Mode aktiv! Spezial-Items ${state.shabbatVariant.toUpperCase()} freigeschaltet.`);
+    updateHUD();
+}
+
+function spawnShabbatItem() {
+    const items = getCurrentShabbatItems();
+    const selected = items[Math.floor(Math.random() * items.length)];
+
+    return {
+        isPowerup: false,
+        isKosher: true,
+        isShabbatSpecial: true,
+        bonusScore: selected?.bonusScore || 3,
+        className: "item emoji-item shabbat-item",
+        label: selected?.name || "Schabbat-Spezial",
+        emoji: selected?.emoji || "🕯️",
+        emojiOnly: true
+    };
+}
+
 function spawnPowerup() {
     const type = powerupTypes[Math.floor(Math.random() * powerupTypes.length)];
     return {
@@ -2107,6 +2163,11 @@ function spawnPowerup() {
 }
 
 function spawnFood() {
+    const shabbatItems = getCurrentShabbatItems();
+    if (shabbatItems.length > 0 && Math.random() < 0.28) {
+        return spawnShabbatItem();
+    }
+
     const isKosher = Math.random() < 0.82;
 
     if (Math.random() < emojiFoodSpawnChance) {
@@ -2168,7 +2229,9 @@ function spawnItem() {
         y,
         isPowerup: spawned.isPowerup,
         powerupType: spawned.powerupType,
-        isKosher: spawned.isKosher
+        isKosher: spawned.isKosher,
+        isShabbatSpecial: spawned.isShabbatSpecial,
+        bonusScore: spawned.bonusScore
     });
 }
 
@@ -2251,10 +2314,12 @@ function handleCatch(item, index) {
         const points = hasCartPower("ultimate") ? basePoints * 2.5 : basePoints + (hasCartPower("mint") ? 1 : 0);
         const focusChance = getAbilityValue("kosherFocus");
         const bonusPoint = focusChance > 0 && Math.random() < focusChance ? 1 : 0;
-        const gainedScore = (points + bonusPoint) * scoreMultiplier;
+        const shabbatBonus = item.isShabbatSpecial ? (Number(item.bonusScore) || 3) : 0;
+        const gainedScore = (points + bonusPoint + shabbatBonus) * scoreMultiplier;
         state.score += gainedScore;
         const multiplierText = scoreMultiplier > 1 ? ` (Multiplikator x${scoreMultiplier.toFixed(1).replace(".", ",")})` : "";
-        setStatus(`+${gainedScore} Koscher${bonusPoint ? " (Fokus-Bonus!)" : ""}${multiplierText}!`);
+        const shabbatText = item.isShabbatSpecial ? " Schabbat-Spezial!" : "";
+        setStatus(`+${gainedScore} Koscher${bonusPoint ? " (Fokus-Bonus!)" : ""}${shabbatText}${multiplierText}!`);
     } else if (!consumeShieldIfActive() && !cartSavedDamage() && !abilitySavedDamage()) {
         state.lives -= 1;
         state.score = Math.max(0, state.score - 1);
@@ -2311,6 +2376,7 @@ function tryCartSecondChance() {
 
 function recalcLevel() {
     state.level = Math.floor(state.score / 8) + 1;
+    maybeActivateShabbatMode();
 }
 
 function currentPlayerSpeed() {

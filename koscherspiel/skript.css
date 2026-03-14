@@ -361,6 +361,13 @@ h1 {
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
 }
 
+
+.shabbat-item {
+    border: 2px solid #f0d98a;
+    box-shadow: 0 0 12px rgba(240, 217, 138, 0.75);
+    background: radial-gradient(circle at 30% 30%, #fff2bf, #e4b653);
+}
+
 .powerup {
     border-radius: 50%;
     border: 2px solid rgba(255, 255, 255, 0.9);
@@ -429,6 +436,23 @@ h1 {
     font-weight: 700;
     line-height: 1.5;
     max-width: 34ch;
+}
+
+
+.mode-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 8px;
+    max-width: 460px;
+    text-align: left;
+}
+
+.mode-toggle input {
+    margin: 0;
+    accent-color: var(--accent);
 }
 
 #startButton,
