@@ -6,6 +6,8 @@
     <meta name="koscher-supabase-url" content="https://twehohdgzrbikuaiptfh.supabase.co">
     <meta name="koscher-supabase-key" content="sb_publishable_CDnbNX7X82lPgC69kfvSqw_rmtRkwrn">
     <meta name="koscher-supabase-table" content="leaderboard">
+    <meta name="koscher-supabase-profile-table" content="profiles">
+    <meta name="koscher-supabase-email-domain" content="koscherspiel.local">
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <title>Koscher Spiel</title>
@@ -57,6 +59,48 @@
         Links/Rechts mit Pfeiltasten oder A/D.
     </p>
 
+    <section class="account-panel" aria-label="Account-System">
+        <div class="account-header">
+            <div>
+                <h2 id="accountTitle">Account-System</h2>
+                <p id="accountSubtitle">Mit Supabase werden Highscore, Münzen, Käufe und deine Liga synchronisiert.</p>
+            </div>
+            <span id="accountModeBadge" class="auth-badge">Gastmodus</span>
+        </div>
+
+        <div class="auth-grid">
+            <label class="auth-field" for="authUsername">
+                <span>Benutzername</span>
+                <input id="authUsername" type="text" maxlength="20" autocomplete="username" placeholder="z. B. koscherprofi">
+            </label>
+
+            <label class="auth-field" for="authPassword">
+                <span>Passwort</span>
+                <input id="authPassword" type="password" minlength="6" autocomplete="current-password" placeholder="Mindestens 6 Zeichen">
+            </label>
+
+            <div class="auth-actions">
+                <button id="signInButton" type="button">Anmelden</button>
+                <button id="signUpButton" type="button" class="secondary">Konto erstellen</button>
+                <button id="signOutButton" type="button" class="ghost hidden">Abmelden</button>
+            </div>
+        </div>
+
+        <p id="authStatus" class="auth-status">Nicht angemeldet. Als Gast werden Fortschritt und Rangliste nur lokal gespeichert.</p>
+    </section>
+
+    <section class="league-overview" aria-label="Ligastatus">
+        <div class="league-current-card">
+            <p class="league-eyebrow">Deine aktuelle Liga</p>
+            <div id="currentLeagueBadge" class="league-badge" data-league="bronze">Bronze</div>
+            <p id="currentLeagueRange" class="league-range">0 bis 9 Punkte</p>
+        </div>
+        <div class="league-copy">
+            <h2 id="leagueOverviewTitle">Duolingo-Ligen</h2>
+            <p id="leagueSummaryText">Dein bester Lauf entscheidet darüber, in welcher Liga du in den Ranglisten auftauchst.</p>
+        </div>
+    </section>
+
     <section class="hud" aria-label="Spielstand">
         <div class="hud-item">Punkte: <span id="score">0</span></div>
         <div class="hud-item">Leben: <span id="lives">3</span></div>
@@ -82,9 +126,10 @@
             <p id="coinResult" class="coin-result"></p>
 
             <div id="leaderboardOptIn" class="leaderboard-optin hidden">
-                <p>Du hast das Spiel abgeschlossen! Möchtest du in die sichtbare Bestenliste?</p>
-                <label for="playerName">Dein Name</label>
+                <p id="leaderboardPrompt">Du hast das Spiel abgeschlossen! Möchtest du in die sichtbare Bestenliste?</p>
+                <label id="playerNameLabel" for="playerName">Dein Name</label>
                 <input id="playerName" type="text" maxlength="20" placeholder="Name eingeben" autocomplete="nickname">
+                <p id="leaderboardAuthHint" class="leaderboard-auth-hint"></p>
                 <div class="optin-actions">
                     <button id="saveLeaderboardButton" type="button">Ja, eintragen</button>
                     <button id="skipLeaderboardButton" type="button" class="secondary">Nein danke</button>
@@ -107,8 +152,15 @@
         <div id="abilityShopList" class="shop-list hidden" data-shop-panel="abilities"></div>
     </section>
 
-    <section class="leaderboard" aria-label="Bestenliste">
-        <h2>Bestenliste</h2>
+    <section class="leaderboard" aria-label="Ligaranglisten">
+        <div class="leaderboard-head">
+            <div>
+                <h2 id="leaderboardTitle">Ligaranglisten</h2>
+                <p id="leaderboardDescription">Jede Duolingo-Liga hat ihre eigene Bestenliste.</p>
+            </div>
+            <span id="leaderboardMeta" class="leaderboard-meta">Top 5</span>
+        </div>
+        <div id="leagueTabs" class="league-tabs" role="tablist" aria-label="Duolingo-Ligen"></div>
         <ol id="leaderboardList"></ol>
     </section>
 
@@ -200,6 +252,11 @@
     "koscherspiel/index.html": () => {
       setText("h1", "Kosher Collection Game");
       setText(".instructions", "Collect kosher foods with the cart and avoid non-kosher items. Move left/right with arrow keys or A/D.");
+      setText("#accountTitle", "Account System");
+      setText("#accountSubtitle", "Supabase syncs your high score, coins, purchases, and league.");
+      setText("#leagueOverviewTitle", "Duolingo Leagues");
+      setText("#leaderboardTitle", "League Leaderboards");
+      setText("#leaderboardDescription", "Each Duolingo league has its own leaderboard.");
       setText("#startTitle", "Ready to collect?");
       setText("#startScreen p", "Start when you are ready and collect as many kosher foods as possible.");
       setText("#startButton", "Start Game");
@@ -210,8 +267,8 @@
       if(labels[1]) labels[1].childNodes[0].textContent='Lives: ';
       if(labels[2]) labels[2].childNodes[0].textContent='Level: ';
       if(labels[3]) labels[3].childNodes[0].textContent='High Score: ';
-      if(labels[4]) labels[4].childNodes[0].textContent='Power-Up: ';
-      setText('.leaderboard h2','Leaderboard');
+      if(labels[4]) labels[4].childNodes[0].textContent='Coins: ';
+      if(labels[5]) labels[5].childNodes[0].textContent='Power-Up: ';
       document.querySelectorAll('.quick-links a')[0].textContent='Home';
       document.querySelectorAll('.quick-links a')[1].textContent='Holiday Quiz';
       document.querySelectorAll('.quick-links a')[2].textContent='3D Learning World';
@@ -258,6 +315,7 @@
   if (entry) map[entry]();
 })();
 </script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/assets/game-theme.js"></script>
 <script src="script.js"></script>
 <script src="/assets/easteregg.js"></script>

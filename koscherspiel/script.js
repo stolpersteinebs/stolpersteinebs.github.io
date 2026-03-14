@@ -7,6 +7,13 @@ const highscoreDisplay = document.getElementById("highscore");
 const coinsDisplay = document.getElementById("coins");
 const powerupStateDisplay = document.getElementById("powerupState");
 const leaderboardList = document.getElementById("leaderboardList");
+const leaderboardTitle = document.getElementById("leaderboardTitle");
+const leaderboardDescription = document.getElementById("leaderboardDescription");
+const leaderboardMeta = document.getElementById("leaderboardMeta");
+const leagueTabs = document.getElementById("leagueTabs");
+const currentLeagueBadge = document.getElementById("currentLeagueBadge");
+const currentLeagueRange = document.getElementById("currentLeagueRange");
+const leagueSummaryText = document.getElementById("leagueSummaryText");
 const statusDisplay = document.getElementById("status");
 const startScreen = document.getElementById("startScreen");
 const startButton = document.getElementById("startButton");
@@ -15,6 +22,9 @@ const resultText = document.getElementById("resultText");
 const coinResult = document.getElementById("coinResult");
 const restartButton = document.getElementById("restartButton");
 const leaderboardOptIn = document.getElementById("leaderboardOptIn");
+const leaderboardPrompt = document.getElementById("leaderboardPrompt");
+const leaderboardAuthHint = document.getElementById("leaderboardAuthHint");
+const playerNameLabel = document.getElementById("playerNameLabel");
 const playerNameInput = document.getElementById("playerName");
 const saveLeaderboardButton = document.getElementById("saveLeaderboardButton");
 const skipLeaderboardButton = document.getElementById("skipLeaderboardButton");
@@ -24,6 +34,13 @@ const shopList = document.getElementById("shopList");
 const abilityShopList = document.getElementById("abilityShopList");
 const cartShopTab = document.getElementById("cartShopTab");
 const abilityShopTab = document.getElementById("abilityShopTab");
+const authUsernameInput = document.getElementById("authUsername");
+const authPasswordInput = document.getElementById("authPassword");
+const signInButton = document.getElementById("signInButton");
+const signUpButton = document.getElementById("signUpButton");
+const signOutButton = document.getElementById("signOutButton");
+const authStatus = document.getElementById("authStatus");
+const accountModeBadge = document.getElementById("accountModeBadge");
 
 const fallbackFoods = {
     kosherFoods: [
@@ -249,16 +266,44 @@ const gravity = 1200;
 const jumpVelocity = 500;
 const ultimateRequiredCarts = ["sky", "mint", "rose", "violet", "jumper"];
 const unlockAllCartsCheatSequence = "koscherwagen";
+const leaderboardStorageKey = "koscher_leaderboard_v2";
+const legacyLeaderboardStorageKey = "koscher_leaderboard";
+const leagueDefs = [
+    { key: "bronze", label: "Bronze", minScore: 0 },
+    { key: "silver", label: "Silber", minScore: 10 },
+    { key: "gold", label: "Gold", minScore: 20 },
+    { key: "sapphire", label: "Saphir", minScore: 35 },
+    { key: "ruby", label: "Rubin", minScore: 50 },
+    { key: "emerald", label: "Smaragd", minScore: 70 },
+    { key: "amethyst", label: "Amethyst", minScore: 90 },
+    { key: "pearl", label: "Perle", minScore: 115 },
+    { key: "obsidian", label: "Obsidian", minScore: 140 },
+    { key: "diamond", label: "Diamant", minScore: 170 }
+];
 
 const keys = {
     left: false,
     right: false
 };
 
+const authState = {
+    client: null,
+    user: null,
+    profile: null,
+    syncTimerId: null,
+    syncInFlight: false,
+    syncQueued: false,
+    suspendSync: false,
+    processing: false,
+    statusText: "",
+    statusType: "normal"
+};
+
 let state = null;
 let loopId = null;
 let lastTime = 0;
 let statusTimeoutId = null;
+let activeLeagueKey = leagueDefs[0].key;
 
 function getStoredHighscore() {
     try {
@@ -274,6 +319,8 @@ function persistHighscore(value) {
     } catch {
         // Ignorieren: Spiel soll auch ohne localStorage funktionieren.
     }
+
+    requestProfileSync();
 }
 
 function sanitizeCoinValue(value) {
@@ -284,6 +331,134 @@ function sanitizeCoinValue(value) {
 function sanitizeScoreValue(value) {
     if (!Number.isFinite(value)) return 0;
     return Math.max(0, Math.round(value));
+}
+
+function getLeagueByKey(leagueKey) {
+    return leagueDefs.find((league) => league.key === leagueKey) || leagueDefs[0];
+}
+
+function getLeagueForScore(score) {
+    const normalizedScore = sanitizeScoreValue(score);
+    return leagueDefs.reduce((currentLeague, candidateLeague) => {
+        if (normalizedScore >= candidateLeague.minScore) {
+            return candidateLeague;
+        }
+        return currentLeague;
+    }, leagueDefs[0]);
+}
+
+function getLeagueRangeLabel(leagueKey) {
+    const league = getLeagueByKey(leagueKey);
+    const leagueIndex = leagueDefs.findIndex((entry) => entry.key === league.key);
+    const nextLeague = leagueDefs[leagueIndex + 1];
+
+    if (!nextLeague) {
+        return `Ab ${league.minScore} Punkten`;
+    }
+
+    return `${league.minScore} bis ${nextLeague.minScore - 1} Punkte`;
+}
+
+function stripDiacritics(value) {
+    return String(value || "")
+        .normalize("NFKD")
+        .replace(/[\u0300-\u036f]/g, "");
+}
+
+function normalizeUsername(rawValue) {
+    return stripDiacritics(rawValue)
+        .toLocaleLowerCase("de-DE")
+        .replace(/[^a-z0-9._-]+/g, "")
+        .replace(/^[._-]+|[._-]+$/g, "")
+        .slice(0, 20);
+}
+
+function validateUsername(username) {
+    return /^[a-z0-9._-]{3,20}$/.test(username);
+}
+
+function sanitizeGuestName(value) {
+    const cleaned = String(value || "")
+        .replace(/[<>]/g, "")
+        .trim()
+        .slice(0, 20);
+
+    return cleaned || "Anonym";
+}
+
+function getAccountUsername() {
+    const profileUsername = authState.profile?.username;
+    if (validateUsername(profileUsername || "")) {
+        return profileUsername;
+    }
+
+    const metadataUsername = authState.user?.user_metadata?.username;
+    const normalizedMetadata = normalizeUsername(metadataUsername || "");
+    if (validateUsername(normalizedMetadata)) {
+        return normalizedMetadata;
+    }
+
+    return "";
+}
+
+function setAuthStatusMessage(text, type = "normal") {
+    authState.statusText = text;
+    authState.statusType = type;
+    renderAuthUI();
+}
+
+function withProfileSyncSuspended(callback) {
+    authState.suspendSync = true;
+    try {
+        return callback();
+    } finally {
+        authState.suspendSync = false;
+    }
+}
+
+function getSupabaseConfig() {
+    const url = document
+        .querySelector('meta[name="koscher-supabase-url"]')
+        ?.getAttribute("content")
+        ?.trim();
+    const key = document
+        .querySelector('meta[name="koscher-supabase-key"]')
+        ?.getAttribute("content")
+        ?.trim();
+    const leaderboardTable = document
+        .querySelector('meta[name="koscher-supabase-table"]')
+        ?.getAttribute("content")
+        ?.trim() || "leaderboard";
+    const profileTable = document
+        .querySelector('meta[name="koscher-supabase-profile-table"]')
+        ?.getAttribute("content")
+        ?.trim() || "profiles";
+    const emailDomain = document
+        .querySelector('meta[name="koscher-supabase-email-domain"]')
+        ?.getAttribute("content")
+        ?.trim() || "koscherspiel.local";
+
+    if (!url || !key) {
+        return null;
+    }
+
+    return {
+        url: url.replace(/\/+$/, ""),
+        key,
+        leaderboardTable,
+        profileTable,
+        emailDomain
+    };
+}
+
+function usernameToEmail(username) {
+    const config = getSupabaseConfig();
+    const normalizedUsername = normalizeUsername(username);
+    if (!config || !validateUsername(normalizedUsername)) {
+        return "";
+    }
+
+    return `${normalizedUsername}@${config.emailDomain}`;
 }
 
 function getStoredUltimateCheatEnabled() {
@@ -300,6 +475,8 @@ function persistUltimateCheatEnabled(enabled) {
     } catch {
         // Ignorieren: Cheat bleibt dann nur temporär.
     }
+
+    requestProfileSync();
 
     return enabled;
 }
@@ -324,6 +501,7 @@ function persistCoins(value) {
         } catch {
             // Ignorieren: Münzen bleiben dann nur temporär.
         }
+        requestProfileSync();
         return maxStoredCoins;
     }
 
@@ -333,6 +511,7 @@ function persistCoins(value) {
     } catch {
         // Ignorieren: Münzen bleiben dann nur temporär.
     }
+    requestProfileSync();
     return normalized;
 }
 
@@ -360,6 +539,7 @@ function persistUnlockedCarts(unlockedCartKeys) {
     } catch {
         // Ignorieren: Freischaltungen bleiben nur temporär.
     }
+    requestProfileSync();
     return sanitized;
 }
 
@@ -379,6 +559,7 @@ function persistSelectedCart(cartKey) {
     } catch {
         // Ignorieren: Auswahl bleibt nur temporär.
     }
+    requestProfileSync();
     return nextCart;
 }
 
@@ -386,216 +567,791 @@ function formatCoins(value) {
     return sanitizeCoinValue(value).toLocaleString("de-DE", { minimumFractionDigits: 0, maximumFractionDigits: 1 });
 }
 
-function normalizeLeaderboard(rawEntries) {
+function normalizeLeaderboardEntry(entry) {
+    if (typeof entry === "number") {
+        return {
+            userId: "",
+            name: "Anonym",
+            score: sanitizeScoreValue(entry),
+            leagueKey: getLeagueForScore(entry).key,
+            updatedAt: ""
+        };
+    }
+
+    if (!entry || typeof entry !== "object") {
+        return null;
+    }
+
+    const score = sanitizeScoreValue(Number(entry.score));
+    const leagueKey = getLeagueByKey(entry.league_key || entry.leagueKey || getLeagueForScore(score).key).key;
+    const userId = typeof entry.user_id === "string"
+        ? entry.user_id
+        : (typeof entry.userId === "string" ? entry.userId : "");
+    const nameSource = typeof entry.username === "string"
+        ? entry.username
+        : (typeof entry.name === "string" ? entry.name : "");
+    const updatedAt = typeof entry.updated_at === "string"
+        ? entry.updated_at
+        : (typeof entry.updatedAt === "string" ? entry.updatedAt : "");
+
+    return {
+        userId,
+        name: sanitizeGuestName(nameSource),
+        score,
+        leagueKey,
+        updatedAt
+    };
+}
+
+function normalizeLeaderboardEntries(rawEntries) {
     if (!Array.isArray(rawEntries)) {
         return [];
     }
 
-    const normalizedEntries = rawEntries
-        .map((entry) => {
-            if (typeof entry === "number") {
-                return { name: "Anonym", score: entry };
+    const bestEntriesByIdentity = new Map();
+
+    rawEntries
+        .map(normalizeLeaderboardEntry)
+        .filter(Boolean)
+        .forEach((entry) => {
+            const identityKey = entry.userId
+                ? `user:${entry.userId}`
+                : `guest:${entry.name.toLocaleLowerCase("de-DE")}`;
+            const existing = bestEntriesByIdentity.get(identityKey);
+
+            if (!existing || entry.score > existing.score || (entry.score === existing.score && entry.updatedAt > existing.updatedAt)) {
+                bestEntriesByIdentity.set(identityKey, {
+                    ...entry,
+                    leagueKey: getLeagueForScore(entry.score).key
+                });
             }
+        });
 
-            if (!entry || typeof entry !== "object") {
-                return null;
+    return Array.from(bestEntriesByIdentity.values()).sort((a, b) => b.score - a.score);
+}
+
+function mergeLeaderboardEntries(...entrySets) {
+    return normalizeLeaderboardEntries(entrySets.flat());
+}
+
+function getStoredLeaderboardEntries() {
+    try {
+        const nextRaw = localStorage.getItem(leaderboardStorageKey);
+        if (nextRaw) {
+            const parsed = JSON.parse(nextRaw);
+            if (Array.isArray(parsed)) {
+                return normalizeLeaderboardEntries(parsed);
             }
-
-            const score = sanitizeScoreValue(Number(entry.score));
-            if (!Number.isFinite(score)) {
-                return null;
-            }
-
-            const trimmedName = typeof entry.name === "string" ? entry.name.trim() : "";
-            return {
-                name: trimmedName || "Anonym",
-                score
-            };
-        })
-        .filter(Boolean);
-
-    const bestScoresByName = new Map();
-
-    normalizedEntries.forEach((entry) => {
-        const key = entry.name.toLocaleLowerCase("de-DE");
-        const existing = bestScoresByName.get(key);
-
-        if (!existing || entry.score > existing.score) {
-            bestScoresByName.set(key, entry);
         }
-    });
 
-    return Array.from(bestScoresByName.values())
-        .sort((a, b) => b.score - a.score)
-        .slice(0, leaderboardSize);
-}
+        const legacyRaw = localStorage.getItem(legacyLeaderboardStorageKey);
+        if (!legacyRaw) {
+            return [];
+        }
 
+        const legacyParsed = JSON.parse(legacyRaw);
+        if (Array.isArray(legacyParsed)) {
+            return normalizeLeaderboardEntries(legacyParsed);
+        }
 
-async function parseJsonSafely(response) {
-    const raw = await response.text();
+        if (legacyParsed && typeof legacyParsed === "object") {
+            return normalizeLeaderboardEntries(Object.values(legacyParsed).flat());
+        }
 
-    if (!raw || !raw.trim()) {
-        return null;
-    }
-
-    try {
-        return JSON.parse(raw);
-    } catch {
-        return null;
-    }
-}
-
-function getStoredLeaderboard() {
-    try {
-        const parsed = JSON.parse(localStorage.getItem("koscher_leaderboard") || "[]");
-        return normalizeLeaderboard(parsed);
+        return [];
     } catch {
         return [];
     }
 }
 
-function persistLeaderboardLocally(scores) {
+function persistLeaderboardLocally(entries) {
     try {
-        localStorage.setItem("koscher_leaderboard", JSON.stringify(scores));
+        localStorage.setItem(leaderboardStorageKey, JSON.stringify(normalizeLeaderboardEntries(entries)));
     } catch {
         // Ignorieren: Bestenliste bleibt dann nur temporär sichtbar.
     }
 }
 
-function getSupabaseConfig() {
-    const url = document
-        .querySelector('meta[name="koscher-supabase-url"]')
-        ?.getAttribute("content")
-        ?.trim();
-    const key = document
-        .querySelector('meta[name="koscher-supabase-key"]')
-        ?.getAttribute("content")
-        ?.trim();
-    const table = document
-        .querySelector('meta[name="koscher-supabase-table"]')
-        ?.getAttribute("content")
-        ?.trim() || "leaderboard";
+function leaderboardEntriesForLeague(entries, leagueKey = activeLeagueKey) {
+    return normalizeLeaderboardEntries(entries)
+        .filter((entry) => entry.leagueKey === getLeagueByKey(leagueKey).key)
+        .slice(0, leaderboardSize);
+}
 
-    if (!url || !key) {
-        return null;
-    }
+function normalizeAbilitiesPayload(abilities) {
+    return uniqueAbilityDefs.reduce((acc, ability) => {
+        const rawLevel = Number(abilities?.[ability.key]);
+        acc[ability.key] = clamp(Math.floor(Number.isFinite(rawLevel) ? rawLevel : 0), 0, ability.maxLevel);
+        return acc;
+    }, {});
+}
+
+function normalizeProfileData(rawProfile = {}, fallbackUsername = "") {
+    const normalizedUsername = normalizeUsername(rawProfile.username || fallbackUsername || "");
+    const unlockedSource = rawProfile.unlocked_carts ?? rawProfile.unlockedCarts;
+    const unlockedCarts = Array.from(new Set(["classic", ...(Array.isArray(unlockedSource) ? unlockedSource : []).filter((key) => cartSkinKeys.includes(key))]));
+    const selectedSource = rawProfile.selected_cart ?? rawProfile.selectedCart;
+    const selectedCart = unlockedCarts.includes(selectedSource) ? selectedSource : "classic";
+    const ultimateCheatEnabled = Boolean(rawProfile.ultimate_cheat_enabled ?? rawProfile.ultimateCheatEnabled);
+    const normalizedCoins = ultimateCheatEnabled
+        ? maxStoredCoins
+        : sanitizeCoinValue(Number(rawProfile.coins));
 
     return {
-        url: url.replace(/\/+$/, ""),
-        key,
-        table
+        username: validateUsername(normalizedUsername) ? normalizedUsername : "",
+        highscore: sanitizeScoreValue(Number(rawProfile.highscore)),
+        coins: normalizedCoins,
+        unlockedCarts,
+        abilities: normalizeAbilitiesPayload(rawProfile.abilities),
+        selectedCart,
+        ultimateCheatEnabled
     };
 }
 
-async function loadLeaderboardFromSupabase(config) {
-    const endpoint = `${config.url}/rest/v1/${encodeURIComponent(config.table)}?select=name,score`;
+function getLocalProfileSnapshot() {
+    return normalizeProfileData({
+        username: getAccountUsername(),
+        highscore: getStoredHighscore(),
+        coins: getStoredCoins(),
+        unlockedCarts: getStoredUnlockedCarts(),
+        abilities: getStoredAbilities(),
+        selectedCart: getSelectedCart(),
+        ultimateCheatEnabled: getStoredUltimateCheatEnabled()
+    }, getAccountUsername());
+}
 
-    const response = await fetch(endpoint, {
-        method: "GET",
-        headers: {
-            apikey: config.key,
-            Authorization: `Bearer ${config.key}`,
-            Accept: "application/json"
-        }
+function persistProfileSnapshotLocally(profileData) {
+    const normalizedProfile = normalizeProfileData(profileData, getAccountUsername());
+
+    withProfileSyncSuspended(() => {
+        persistUltimateCheatEnabled(normalizedProfile.ultimateCheatEnabled);
+        persistHighscore(normalizedProfile.highscore);
+        persistCoins(normalizedProfile.coins);
+        persistUnlockedCarts(normalizedProfile.unlockedCarts);
+        persistAbilities(normalizedProfile.abilities);
+        persistSelectedCart(normalizedProfile.selectedCart);
     });
 
-    if (!response.ok) {
-        throw new Error("Supabase GET fehlgeschlagen");
-    }
-
-    const payload = await parseJsonSafely(response);
-    return normalizeLeaderboard(payload);
+    return normalizedProfile;
 }
 
-async function saveLeaderboardToSupabase(config, name, score) {
-    const endpoint = `${config.url}/rest/v1/${encodeURIComponent(config.table)}`;
-    const response = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-            apikey: config.key,
-            Authorization: `Bearer ${config.key}`,
-            "Content-Type": "application/json",
-            Prefer: "return=minimal"
-        },
-        body: JSON.stringify([{ name, score }])
+function refreshPersistentViews() {
+    if (state && !state.running) {
+        state = createInitialState();
+        state.running = false;
+        applyCartSkinClass();
+        renderIdleHUD();
+        renderShop();
+        centerPlayerIdle();
+    } else if (!state) {
+        renderIdleHUD();
+        renderShop();
+        centerPlayerIdle();
+    } else {
+        updateHUD();
+        renderShop();
+    }
+
+    updateLeagueSummary(getStoredHighscore());
+}
+
+function updateLeagueSummary(score = getStoredHighscore()) {
+    const league = getLeagueForScore(score);
+    activeLeagueKey = getLeagueByKey(activeLeagueKey).key;
+
+    if (currentLeagueBadge) {
+        currentLeagueBadge.textContent = league.label;
+        currentLeagueBadge.setAttribute("data-league", league.key);
+    }
+
+    if (currentLeagueRange) {
+        currentLeagueRange.textContent = getLeagueRangeLabel(league.key);
+    }
+
+    if (leagueSummaryText) {
+        leagueSummaryText.textContent = `Mit ${sanitizeScoreValue(score)} Punkten spielst du aktuell in der ${league.label}-Liga.`;
+    }
+}
+
+function updateLeaderboardHeader() {
+    const league = getLeagueByKey(activeLeagueKey);
+
+    if (leaderboardTitle) {
+        leaderboardTitle.textContent = `${league.label}-Liga`;
+    }
+
+    if (leaderboardDescription) {
+        leaderboardDescription.textContent = `Bestwerte mit ${getLeagueRangeLabel(league.key)}. Jede Liga hat ihre eigene Rangliste.`;
+    }
+
+    if (leaderboardMeta) {
+        leaderboardMeta.textContent = `Top ${leaderboardSize}`;
+    }
+}
+
+function renderLeagueTabs() {
+    if (!leagueTabs) return;
+
+    leagueTabs.innerHTML = "";
+    leagueDefs.forEach((league) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "league-tab";
+        button.textContent = league.label;
+        button.dataset.leagueKey = league.key;
+        button.setAttribute("data-league", league.key);
+        button.setAttribute("role", "tab");
+        button.setAttribute("aria-selected", String(activeLeagueKey === league.key));
+
+        if (activeLeagueKey === league.key) {
+            button.classList.add("active");
+        }
+
+        button.addEventListener("click", () => {
+            activeLeagueKey = league.key;
+            renderLeagueTabs();
+            updateLeaderboardHeader();
+            loadLeaderboard(activeLeagueKey);
+        });
+
+        leagueTabs.appendChild(button);
     });
-
-    if (!response.ok) {
-        throw new Error("Supabase POST fehlgeschlagen");
-    }
-
-    return loadLeaderboardFromSupabase(config);
 }
 
-async function loadLeaderboard() {
-    const supabaseConfig = getSupabaseConfig();
-
-    if (supabaseConfig) {
-        try {
-            const supabaseEntries = await loadLeaderboardFromSupabase(supabaseConfig);
-
-            if (supabaseEntries.length > 0) {
-                persistLeaderboardLocally(supabaseEntries);
-                renderLeaderboard(supabaseEntries);
-                return;
-            }
-        } catch {
-            // Fallback auf localStorage-Strategie.
-        }
-    }
-
-    renderLeaderboard(getStoredLeaderboard());
-}
-
-async function saveLeaderboard(name, score) {
-    const cleanedName = (name || "Anonym").trim() || "Anonym";
-    const normalizedScore = sanitizeScoreValue(score);
-    const leaderboard = getStoredLeaderboard();
-    leaderboard.push({ name: cleanedName, score: normalizedScore });
-    const topScores = normalizeLeaderboard(leaderboard);
-
-    persistLeaderboardLocally(topScores);
-
-    const supabaseConfig = getSupabaseConfig();
-    if (supabaseConfig) {
-        try {
-            const supabaseEntries = await saveLeaderboardToSupabase(supabaseConfig, cleanedName, normalizedScore);
-
-            if (supabaseEntries.length > 0) {
-                persistLeaderboardLocally(supabaseEntries);
-                renderLeaderboard(supabaseEntries);
-            } else {
-                renderLeaderboard(topScores);
-            }
-
-            return { savedOnServer: true };
-        } catch {
-            // Fallback auf localStorage
-        }
-    }
-
-    renderLeaderboard(topScores);
-    return { savedOnServer: false };
-
-}
-
-function renderLeaderboard(scores = getStoredLeaderboard()) {
+function renderLeaderboard(entries = leaderboardEntriesForLeague(getStoredLeaderboardEntries(), activeLeagueKey)) {
     if (!leaderboardList) return;
 
     leaderboardList.innerHTML = "";
+    updateLeaderboardHeader();
 
-    if (scores.length === 0) {
+    if (entries.length === 0) {
         const emptyItem = document.createElement("li");
-        emptyItem.textContent = "Noch keine Einträge";
+        emptyItem.textContent = "Noch keine Einträge in dieser Liga";
         leaderboardList.appendChild(emptyItem);
         return;
     }
 
-    scores.slice(0, leaderboardSize).forEach((entry, index) => {
+    const currentUsername = getAccountUsername();
+
+    entries.slice(0, leaderboardSize).forEach((entry) => {
         const item = document.createElement("li");
-        item.textContent = `${index + 1}. ${entry.name}: ${entry.score} Punkte`;
+        item.textContent = `${entry.name}: ${entry.score} Punkte`;
+
+        const isCurrentUser = Boolean(
+            (authState.user && entry.userId && entry.userId === authState.user.id) ||
+            (currentUsername && entry.name.toLocaleLowerCase("de-DE") === currentUsername.toLocaleLowerCase("de-DE"))
+        );
+
+        if (isCurrentUser) {
+            item.classList.add("current-user");
+        }
+
         leaderboardList.appendChild(item);
     });
+}
+
+function canUseSupabaseClient() {
+    return Boolean(authState.client && getSupabaseConfig());
+}
+
+function requestProfileSync(options = {}) {
+    const immediate = Boolean(options.immediate);
+
+    if (!authState.user || !canUseSupabaseClient() || authState.suspendSync) {
+        return;
+    }
+
+    if (authState.syncTimerId) {
+        window.clearTimeout(authState.syncTimerId);
+    }
+
+    authState.syncTimerId = window.setTimeout(() => {
+        authState.syncTimerId = null;
+        syncProfileToSupabase();
+    }, immediate ? 0 : 500);
+}
+
+async function syncProfileToSupabase() {
+    if (!authState.user || !canUseSupabaseClient() || authState.suspendSync) {
+        return;
+    }
+
+    if (authState.syncInFlight) {
+        authState.syncQueued = true;
+        return;
+    }
+
+    const config = getSupabaseConfig();
+    const username = getAccountUsername();
+    if (!config || !validateUsername(username)) {
+        return;
+    }
+
+    authState.syncInFlight = true;
+    renderAuthUI();
+
+    try {
+        const snapshot = getLocalProfileSnapshot();
+        const payload = {
+            id: authState.user.id,
+            username,
+            highscore: snapshot.highscore,
+            coins: snapshot.coins,
+            unlocked_carts: snapshot.unlockedCarts,
+            abilities: snapshot.abilities,
+            selected_cart: snapshot.selectedCart,
+            ultimate_cheat_enabled: snapshot.ultimateCheatEnabled,
+            updated_at: new Date().toISOString()
+        };
+
+        const { error } = await authState.client
+            .from(config.profileTable)
+            .upsert(payload, { onConflict: "id" });
+
+        if (error) {
+            throw error;
+        }
+
+        authState.profile = normalizeProfileData(payload, username);
+        if (!authState.statusText || authState.statusType !== "error") {
+            authState.statusText = `Angemeldet als ${username}. Dein Fortschritt wird synchronisiert.`;
+            authState.statusType = "normal";
+        }
+    } catch {
+        authState.statusText = "Supabase-Profil konnte gerade nicht synchronisiert werden.";
+        authState.statusType = "error";
+    } finally {
+        authState.syncInFlight = false;
+        renderAuthUI();
+
+        if (authState.syncQueued) {
+            authState.syncQueued = false;
+            requestProfileSync({ immediate: true });
+        }
+    }
+}
+
+async function loadProfileFromSupabase() {
+    if (!authState.user || !canUseSupabaseClient()) {
+        return null;
+    }
+
+    const config = getSupabaseConfig();
+    const { data, error } = await authState.client
+        .from(config.profileTable)
+        .select("username, highscore, coins, unlocked_carts, abilities, selected_cart, ultimate_cheat_enabled")
+        .eq("id", authState.user.id)
+        .maybeSingle();
+
+    if (error) {
+        throw error;
+    }
+
+    return data;
+}
+
+function applyAuthenticatedProfile(rawProfile) {
+    const fallbackUsername = getAccountUsername();
+    const localProfile = getLocalProfileSnapshot();
+    const remoteProfile = normalizeProfileData(rawProfile || {}, fallbackUsername);
+    const mergedUnlockedCarts = Array.from(new Set([
+        "classic",
+        ...localProfile.unlockedCarts,
+        ...remoteProfile.unlockedCarts
+    ].filter((key) => cartSkinKeys.includes(key))));
+    const mergedAbilities = uniqueAbilityDefs.reduce((acc, ability) => {
+        acc[ability.key] = Math.max(localProfile.abilities[ability.key] || 0, remoteProfile.abilities[ability.key] || 0);
+        return acc;
+    }, {});
+    const mergedProfile = normalizeProfileData({
+        username: remoteProfile.username || localProfile.username || fallbackUsername,
+        highscore: Math.max(localProfile.highscore, remoteProfile.highscore),
+        coins: Math.max(localProfile.coins, remoteProfile.coins),
+        unlockedCarts: mergedUnlockedCarts,
+        abilities: mergedAbilities,
+        selectedCart: remoteProfile.selectedCart && mergedUnlockedCarts.includes(remoteProfile.selectedCart)
+            ? remoteProfile.selectedCart
+            : (localProfile.selectedCart && mergedUnlockedCarts.includes(localProfile.selectedCart) ? localProfile.selectedCart : "classic"),
+        ultimateCheatEnabled: localProfile.ultimateCheatEnabled || remoteProfile.ultimateCheatEnabled
+    }, fallbackUsername);
+
+    authState.profile = mergedProfile;
+    persistProfileSnapshotLocally(mergedProfile);
+    activeLeagueKey = getLeagueForScore(mergedProfile.highscore).key;
+    renderLeagueTabs();
+    refreshPersistentViews();
+    requestProfileSync({ immediate: true });
+}
+
+function renderAuthUI() {
+    const supabaseConfigured = Boolean(getSupabaseConfig());
+    const signedIn = Boolean(authState.user);
+    const username = getAccountUsername();
+
+    if (accountModeBadge) {
+        accountModeBadge.classList.remove("online", "syncing");
+        accountModeBadge.textContent = supabaseConfigured ? "Gastmodus" : "Lokaler Modus";
+
+        if (signedIn) {
+            accountModeBadge.textContent = authState.syncInFlight ? "Synchronisiert..." : `Online: ${username}`;
+            accountModeBadge.classList.add(authState.syncInFlight ? "syncing" : "online");
+        }
+    }
+
+    if (authUsernameInput) {
+        if (signedIn) {
+            authUsernameInput.value = username;
+            authUsernameInput.disabled = false;
+            authUsernameInput.readOnly = true;
+        } else {
+            authUsernameInput.readOnly = false;
+            authUsernameInput.disabled = authState.processing || !supabaseConfigured;
+        }
+    }
+
+    if (authPasswordInput) {
+        if (signedIn) {
+            authPasswordInput.value = "";
+            authPasswordInput.disabled = true;
+            authPasswordInput.placeholder = "Angemeldet";
+        } else {
+            authPasswordInput.disabled = authState.processing || !supabaseConfigured;
+            authPasswordInput.placeholder = "Mindestens 6 Zeichen";
+        }
+    }
+
+    if (signInButton) {
+        signInButton.classList.toggle("hidden", signedIn);
+        signInButton.disabled = authState.processing || !supabaseConfigured;
+    }
+
+    if (signUpButton) {
+        signUpButton.classList.toggle("hidden", signedIn);
+        signUpButton.disabled = authState.processing || !supabaseConfigured;
+    }
+
+    if (signOutButton) {
+        signOutButton.classList.toggle("hidden", !signedIn);
+        signOutButton.disabled = authState.processing;
+    }
+
+    if (authStatus) {
+        authStatus.classList.toggle("error", authState.statusType === "error");
+
+        if (!supabaseConfigured) {
+            authStatus.textContent = "Supabase ist noch nicht vollständig konfiguriert. Das Spiel läuft derzeit nur lokal.";
+        } else if (authState.statusText) {
+            authStatus.textContent = authState.statusText;
+        } else if (signedIn) {
+            authStatus.textContent = `Angemeldet als ${username}. Highscore, Münzen, Käufe und Liga werden mit Supabase geteilt.`;
+        } else {
+            authStatus.textContent = "Nicht angemeldet. Als Gast werden Fortschritt und Rangliste nur lokal gespeichert.";
+        }
+    }
+
+    configureLeaderboardOptIn();
+}
+
+async function handleAuthSession(session) {
+    authState.user = session?.user || null;
+
+    if (!authState.user) {
+        authState.profile = null;
+        if (authState.statusType !== "error") {
+            authState.statusText = "";
+            authState.statusType = "normal";
+        }
+        renderAuthUI();
+        renderLeagueTabs();
+        loadLeaderboard(activeLeagueKey);
+        return;
+    }
+
+    try {
+        const remoteProfile = await loadProfileFromSupabase();
+        applyAuthenticatedProfile(remoteProfile);
+        setAuthStatusMessage(`Angemeldet als ${getAccountUsername()}.`, "normal");
+    } catch {
+        authState.profile = getLocalProfileSnapshot();
+        requestProfileSync({ immediate: true });
+        refreshPersistentViews();
+        setAuthStatusMessage("Anmeldung erfolgreich, aber das Supabase-Profil konnte noch nicht geladen werden.", "error");
+    }
+
+    renderAuthUI();
+    loadLeaderboard(activeLeagueKey);
+}
+
+function initializeSupabase() {
+    const config = getSupabaseConfig();
+    if (!config) {
+        renderAuthUI();
+        return;
+    }
+
+    if (!window.supabase?.createClient) {
+        setAuthStatusMessage("Die Supabase-Bibliothek konnte nicht geladen werden.");
+        return;
+    }
+
+    authState.client = window.supabase.createClient(config.url, config.key, {
+        auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true
+        }
+    });
+
+    authState.client.auth.onAuthStateChange((_event, session) => {
+        handleAuthSession(session);
+    });
+
+    authState.client.auth.getSession()
+        .then(({ data, error }) => {
+            if (error) {
+                throw error;
+            }
+
+            handleAuthSession(data.session || null);
+        })
+        .catch(() => {
+            setAuthStatusMessage("Supabase-Session konnte nicht geladen werden.", "error");
+            renderAuthUI();
+        });
+}
+
+async function signInWithUsername() {
+    const username = normalizeUsername(authUsernameInput?.value || "");
+    const password = authPasswordInput?.value || "";
+    const email = usernameToEmail(username);
+
+    if (authUsernameInput) {
+        authUsernameInput.value = username;
+    }
+
+    if (!validateUsername(username)) {
+        setAuthStatusMessage("Benutzernamen dürfen nur Kleinbuchstaben, Zahlen, Punkt, Unterstrich oder Bindestrich enthalten und müssen 3 bis 20 Zeichen lang sein.", "error");
+        return;
+    }
+
+    if (password.length < 6) {
+        setAuthStatusMessage("Das Passwort muss mindestens 6 Zeichen lang sein.", "error");
+        return;
+    }
+
+    authState.processing = true;
+    renderAuthUI();
+
+    try {
+        const { error } = await authState.client.auth.signInWithPassword({ email, password });
+        if (error) {
+            throw error;
+        }
+
+        if (authPasswordInput) {
+            authPasswordInput.value = "";
+        }
+
+        setAuthStatusMessage(`Willkommen zurück, ${username}.`, "normal");
+    } catch {
+        setAuthStatusMessage("Anmeldung fehlgeschlagen. Prüfe Benutzername und Passwort.", "error");
+    } finally {
+        authState.processing = false;
+        renderAuthUI();
+    }
+}
+
+async function signUpWithUsername() {
+    const username = normalizeUsername(authUsernameInput?.value || "");
+    const password = authPasswordInput?.value || "";
+    const email = usernameToEmail(username);
+
+    if (authUsernameInput) {
+        authUsernameInput.value = username;
+    }
+
+    if (!validateUsername(username)) {
+        setAuthStatusMessage("Benutzernamen dürfen nur Kleinbuchstaben, Zahlen, Punkt, Unterstrich oder Bindestrich enthalten und müssen 3 bis 20 Zeichen lang sein.", "error");
+        return;
+    }
+
+    if (password.length < 6) {
+        setAuthStatusMessage("Das Passwort muss mindestens 6 Zeichen lang sein.", "error");
+        return;
+    }
+
+    authState.processing = true;
+    renderAuthUI();
+
+    try {
+        const { data, error } = await authState.client.auth.signUp({
+            email,
+            password,
+            options: {
+                data: {
+                    username
+                }
+            }
+        });
+
+        if (error) {
+            throw error;
+        }
+
+        if (authPasswordInput) {
+            authPasswordInput.value = "";
+        }
+
+        if (data.session) {
+            setAuthStatusMessage(`Konto ${username} wurde erstellt. Du bist jetzt angemeldet.`, "normal");
+        } else {
+            setAuthStatusMessage("Konto erstellt. Falls keine Sitzung geöffnet wurde, deaktiviere in Supabase die E-Mail-Bestätigung für diese Login-Art.", "error");
+        }
+    } catch {
+        setAuthStatusMessage("Konto konnte nicht erstellt werden. Der Benutzername ist möglicherweise schon vergeben.", "error");
+    } finally {
+        authState.processing = false;
+        renderAuthUI();
+    }
+}
+
+async function signOutAccount() {
+    if (!authState.client) return;
+
+    authState.processing = true;
+    renderAuthUI();
+
+    try {
+        const { error } = await authState.client.auth.signOut();
+        if (error) {
+            throw error;
+        }
+
+        authState.profile = null;
+        setAuthStatusMessage("Du bist jetzt abgemeldet.", "normal");
+    } catch {
+        setAuthStatusMessage("Abmeldung fehlgeschlagen.", "error");
+    } finally {
+        authState.processing = false;
+        renderAuthUI();
+    }
+}
+
+async function loadLeaderboardFromSupabase(leagueKey = activeLeagueKey) {
+    if (!canUseSupabaseClient()) {
+        return [];
+    }
+
+    const config = getSupabaseConfig();
+    const normalizedLeague = getLeagueByKey(leagueKey);
+    const { data, error } = await authState.client
+        .from(config.leaderboardTable)
+        .select("user_id, username, score, league_key, updated_at")
+        .eq("league_key", normalizedLeague.key)
+        .order("score", { ascending: false })
+        .limit(leaderboardSize);
+
+    if (error) {
+        throw error;
+    }
+
+    return normalizeLeaderboardEntries(data);
+}
+
+async function loadLeaderboard(leagueKey = activeLeagueKey) {
+    activeLeagueKey = getLeagueByKey(leagueKey).key;
+    renderLeagueTabs();
+    updateLeaderboardHeader();
+
+    if (canUseSupabaseClient()) {
+        try {
+            const supabaseEntries = await loadLeaderboardFromSupabase(activeLeagueKey);
+            const mergedEntries = mergeLeaderboardEntries(getStoredLeaderboardEntries(), supabaseEntries);
+            persistLeaderboardLocally(mergedEntries);
+            renderLeaderboard(leaderboardEntriesForLeague(mergedEntries, activeLeagueKey));
+            return;
+        } catch {
+            // Fallback auf lokale Rangliste.
+        }
+    }
+
+    renderLeaderboard(leaderboardEntriesForLeague(getStoredLeaderboardEntries(), activeLeagueKey));
+}
+
+async function saveLeaderboardToSupabase(score) {
+    if (!authState.user || !canUseSupabaseClient()) {
+        throw new Error("Kein Supabase-Login vorhanden.");
+    }
+
+    const config = getSupabaseConfig();
+    const username = getAccountUsername();
+    const normalizedScore = sanitizeScoreValue(score);
+    const { data: existingEntry, error: readError } = await authState.client
+        .from(config.leaderboardTable)
+        .select("score")
+        .eq("user_id", authState.user.id)
+        .maybeSingle();
+
+    if (readError) {
+        throw readError;
+    }
+
+    const bestScore = Math.max(sanitizeScoreValue(Number(existingEntry?.score)), normalizedScore);
+    const league = getLeagueForScore(bestScore);
+    const payload = {
+        user_id: authState.user.id,
+        username,
+        score: bestScore,
+        league_key: league.key,
+        updated_at: new Date().toISOString()
+    };
+
+    const { error } = await authState.client
+        .from(config.leaderboardTable)
+        .upsert(payload, { onConflict: "user_id" });
+
+    if (error) {
+        throw error;
+    }
+
+    return normalizeLeaderboardEntry(payload);
+}
+
+async function saveLeaderboard(name, score) {
+    const normalizedScore = sanitizeScoreValue(score);
+
+    if (authState.user && validateUsername(getAccountUsername())) {
+        try {
+            const savedEntry = await saveLeaderboardToSupabase(normalizedScore);
+            const mergedEntries = mergeLeaderboardEntries(getStoredLeaderboardEntries(), [savedEntry]);
+            persistLeaderboardLocally(mergedEntries);
+            activeLeagueKey = savedEntry.leagueKey;
+            await loadLeaderboard(activeLeagueKey);
+            return {
+                savedOnServer: true,
+                leagueKey: savedEntry.leagueKey
+            };
+        } catch {
+            // Fallback auf lokale Speicherung.
+        }
+    }
+
+    const localEntry = {
+        name: sanitizeGuestName(name),
+        score: normalizedScore,
+        leagueKey: getLeagueForScore(normalizedScore).key,
+        updatedAt: new Date().toISOString()
+    };
+    const mergedEntries = mergeLeaderboardEntries(getStoredLeaderboardEntries(), [localEntry]);
+    persistLeaderboardLocally(mergedEntries);
+    activeLeagueKey = localEntry.leagueKey;
+    renderLeagueTabs();
+    renderLeaderboard(leaderboardEntriesForLeague(mergedEntries, activeLeagueKey));
+
+    return {
+        savedOnServer: false,
+        leagueKey: localEntry.leagueKey
+    };
 }
 
 function getStoredAbilities() {
@@ -632,6 +1388,7 @@ function persistAbilities(abilities) {
         // Ignorieren: Upgrades bleiben nur temporär.
     }
 
+    requestProfileSync();
     return normalized;
 }
 
@@ -899,6 +1656,7 @@ function updateHUD() {
     highscoreDisplay.textContent = String(state.highscore);
     if (coinsDisplay) coinsDisplay.textContent = formatCoins(state.coins);
     powerupStateDisplay.textContent = activePowerupLabel();
+    updateLeagueSummary(state.highscore);
 }
 
 function renderIdleHUD() {
@@ -908,6 +1666,55 @@ function renderIdleHUD() {
     highscoreDisplay.textContent = String(getStoredHighscore());
     if (coinsDisplay) coinsDisplay.textContent = formatCoins(getStoredCoins());
     powerupStateDisplay.textContent = "Keins";
+    updateLeagueSummary(getStoredHighscore());
+}
+
+function configureLeaderboardOptIn(score = state?.score || 0) {
+    if (!leaderboardOptIn) return;
+
+    const league = getLeagueForScore(score);
+    const accountUsername = getAccountUsername();
+    const signedIn = Boolean(authState.user && validateUsername(accountUsername));
+
+    if (leaderboardPrompt) {
+        leaderboardPrompt.textContent = signedIn
+            ? `Dein Lauf gehört in die ${league.label}-Liga. Möchtest du ihn als ${accountUsername} speichern?`
+            : `Dein Lauf gehört in die ${league.label}-Liga. Ohne Login wird er nur lokal in diesem Browser gespeichert.`;
+    }
+
+    if (playerNameLabel) {
+        playerNameLabel.textContent = signedIn ? "Account" : "Gastname";
+    }
+
+    if (playerNameInput) {
+        if (signedIn) {
+            playerNameInput.value = accountUsername;
+            playerNameInput.readOnly = true;
+            playerNameInput.disabled = false;
+            playerNameInput.placeholder = accountUsername;
+        } else {
+            playerNameInput.readOnly = false;
+            playerNameInput.disabled = false;
+            playerNameInput.placeholder = "Name eingeben";
+        }
+    }
+
+    if (leaderboardAuthHint) {
+        leaderboardAuthHint.classList.toggle("error", false);
+        leaderboardAuthHint.textContent = signedIn
+            ? `Gespeichert wird immer dein bester Lauf. Damit wechselst du automatisch in höhere Ligen.`
+            : "Mit Supabase-Login erscheint dein Score in der globalen Ligarangliste. Ohne Login bleibt er lokal.";
+    }
+
+    if (saveLeaderboardButton) {
+        saveLeaderboardButton.textContent = signedIn
+            ? `In ${league.label} speichern`
+            : "Lokal speichern";
+    }
+
+    if (skipLeaderboardButton) {
+        skipLeaderboardButton.textContent = signedIn ? "Ohne Eintrag" : "Überspringen";
+    }
 }
 
 function setStatus(text, type = "normal") {
@@ -1343,6 +2150,7 @@ function endGame(reason) {
     if (statusDisplay) statusDisplay.classList.add("hidden");
 
     state.score = sanitizeScoreValue(state.score);
+    const achievedLeague = getLeagueForScore(state.score);
 
     if (state.score > state.highscore) {
         state.highscore = state.score;
@@ -1351,6 +2159,7 @@ function endGame(reason) {
 
     if (leaderboardOptIn) {
         if (state.score > 0) {
+            configureLeaderboardOptIn(state.score);
             leaderboardOptIn.classList.remove("hidden");
         } else {
             leaderboardOptIn.classList.add("hidden");
@@ -1369,7 +2178,7 @@ function endGame(reason) {
     updateHUD();
     renderShop();
 
-    if (resultText) resultText.textContent = `${reason} Dein Ergebnis: ${state.score} Punkte.`;
+    if (resultText) resultText.textContent = `${reason} Dein Ergebnis: ${state.score} Punkte. Das ist ${achievedLeague.label}-Liga.`;
     if (coinResult) {
         const boostText = hasCartPower("ultimate")
             ? " (inkl. Ultimate-Bonus)"
@@ -1399,13 +2208,15 @@ function startGame() {
     if (gameOverScreen) gameOverScreen.classList.add("hidden");
     if (leaderboardOptIn) leaderboardOptIn.classList.add("hidden");
     if (playerNameInput) {
-        playerNameInput.value = "";
+        playerNameInput.value = getAccountUsername() || "";
         playerNameInput.disabled = false;
+        playerNameInput.readOnly = Boolean(authState.user && getAccountUsername());
     }
     if (saveLeaderboardButton) saveLeaderboardButton.disabled = false;
     if (skipLeaderboardButton) skipLeaderboardButton.disabled = false;
     if (statusDisplay) statusDisplay.classList.add("hidden");
     if (coinResult) coinResult.textContent = "";
+    configureLeaderboardOptIn();
 
     state.playerX = (gameWidth() - basePlayerWidth) / 2;
     state.playerY = 0;
@@ -1535,18 +2346,17 @@ if (saveLeaderboardButton && skipLeaderboardButton && playerNameInput && leaderb
         saveLeaderboardButton.disabled = true;
         skipLeaderboardButton.disabled = true;
         playerNameInput.disabled = true;
-        const playerName = playerNameInput.value.trim();
+        const playerName = authState.user ? getAccountUsername() : playerNameInput.value.trim();
         const result = await saveLeaderboard(playerName || "Anonym", state.score);
         leaderboardOptIn.classList.add("hidden");
 
         if (result.savedOnServer) {
-            setStatus("In die Server-Bestenliste eingetragen!");
+            const savedLeague = getLeagueByKey(result.leagueKey);
+            setStatus(`In die ${savedLeague.label}-Liga eingetragen!`);
             return;
         }
 
-        const supabaseConfig = getSupabaseConfig();
-        const endpoint = supabaseConfig?.url || "Supabase";
-        setStatus(`Server nicht erreicht (${endpoint}) – lokal eingetragen.`, "danger");
+        setStatus("Nur lokal gespeichert. Für die globale Ligarangliste bitte anmelden.", "danger");
     });
 
     skipLeaderboardButton.addEventListener("click", () => {
@@ -1564,6 +2374,48 @@ if (saveLeaderboardButton && skipLeaderboardButton && playerNameInput && leaderb
         if (shouldActivateCheat) {
             activateUnlockAllCartsCheat();
         }
+    });
+}
+
+if (signInButton) {
+    signInButton.addEventListener("click", () => {
+        if (!authState.client) {
+            setAuthStatusMessage("Supabase ist noch nicht verbunden.", "error");
+            return;
+        }
+
+        signInWithUsername();
+    });
+}
+
+if (signUpButton) {
+    signUpButton.addEventListener("click", () => {
+        if (!authState.client) {
+            setAuthStatusMessage("Supabase ist noch nicht verbunden.", "error");
+            return;
+        }
+
+        signUpWithUsername();
+    });
+}
+
+if (signOutButton) {
+    signOutButton.addEventListener("click", () => {
+        signOutAccount();
+    });
+}
+
+if (authPasswordInput) {
+    authPasswordInput.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter") return;
+
+        event.preventDefault();
+        if (!authState.client) {
+            setAuthStatusMessage("Supabase ist noch nicht verbunden.", "error");
+            return;
+        }
+
+        signInWithUsername();
     });
 }
 
@@ -1621,10 +2473,15 @@ window.addEventListener("resize", () => {
     positionPlayer();
 });
 
+activeLeagueKey = getLeagueForScore(getStoredHighscore()).key;
 state = createInitialState();
 state.running = false;
 applyCartSkinClass();
 renderIdleHUD();
 renderShop();
-loadLeaderboard();
+renderLeagueTabs();
+configureLeaderboardOptIn();
+renderAuthUI();
+initializeSupabase();
+loadLeaderboard(activeLeagueKey);
 centerPlayerIdle();
