@@ -286,7 +286,29 @@ function sanitizeScoreValue(value) {
     return Math.max(0, Math.round(value));
 }
 
+function getStoredUltimateCheatEnabled() {
+    try {
+        return localStorage.getItem("koscher_ultimate_cheat") === "true";
+    } catch {
+        return false;
+    }
+}
+
+function persistUltimateCheatEnabled(enabled) {
+    try {
+        localStorage.setItem("koscher_ultimate_cheat", enabled ? "true" : "false");
+    } catch {
+        // Ignorieren: Cheat bleibt dann nur temporär.
+    }
+
+    return enabled;
+}
+
 function getStoredCoins() {
+    if (getStoredUltimateCheatEnabled()) {
+        return maxStoredCoins;
+    }
+
     try {
         const parsed = Number(localStorage.getItem("koscher_coins") || 0);
         return sanitizeCoinValue(parsed);
@@ -296,6 +318,15 @@ function getStoredCoins() {
 }
 
 function persistCoins(value) {
+    if (getStoredUltimateCheatEnabled()) {
+        try {
+            localStorage.setItem("koscher_coins", String(maxStoredCoins));
+        } catch {
+            // Ignorieren: Münzen bleiben dann nur temporär.
+        }
+        return maxStoredCoins;
+    }
+
     const normalized = sanitizeCoinValue(value);
     try {
         localStorage.setItem("koscher_coins", String(normalized));
@@ -614,6 +645,7 @@ function createInitialState() {
         leaderboardSubmitted: false,
         score: 0,
         coins: getStoredCoins(),
+        ultimateCheatEnabled: getStoredUltimateCheatEnabled(),
         lives: 3,
         level: 1,
         playerX: 0,
@@ -1392,12 +1424,20 @@ function setDirection(direction, active) {
 function activateUnlockAllCartsCheat() {
     if (!state) return;
 
+    const maxedAbilities = uniqueAbilityDefs.reduce((acc, ability) => {
+        acc[ability.key] = ability.maxLevel;
+        return acc;
+    }, {});
+
+    state.ultimateCheatEnabled = persistUltimateCheatEnabled(true);
     state.unlockedCarts = persistUnlockedCarts(cartSkinKeys);
     state.selectedCart = persistSelectedCart("ultimate");
+    state.abilities = persistAbilities(maxedAbilities);
+    state.coins = persistCoins(maxStoredCoins);
     applyCartSkinClass();
     updateHUD();
     renderShop();
-    setStatus("Geheimer Code aktiviert: Alle Wagen freigeschaltet!");
+    setStatus("Geheimer Code aktiviert: Alle Wagen, Max-Fähigkeiten und unendliche Münzen!");
 }
 
 function bindButtonHold(button, direction) {
