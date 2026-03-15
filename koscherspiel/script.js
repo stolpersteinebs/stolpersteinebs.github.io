@@ -1993,6 +1993,10 @@ function activePowerupLabel() {
 
     const activeLabel = active.length > 0 ? active.join(", ") : "Keins";
 
+    if (state.shabbatCountdownActive) {
+        return `${activeLabel} · Schabbat startet…`;
+    }
+
     if (state.shabbatModeActive) {
         return `${activeLabel} · Schabbat-Mode`;
     }
