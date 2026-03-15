@@ -413,6 +413,17 @@ h1 {
     text-align: center;
 }
 
+#shabbatIntroScreen {
+    background: #ffffff;
+    color: #102543;
+}
+
+#shabbatIntroTitle,
+#shabbatIntroText {
+    color: #102543;
+    text-shadow: none;
+}
+
 #startScreen h2 {
     margin: 0 0 6px;
 }
