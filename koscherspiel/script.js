@@ -17,6 +17,8 @@ const leagueSummaryText = document.getElementById("leagueSummaryText");
 const statusDisplay = document.getElementById("status");
 const startScreen = document.getElementById("startScreen");
 const startButton = document.getElementById("startButton");
+const shabbatIntroScreen = document.getElementById("shabbatIntroScreen");
+const shabbatIntroCountdown = document.getElementById("shabbatIntroCountdown");
 const gameOverScreen = document.getElementById("gameOver");
 const resultText = document.getElementById("resultText");
 const coinResult = document.getElementById("coinResult");
@@ -230,13 +232,17 @@ const shabbatForbiddenActions = [
     { name: "Hämmern", emoji: "🔨" }
 ];
 
-const shabbatCountdownSeconds = 3;
+const shabbatCountdownSeconds = 5;
 const shabbatMinLevel = 10;
 const shabbatLevelIntervalMin = 2;
 const shabbatLevelIntervalMax = 5;
 const shabbatBaseDurationMs = 24000;
 const shabbatTransitionDurationMs = 9000;
 const shabbatForbiddenScoreEveryDodges = 5;
+const shabbatDodgeBaseReward = 2;
+const shabbatMovementPenaltyPerPx = 0.012;
+const shabbatFallSpeedMultiplier = 0.8;
+const shabbatSpawnIntervalMultiplier = 0.58;
 
 const powerupTypes = [
     { key: "shield", label: "Schutz", icon: "🛡️", colorClass: "powerup-shield" },
@@ -1754,6 +1760,9 @@ function createInitialState() {
         shabbatNextTriggerLevel: 0,
         shabbatDodgedForbidden: 0,
         shabbatCountdownSecondShown: 0,
+        shabbatIntroActive: false,
+        shabbatIntroEndsAt: 0,
+        shabbatMovementForDodges: 0,
         activePowerups: {
             shield: 0,
             slow: 0,
@@ -2121,7 +2130,8 @@ function hasPowerup(powerupKey) {
 
 function currentFallSpeed() {
     const baseSpeed = 120 + (state.level - 1) * 22;
-    return hasPowerup("slow") ? baseSpeed * 0.68 : baseSpeed;
+    const slowedBase = hasPowerup("slow") ? baseSpeed * 0.68 : baseSpeed;
+    return shabbatIntensity() > 0 ? slowedBase * shabbatFallSpeedMultiplier : slowedBase;
 }
 
 function getFoodEmoji(name = "", isKosher = true) {
@@ -2174,7 +2184,9 @@ function maybeStartShabbatCountdown() {
     state.shabbatCountdownActive = true;
     state.shabbatCountdownEndsAt = Date.now() + shabbatCountdownSeconds * 1000;
     state.shabbatCountdownSecondShown = 0;
-    setStatus(`Schabbat-Mode beginnt in ${shabbatCountdownSeconds}…`);
+    state.shabbatIntroActive = true;
+    state.shabbatIntroEndsAt = state.shabbatCountdownEndsAt;
+    if (shabbatIntroScreen) shabbatIntroScreen.classList.remove("hidden");
     updateHUD();
 }
 
@@ -2188,8 +2200,12 @@ function startShabbatMode() {
     state.shabbatPhaseEndsAt = Date.now() + shabbatBaseDurationMs;
     state.shabbatTransitionEndsAt = state.shabbatPhaseEndsAt + shabbatTransitionDurationMs;
     state.shabbatDodgedForbidden = 0;
+    state.shabbatMovementForDodges = 0;
+    state.shabbatIntroActive = false;
+    state.shabbatIntroEndsAt = 0;
+    if (shabbatIntroScreen) shabbatIntroScreen.classList.add("hidden");
 
-    setStatus("Schabbat-Mode läuft: weiche verbotenen Tätigkeiten aus!");
+    setStatus("Schabbat-Mode läuft: weiche verbotenen Tätigkeiten aus und bewege dich wenig!");
     updateHUD();
 }
 
@@ -2208,7 +2224,9 @@ function updateShabbatState() {
             const secondsLeft = Math.ceil(msLeft / 1000);
             if (state.shabbatCountdownSecondShown !== secondsLeft) {
                 state.shabbatCountdownSecondShown = secondsLeft;
-                setStatus(`Schabbat-Mode beginnt in ${secondsLeft}…`);
+                if (shabbatIntroCountdown) {
+                    shabbatIntroCountdown.textContent = String(secondsLeft);
+                }
             }
         }
     }
@@ -2217,6 +2235,7 @@ function updateShabbatState() {
         state.shabbatModeActive = false;
         state.shabbatPhaseEndsAt = 0;
         state.shabbatTransitionEndsAt = 0;
+        state.shabbatMovementForDodges = 0;
         scheduleNextShabbatTriggerLevel();
         setStatus("Schabbat-Mode endet, normaler Modus kommt zurück.");
         updateHUD();
@@ -2403,6 +2422,7 @@ function handleCatch(item, index) {
         state.lives -= 1;
         state.score = Math.max(0, state.score - 1);
         state.shabbatDodgedForbidden = 0;
+        state.shabbatMovementForDodges = 0;
         setStatus("Nicht ausgewichen: Schabbat-Verbot getroffen!", "danger");
     } else if (item.isKosher) {
         const scoreMultiplier = 1 + getAbilityValue("scoreMultiplier");
@@ -2435,13 +2455,15 @@ function handleMissed(item, index) {
         state.shabbatDodgedForbidden += 1;
 
         if (state.shabbatDodgedForbidden >= shabbatForbiddenScoreEveryDodges) {
-            const baseReward = 1;
             const cartBonus = hasCartPower("mint") ? 1 : 0;
             const scoreMultiplier = 1 + getAbilityValue("scoreMultiplier");
-            const reward = (hasCartPower("ultimate") ? baseReward * 2.5 : baseReward + cartBonus) * scoreMultiplier;
-            state.score += reward;
+            const grossReward = (hasCartPower("ultimate") ? shabbatDodgeBaseReward * 2.5 : shabbatDodgeBaseReward + cartBonus) * scoreMultiplier;
+            const movementPenalty = state.shabbatMovementForDodges * shabbatMovementPenaltyPerPx;
+            const netReward = Math.max(0, Math.round((grossReward - movementPenalty) * 10) / 10);
+            state.score += netReward;
             state.shabbatDodgedForbidden = 0;
-            setStatus(`+${reward} für ${shabbatForbiddenScoreEveryDodges} Schabbat-Ausweichmanöver!`);
+            state.shabbatMovementForDodges = 0;
+            setStatus(`+${netReward} für ${shabbatForbiddenScoreEveryDodges} Ausweichmanöver (Bewegungsabzug: ${movementPenalty.toFixed(1)})`);
             recalcLevel();
             updateHUD();
         }
@@ -2532,8 +2554,12 @@ function updatePlayer(deltaSeconds) {
     state.isMoving = move !== 0;
 
     if (move !== 0) {
+        const previousX = state.playerX;
         state.playerX += move * currentPlayerSpeed() * deltaSeconds;
         state.playerX = clamp(state.playerX, 0, gameWidth() - currentPlayerWidth());
+        if (state.shabbatModeActive) {
+            state.shabbatMovementForDodges += Math.abs(state.playerX - previousX);
+        }
     }
 
     updateJump(deltaSeconds);
@@ -2598,7 +2624,8 @@ function clearExpiredPowerups() {
 
 function updateSpawn(deltaSeconds) {
     state.spawnTimer += deltaSeconds * 1000;
-    const interval = currentSpawnInterval();
+    const shabbatFactor = shabbatIntensity() > 0 ? shabbatSpawnIntervalMultiplier : 1;
+    const interval = currentSpawnInterval() * shabbatFactor;
 
     if (state.spawnTimer >= interval) {
         state.spawnTimer = 0;
@@ -2616,7 +2643,7 @@ function gameLoop(timestamp) {
     updateShabbatState();
 
     clearExpiredPowerups();
-    if (!state.shabbatCountdownActive) {
+    if (!state.shabbatCountdownActive && !state.shabbatIntroActive) {
         updatePlayer(deltaSeconds);
         updateSpawn(deltaSeconds);
         updateItems(deltaSeconds);
@@ -2640,6 +2667,7 @@ function endGame(reason) {
         statusTimeoutId = null;
     }
     if (statusDisplay) statusDisplay.classList.add("hidden");
+    if (shabbatIntroScreen) shabbatIntroScreen.classList.add("hidden");
 
     state.score = sanitizeScoreValue(state.score);
     if (state.score > state.highscore) {
@@ -2695,6 +2723,8 @@ function startGame() {
     renderShop();
 
     if (startScreen) startScreen.classList.add("hidden");
+    if (shabbatIntroScreen) shabbatIntroScreen.classList.add("hidden");
+    if (shabbatIntroCountdown) shabbatIntroCountdown.textContent = String(shabbatCountdownSeconds);
     if (gameOverScreen) gameOverScreen.classList.add("hidden");
     if (leaderboardOptIn) leaderboardOptIn.classList.add("hidden");
     if (playerNameInput) {
@@ -2705,6 +2735,7 @@ function startGame() {
     if (saveLeaderboardButton) saveLeaderboardButton.disabled = false;
     if (skipLeaderboardButton) skipLeaderboardButton.disabled = false;
     if (statusDisplay) statusDisplay.classList.add("hidden");
+    if (shabbatIntroScreen) shabbatIntroScreen.classList.add("hidden");
     if (coinResult) coinResult.textContent = "";
     configureLeaderboardOptIn();
 

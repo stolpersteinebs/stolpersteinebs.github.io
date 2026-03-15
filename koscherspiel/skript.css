@@ -363,9 +363,9 @@ h1 {
 
 
 .shabbat-item {
-    border: 2px solid #f0d98a;
-    box-shadow: 0 0 12px rgba(240, 217, 138, 0.75);
-    background: radial-gradient(circle at 30% 30%, #fff2bf, #e4b653);
+    border: none;
+    box-shadow: none;
+    background: transparent;
 }
 
 .powerup {
