@@ -114,11 +114,12 @@
         <div id="startScreen" class="overlay" role="dialog" aria-modal="true" aria-labelledby="startTitle">
             <h2 id="startTitle">Bereit zum Sammeln?</h2>
             <p>Starte, sobald du bereit bist und sammle so viele koschere Lebensmittel wie möglich.</p>
-            <label class="mode-toggle" for="shabbatModeToggle">
-                <input id="shabbatModeToggle" type="checkbox">
-                Schabbat-Mode aktivieren (ab Level 10 mit zufälligen Spezial-Items A/B)
-            </label>
             <button id="startButton" type="button">Spiel starten</button>
+        </div>
+
+        <div id="shabbatIntroScreen" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="shabbatIntroTitle">
+            <h2 id="shabbatIntroTitle">Schabbat-Mode beginnt in <span id="shabbatIntroCountdown">5</span>…</h2>
+            <p id="shabbatIntroText">Im Schabbat-Mode fallen sehr viele Tätigkeiten, die man am Schabbat nicht machen darf. Weiche ihnen aus, bewege dich möglichst wenig und sammle so Bonuspunkte.</p>
         </div>
 
         <div id="player" aria-label="Spieler"></div>
