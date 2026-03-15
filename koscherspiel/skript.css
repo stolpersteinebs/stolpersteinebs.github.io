@@ -363,9 +363,9 @@ h1 {
 
 
 .shabbat-item {
-    border: 2px solid #f0d98a;
-    box-shadow: 0 0 12px rgba(240, 217, 138, 0.75);
-    background: radial-gradient(circle at 30% 30%, #fff2bf, #e4b653);
+    border: none;
+    box-shadow: none;
+    background: transparent;
 }
 
 .powerup {
@@ -675,14 +675,21 @@ h1 {
     flex-direction: column;
     gap: 8px;
     width: min(100%, 320px);
-    background: rgba(255, 255, 255, 0.12);
-    border: 1px solid rgba(255, 255, 255, 0.35);
+    background: rgba(8, 18, 35, 0.7);
+    border: 1px solid rgba(233, 244, 255, 0.34);
     border-radius: 12px;
     padding: 12px;
 }
 
 .leaderboard-optin p {
     margin: 0;
+    color: #f2f8ff;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+#playerNameLabel {
+    color: #f2f8ff;
+    font-weight: 600;
 }
 
 .leaderboard-optin input {
@@ -702,7 +709,7 @@ h1 {
 .leaderboard-auth-hint {
     margin: 0;
     font-size: 0.9rem;
-    color: rgba(255, 255, 255, 0.82);
+    color: rgba(242, 248, 255, 0.9);
 }
 
 .auth-status.error,
