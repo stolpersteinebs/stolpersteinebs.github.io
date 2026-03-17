@@ -366,6 +366,8 @@ declare
     target_group integer;
     previous_rank integer;
     previous_member_count integer;
+    movement_slots integer;
+    demotion_start_rank integer;
 begin
     if target_user_id is null then
         raise exception 'Kein angemeldeter Nutzer vorhanden.';
@@ -422,10 +424,13 @@ begin
         ) ranked
         where ranked.user_id = profile_row.id;
 
-        if coalesce(previous_member_count, 0) >= 10 then
-            if coalesce(previous_rank, 9999) <= 5 then
+        if coalesce(previous_member_count, 0) > 0 then
+            movement_slots := least(5, greatest(1, floor(previous_member_count * 0.25)::integer));
+            demotion_start_rank := greatest(previous_member_count - movement_slots + 1, 1);
+
+            if coalesce(previous_rank, 9999) <= movement_slots then
                 target_league := public.koscher_next_league(target_league);
-            elsif previous_rank > previous_member_count - 5 then
+            elsif previous_rank >= demotion_start_rank then
                 target_league := public.koscher_previous_league(target_league);
             end if;
         end if;
