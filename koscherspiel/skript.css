@@ -620,6 +620,20 @@ h1 {
     background: rgba(242, 184, 75, 0.22);
 }
 
+.leaderboard li.promotion-zone {
+    background: rgba(53, 164, 97, 0.2);
+    border: 1px solid rgba(53, 164, 97, 0.35);
+}
+
+.leaderboard li.demotion-zone {
+    background: rgba(194, 61, 74, 0.2);
+    border: 1px solid rgba(194, 61, 74, 0.35);
+}
+
+.leaderboard li.bot-entry {
+    font-style: italic;
+}
+
 
 .developer-options {
     width: min(100%, 820px);

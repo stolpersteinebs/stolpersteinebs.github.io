@@ -297,6 +297,20 @@ const jumpVelocity = 500;
 const leagueRotationDays = 3;
 const promotionSlots = 5;
 const demotionSlots = 5;
+const mysteriousBotNames = [
+    "Nebelrabe",
+    "Schattenluchs",
+    "Mondfunke",
+    "Kupferfuchs",
+    "Sternenwächter",
+    "EchoMohn",
+    "Silberkiesel",
+    "Dämmerhirsch",
+    "Flüsterfeder",
+    "Nachtzitrone",
+    "Rätselkrähe",
+    "Bernsteinwelle"
+];
 const ultimateRequiredCarts = ["sky", "mint", "rose", "violet", "jumper"];
 const unlockAllCartsCheatSequence = "koscherwagen";
 const guestLeagueDef = { key: "guest", label: "Gast" };
@@ -551,6 +565,44 @@ function buildLeagueSnapshotFromEntries(entries, options = {}) {
                 )
             }))
     });
+}
+
+function buildDisplayLeaderboardEntries(entries) {
+    const realEntries = (Array.isArray(entries) ? entries : [])
+        .map((entry, index) => normalizeLeagueSnapshotEntry(entry, index))
+        .filter(Boolean)
+        .slice(0, leaderboardSize)
+        .map((entry) => ({ ...entry, isBot: false }));
+
+    if (realEntries.length >= leaderboardSize) {
+        return realEntries
+            .sort((a, b) => b.score - a.score || a.rank - b.rank)
+            .map((entry, index) => ({ ...entry, rank: index + 1 }));
+    }
+
+    const botCount = leaderboardSize - realEntries.length;
+    const highestPlayerScore = realEntries.reduce((maxScore, entry) => Math.max(maxScore, entry.score), 0);
+    const botCeiling = highestPlayerScore > 0 ? Math.max(0, highestPlayerScore - 1) : 0;
+
+    const bots = Array.from({ length: botCount }, (_, index) => {
+        const baseName = mysteriousBotNames[index % mysteriousBotNames.length];
+        const suffix = Math.floor(index / mysteriousBotNames.length) + 1;
+        const botScore = Math.max(0, botCeiling - (index * 2));
+
+        return {
+            rank: 0,
+            score: botScore,
+            name: `${baseName} ${suffix}`,
+            userId: `mystery-bot-${index + 1}`,
+            isCurrentUser: false,
+            isBot: true
+        };
+    });
+
+    return [...realEntries, ...bots]
+        .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name, "de-DE"))
+        .slice(0, leaderboardSize)
+        .map((entry, index) => ({ ...entry, rank: index + 1 }));
 }
 
 function getLeagueForScore(score) {
@@ -976,13 +1028,13 @@ function updateLeagueSummary() {
     if (currentLeagueRange) {
         currentLeagueRange.textContent = snapshot.guest
             ? `20 Plätze · Bereinigung alle ${leagueRotationDays} Tage`
-            : `Gruppe ${snapshot.leagueGroup} · 20 Plätze`;
+            : `Gruppe ${snapshot.leagueGroup} · Top ${promotionSlots} Aufstieg · Letzte ${demotionSlots} Abstieg`;
     }
 
     if (leagueSummaryText) {
         leagueSummaryText.textContent = snapshot.guest
             ? `Gäste spielen nur in der Gast-Liga. Sie wird alle ${leagueRotationDays} Tage bereinigt. ${cycleHint}`
-            : `Du siehst nur deine aktuelle ${leagueLabel}-Liga. Alle ${leagueRotationDays} Tage steigen die Top-Plätze auf und die letzten Plätze ab (in kleinen Ligen anteilig). ${cycleHint}`;
+            : `Du siehst nur deine aktuelle ${leagueLabel}-Liga. Alle ${leagueRotationDays} Tage steigen immer die Top ${promotionSlots} auf und die letzten ${demotionSlots} ab. ${cycleHint}`;
     }
 }
 
@@ -1000,7 +1052,7 @@ function updateLeaderboardHeader() {
     if (leaderboardDescription) {
         leaderboardDescription.textContent = snapshot.guest
             ? `Nur für Gäste. Die Liste wird alle ${leagueRotationDays} Tage bereinigt${formattedDeadline ? `, nächste Bereinigung: ${formattedDeadline}` : ""}.`
-            : `Deine aktuelle 20er-Liga${formattedDeadline ? `, nächster Wechsel: ${formattedDeadline}` : ""}.`;
+            : `Deine aktuelle 20er-Liga mit grüner Aufstiegszone (Top ${promotionSlots}) und roter Abstiegszone (letzte ${demotionSlots})${formattedDeadline ? `, nächster Wechsel: ${formattedDeadline}` : ""}.`;
     }
 
     if (leaderboardMeta) {
@@ -1021,7 +1073,9 @@ function renderLeaderboard(entries = getCurrentLeagueSnapshot().entries) {
     leaderboardList.innerHTML = "";
     updateLeaderboardHeader();
 
-    if (entries.length === 0) {
+    const displayEntries = buildDisplayLeaderboardEntries(entries);
+
+    if (displayEntries.length === 0) {
         const emptyItem = document.createElement("li");
         emptyItem.textContent = getCurrentLeagueSnapshot().guest
             ? "Noch keine Einträge in der Gast-Liga"
@@ -1030,9 +1084,24 @@ function renderLeaderboard(entries = getCurrentLeagueSnapshot().entries) {
         return;
     }
 
-    entries.slice(0, leaderboardSize).forEach((entry) => {
+    const promotionCutoff = Math.min(promotionSlots, displayEntries.length);
+    const demotionStart = Math.max(1, displayEntries.length - demotionSlots + 1);
+
+    displayEntries.forEach((entry) => {
         const item = document.createElement("li");
-        item.textContent = `${entry.rank}. ${entry.name}: ${entry.score} Punkte`;
+        item.textContent = `${entry.rank}. ${entry.name}${entry.isBot ? " ✨" : ""}: ${entry.score} Punkte`;
+
+        if (entry.rank <= promotionCutoff) {
+            item.classList.add("promotion-zone");
+        }
+
+        if (entry.rank >= demotionStart) {
+            item.classList.add("demotion-zone");
+        }
+
+        if (entry.isBot) {
+            item.classList.add("bot-entry");
+        }
 
         if (entry.isCurrentUser) {
             item.classList.add("current-user");
