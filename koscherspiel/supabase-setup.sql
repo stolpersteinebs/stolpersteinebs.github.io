@@ -199,6 +199,23 @@ end;
 $$;
 
 drop index if exists public.leaderboard_user_id_idx;
+
+with ranked_duplicate_rows as (
+    select
+        ctid,
+        row_number() over (
+            partition by user_id, cycle_id
+            order by score desc, updated_at desc, created_at desc, ctid desc
+        ) as duplicate_rank
+    from public.leaderboard
+    where user_id is not null
+      and is_guest = false
+)
+delete from public.leaderboard as lb
+using ranked_duplicate_rows as ranked
+where lb.ctid = ranked.ctid
+  and ranked.duplicate_rank > 1;
+
 create unique index if not exists leaderboard_user_cycle_unique_idx
 on public.leaderboard (user_id, cycle_id)
 where user_id is not null and is_guest = false;
@@ -263,6 +280,20 @@ set league_key = ranked_profiles.target_league,
 from ranked_profiles
 where p.id = ranked_profiles.id;
 
+with current_profile_rows as (
+    select distinct on (lb.user_id)
+        lb.ctid as row_ctid,
+        lb.user_id
+    from public.leaderboard lb
+    where lb.user_id is not null
+    order by
+        lb.user_id,
+        (lb.cycle_id = public.koscher_current_cycle_id()) desc,
+        lb.score desc,
+        lb.updated_at desc,
+        lb.created_at desc,
+        lb.ctid desc
+)
 update public.leaderboard lb
 set username = coalesce(nullif(lb.username, ''), p.username, 'Anonym'),
     league_key = p.league_key,
@@ -270,7 +301,8 @@ set username = coalesce(nullif(lb.username, ''), p.username, 'Anonym'),
     cycle_id = public.koscher_current_cycle_id(),
     is_guest = false
 from public.profiles p
-where lb.user_id = p.id;
+join current_profile_rows selected on selected.user_id = p.id
+where lb.ctid = selected.row_ctid;
 
 update public.leaderboard
 set username = coalesce(nullif(username, ''), 'Anonym'),
