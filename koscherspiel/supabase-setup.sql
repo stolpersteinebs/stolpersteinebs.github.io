@@ -677,6 +677,95 @@ begin
 end;
 $$;
 
+
+create or replace function public.koscher_force_league_rotation()
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+    current_cycle bigint := public.koscher_current_cycle_id();
+    moved_count integer := 0;
+    group_row record;
+    ranked_row record;
+    movement_slots integer;
+    demotion_start_rank integer;
+    target_league text;
+    target_group integer;
+begin
+    for group_row in
+        select
+            lb.league_key,
+            lb.league_group,
+            count(*)::integer as member_count
+        from public.leaderboard lb
+        where lb.cycle_id = current_cycle
+          and lb.is_guest = false
+          and lb.user_id is not null
+        group by lb.league_key, lb.league_group
+    loop
+        movement_slots := greatest(1, least(5, floor(group_row.member_count::numeric / 4)::integer));
+        demotion_start_rank := greatest(group_row.member_count - movement_slots + 1, 1);
+
+        for ranked_row in
+            select
+                ranked.user_id,
+                ranked.rank_position
+            from (
+                select
+                    lb.user_id,
+                    row_number() over (
+                        order by lb.score desc, lb.updated_at asc, lb.user_id asc
+                    ) as rank_position
+                from public.leaderboard lb
+                where lb.cycle_id = current_cycle
+                  and lb.is_guest = false
+                  and lb.user_id is not null
+                  and lb.league_key = group_row.league_key
+                  and lb.league_group = group_row.league_group
+            ) ranked
+            where ranked.rank_position <= movement_slots
+               or ranked.rank_position >= demotion_start_rank
+        loop
+            target_league := group_row.league_key;
+
+            if ranked_row.rank_position <= movement_slots then
+                target_league := public.koscher_next_league(target_league);
+            elsif ranked_row.rank_position >= demotion_start_rank then
+                target_league := public.koscher_previous_league(target_league);
+            end if;
+
+            if target_league <> group_row.league_key then
+                target_group := public.koscher_pick_group(target_league, current_cycle);
+
+                update public.profiles
+                set league_key = target_league,
+                    league_group = target_group,
+                    league_cycle_id = current_cycle,
+                    updated_at = timezone('utc', now())
+                where id = ranked_row.user_id;
+
+                update public.leaderboard
+                set league_key = target_league,
+                    league_group = target_group,
+                    updated_at = timezone('utc', now())
+                where user_id = ranked_row.user_id
+                  and cycle_id = current_cycle
+                  and is_guest = false;
+
+                moved_count := moved_count + 1;
+            end if;
+        end loop;
+    end loop;
+
+    return jsonb_build_object(
+        'cycleId', current_cycle,
+        'movedProfiles', moved_count
+    );
+end;
+$$;
+
 alter table public.profiles enable row level security;
 alter table public.leaderboard enable row level security;
 
@@ -737,3 +826,4 @@ grant execute on function public.koscher_submit_guest_score(text, integer) to an
 grant execute on function public.koscher_get_my_league_snapshot() to authenticated;
 grant execute on function public.koscher_submit_authenticated_score(integer) to authenticated;
 grant execute on function public.koscher_ensure_profile_league(uuid) to authenticated;
+grant execute on function public.koscher_force_league_rotation() to authenticated;

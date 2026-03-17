@@ -620,6 +620,49 @@ h1 {
     background: rgba(242, 184, 75, 0.22);
 }
 
+
+.developer-options {
+    width: min(100%, 820px);
+    margin: 0 auto 16px;
+    background: rgba(8, 18, 35, 0.08);
+    border: 1px solid rgba(47, 111, 204, 0.24);
+    border-radius: 14px;
+    padding: 14px;
+}
+
+.developer-options-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.developer-options h2 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.developer-options p {
+    margin: 10px 0 0;
+}
+
+.developer-badge {
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    background: rgba(47, 111, 204, 0.16);
+    border: 1px solid rgba(47, 111, 204, 0.28);
+}
+
+.developer-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+
 .mobile-controls {
     margin: 16px auto 0;
     width: min(100%, 520px);
