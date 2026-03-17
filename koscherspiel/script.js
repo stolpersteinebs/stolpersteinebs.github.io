@@ -963,7 +963,7 @@ function updateLeagueSummary() {
     if (leagueSummaryText) {
         leagueSummaryText.textContent = snapshot.guest
             ? `Gäste spielen nur in der Gast-Liga. Sie wird alle ${leagueRotationDays} Tage bereinigt. ${cycleHint}`
-            : `Du siehst nur deine aktuelle ${leagueLabel}-Liga. Platz 1 bis ${promotionSlots} steigt auf, Platz ${leaderboardSize - demotionSlots + 1} bis ${leaderboardSize} steigt alle ${leagueRotationDays} Tage ab. ${cycleHint}`;
+            : `Du siehst nur deine aktuelle ${leagueLabel}-Liga. Alle ${leagueRotationDays} Tage steigen die Top-Plätze auf und die letzten Plätze ab (in kleinen Ligen anteilig). ${cycleHint}`;
     }
 }
 
@@ -2059,7 +2059,7 @@ function configureLeaderboardOptIn(score = state?.score || 0) {
     if (leaderboardAuthHint) {
         leaderboardAuthHint.classList.toggle("error", false);
         leaderboardAuthHint.textContent = signedIn
-            ? `Es zählt dein bester Lauf im aktuellen ${leagueRotationDays}-Tage-Zyklus. Platz 1 bis ${promotionSlots} steigt auf, Platz ${leaderboardSize - demotionSlots + 1} bis ${leaderboardSize} steigt ab.`
+            ? `Es zählt dein bester Lauf im aktuellen ${leagueRotationDays}-Tage-Zyklus. Die Top-Plätze steigen auf, die letzten Plätze steigen ab (in kleinen Ligen anteilig).`
             : `Ohne Login spielst du nur in der Gast-Liga. Auch dort werden Einträge nicht lokal gespeichert.`;
     }
 
