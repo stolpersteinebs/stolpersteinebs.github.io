@@ -43,6 +43,9 @@ const signUpButton = document.getElementById("signUpButton");
 const signOutButton = document.getElementById("signOutButton");
 const authStatus = document.getElementById("authStatus");
 const accountModeBadge = document.getElementById("accountModeBadge");
+const developerOptions = document.getElementById("developerOptions");
+const devForceShabbatButton = document.getElementById("devForceShabbatButton");
+const devForceLeagueRotationButton = document.getElementById("devForceLeagueRotationButton");
 
 const fallbackFoods = {
     kosherFoods: [
@@ -618,6 +621,22 @@ function setAuthStatusMessage(text, type = "normal") {
     authState.statusText = text;
     authState.statusType = type;
     renderAuthUI();
+    renderDeveloperOptions();
+}
+
+function renderDeveloperOptions() {
+    if (!developerOptions) return;
+
+    const cheatEnabled = Boolean(state?.ultimateCheatEnabled || getStoredUltimateCheatEnabled());
+    developerOptions.classList.toggle("hidden", !cheatEnabled);
+
+    if (devForceShabbatButton) {
+        devForceShabbatButton.disabled = !cheatEnabled;
+    }
+
+    if (devForceLeagueRotationButton) {
+        devForceLeagueRotationButton.disabled = !cheatEnabled || !authState.user || !canUseSupabaseClient();
+    }
 }
 
 function withProfileSyncSuspended(callback) {
@@ -2770,7 +2789,58 @@ function activateUnlockAllCartsCheat() {
     applyCartSkinClass();
     updateHUD();
     renderShop();
+    renderDeveloperOptions();
     setStatus("Geheimer Code aktiviert: Alle Wagen, Max-Fähigkeiten und unendliche Münzen!");
+}
+
+function forceStartShabbatForTesting() {
+    const cheatEnabled = Boolean(state?.ultimateCheatEnabled || getStoredUltimateCheatEnabled());
+    if (!cheatEnabled) {
+        setStatus("Developer-Optionen sind erst nach Cheatcode aktiv.", "danger");
+        return;
+    }
+
+    if (!state || !state.running) {
+        startGame();
+    }
+
+    startShabbatMode();
+    state.shabbatNextTriggerLevel = Math.max(state.level + shabbatLevelIntervalMax, shabbatMinLevel + shabbatLevelIntervalMin);
+    setStatus("Developer-Test: Schabbat-Modus wurde manuell aktiviert.");
+    renderDeveloperOptions();
+}
+
+async function triggerManualLeagueRotationForAllLeagues() {
+    const cheatEnabled = Boolean(state?.ultimateCheatEnabled || getStoredUltimateCheatEnabled());
+    if (!cheatEnabled) {
+        setStatus("Developer-Optionen sind erst nach Cheatcode aktiv.", "danger");
+        return;
+    }
+
+    if (!canUseSupabaseClient() || !authState.user) {
+        setStatus("Ligawechsel benötigt einen angemeldeten Account mit Supabase-Verbindung.", "danger");
+        return;
+    }
+
+    if (devForceLeagueRotationButton) {
+        devForceLeagueRotationButton.disabled = true;
+    }
+
+    try {
+        const { data, error } = await authState.client.rpc("koscher_force_league_rotation");
+        if (error) {
+            throw error;
+        }
+
+        await loadLeaderboard();
+        const moved = Number(data?.moved_profiles ?? data?.movedProfiles ?? 0);
+        setStatus(`Developer-Test: Ligawechsel ausgeführt (${moved} Profile bewegt).`);
+    } catch (error) {
+        const errorText = extractSupabaseErrorMessage(error, "Manueller Ligawechsel konnte nicht ausgeführt werden. Führe ggf. die aktuelle Supabase-Setup-SQL aus.");
+        setStatus(errorText, "danger");
+    } finally {
+        renderDeveloperOptions();
+    }
 }
 
 function bindButtonHold(button, direction) {
@@ -2997,6 +3067,16 @@ if (game) {
     bindTouchFieldControl();
 }
 
+if (devForceShabbatButton) {
+    devForceShabbatButton.addEventListener("click", forceStartShabbatForTesting);
+}
+
+if (devForceLeagueRotationButton) {
+    devForceLeagueRotationButton.addEventListener("click", () => {
+        triggerManualLeagueRotationForAllLeagues();
+    });
+}
+
 window.addEventListener("resize", () => {
     if (!state) {
         centerPlayerIdle();
@@ -3015,6 +3095,7 @@ renderShop();
 renderLeagueTabs();
 configureLeaderboardOptIn();
 renderAuthUI();
+renderDeveloperOptions();
 initializeSupabase();
 loadLeaderboard();
 centerPlayerIdle();
