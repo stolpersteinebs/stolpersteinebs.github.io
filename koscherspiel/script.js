@@ -244,8 +244,8 @@ const shabbatTransitionDurationMs = 9000;
 const shabbatForbiddenScoreEveryDodges = 5;
 const shabbatDodgeBaseReward = 2;
 const shabbatMovementPenaltyPerPx = 0.012;
-const shabbatFallSpeedMultiplier = 0.8;
-const shabbatSpawnIntervalMultiplier = 0.58;
+const shabbatFallSpeedMultiplier = 0.72;
+const shabbatSpawnIntervalMultiplier = 0.82;
 
 const powerupTypes = [
     { key: "shield", label: "Schutz", icon: "🛡️", colorClass: "powerup-shield" },
@@ -2290,13 +2290,13 @@ function spawnPowerup() {
 function spawnFood() {
     const intensity = shabbatIntensity();
     if (intensity > 0) {
-        const forbiddenChance = 0.45 + intensity * 0.4;
+        const forbiddenChance = 0.2 + intensity * 0.25;
         if (Math.random() < forbiddenChance) {
             return spawnShabbatForbiddenItem();
         }
     }
 
-    const kosherChance = intensity > 0 ? 0.56 : 0.82;
+    const kosherChance = intensity > 0 ? 0.7 : 0.82;
     const isKosher = Math.random() < kosherChance;
 
     if (Math.random() < emojiFoodSpawnChance) {
@@ -2438,11 +2438,16 @@ function handleCatch(item, index) {
     }
 
     if (item.isShabbatForbidden) {
-        state.lives -= 1;
-        state.score = Math.max(0, state.score - 1);
+        if (!consumeShieldIfActive() && !cartSavedDamage() && !abilitySavedDamage()) {
+            state.lives -= 1;
+            state.score = Math.max(0, state.score - 0.5);
+            setStatus("Nicht ausgewichen: Schabbat-Verbot getroffen!", "danger");
+        } else {
+            setStatus("Schabbat-Verbot dank Schutz abgewehrt!");
+        }
+
         state.shabbatDodgedForbidden = 0;
         state.shabbatMovementForDodges = 0;
-        setStatus("Nicht ausgewichen: Schabbat-Verbot getroffen!", "danger");
     } else if (item.isKosher) {
         const scoreMultiplier = 1 + getAbilityValue("scoreMultiplier");
         const basePoints = hasPowerup("double") ? 2 : 1;
