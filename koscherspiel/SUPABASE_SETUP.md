@@ -8,7 +8,7 @@
 Das neue Setup macht Folgendes serverseitig:
 
 - Angemeldete Nutzer sehen nur ihre aktuelle 20er-Liga.
-- Alle 3 Tage steigen Platz 1 bis 5 auf, Platz 16 bis 20 ab.
+- Alle 3 Tage steigen in 20er-Ligen Platz 1 bis 5 auf und Platz 16 bis 20 ab; in kleineren Ligen bewegen sich anteilig mindestens 1 und maximal 5 Plaetze.
 - Es gibt eine separate Gast-Liga.
 - Gast-Eintraege werden alle 3 Tage automatisch bereinigt.
 - Ligadaten werden nicht mehr im Browser lokal gespeichert.
