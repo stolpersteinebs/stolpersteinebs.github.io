@@ -10,4 +10,5 @@ permalink: /feiertage/
 Hier findest du eine Übersicht über Artikel zu jüdischen Feiertagen.
 
 [Der Schabbat](https://stolpersteinebs.github.io/schabbat)
+
 [Pessach](https://stolpersteinebs.github.io/pessach)
