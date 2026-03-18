@@ -457,7 +457,7 @@ begin
         where ranked.user_id = profile_row.id;
 
         if coalesce(previous_member_count, 0) > 0 then
-            movement_slots := least(5, greatest(1, floor(previous_member_count * 0.25)::integer));
+            movement_slots := least(5, greatest(previous_member_count, 0));
             demotion_start_rank := greatest(previous_member_count - movement_slots + 1, 1);
 
             if coalesce(previous_rank, 9999) <= movement_slots then
@@ -481,6 +481,7 @@ begin
 
     update public.leaderboard as lb
     set username = profile_row.username,
+        score = 0,
         league_key = profile_row.league_key,
         league_group = profile_row.league_group,
         cycle_id = current_cycle,
@@ -705,7 +706,7 @@ begin
           and lb.user_id is not null
         group by lb.league_key, lb.league_group
     loop
-        movement_slots := greatest(1, least(5, floor(group_row.member_count::numeric / 4)::integer));
+        movement_slots := least(5, greatest(group_row.member_count, 0));
         demotion_start_rank := greatest(group_row.member_count - movement_slots + 1, 1);
 
         for ranked_row in
@@ -749,6 +750,7 @@ begin
                 update public.leaderboard
                 set league_key = target_league,
                     league_group = target_group,
+                    score = 0,
                     updated_at = timezone('utc', now())
                 where user_id = ranked_row.user_id
                   and cycle_id = current_cycle

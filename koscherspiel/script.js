@@ -246,11 +246,11 @@ const shabbatAllowedActions = [
 ];
 
 const shabbatCountdownSeconds = 5;
-const shabbatMinLevel = 10;
-const shabbatLevelIntervalMin = 4;
-const shabbatLevelIntervalMax = 8;
-const shabbatBaseDurationMs = 16000;
-const shabbatTransitionDurationMs = 5000;
+const shabbatMinLevel = 14;
+const shabbatLevelIntervalMin = 2;
+const shabbatLevelIntervalMax = 5;
+const shabbatBaseDurationMs = 24000;
+const shabbatTransitionDurationMs = 9000;
 const shabbatForbiddenScoreEveryDodges = 5;
 const shabbatDodgeBaseReward = 2;
 const shabbatAllowedCatchReward = 1.5;
@@ -1527,13 +1527,13 @@ async function loadLegacyAuthenticatedLeaderboardFromSupabase() {
         throw existingError;
     }
 
-    let leagueKey = getLeagueForScore(getStoredHighscore()).key;
+    let leagueKey = leagueDefs[0].key;
     if (existingEntry?.league_key) {
         leagueKey = getLeagueByKey(existingEntry.league_key).key;
     } else {
         const { data: profileRow, error: profileError } = await authState.client
             .from(config.profileTable)
-            .select("highscore")
+            .select("league_key")
             .eq("id", authState.user.id)
             .maybeSingle();
 
@@ -1541,7 +1541,7 @@ async function loadLegacyAuthenticatedLeaderboardFromSupabase() {
             throw profileError;
         }
 
-        leagueKey = getLeagueForScore(Number(profileRow?.highscore || 0)).key;
+        leagueKey = getLeagueByKey(profileRow?.league_key || leagueDefs[0].key).key;
     }
 
     const { data: rows, error: leaderboardError } = await authState.client
@@ -1594,7 +1594,7 @@ async function saveLegacyAuthenticatedLeaderboardToSupabase(score) {
     const normalizedScore = sanitizeScoreValue(score);
     const { data: existingEntry, error: existingError } = await authState.client
         .from(config.leaderboardTable)
-        .select("score")
+        .select("score, league_key")
         .eq("user_id", authState.user.id)
         .maybeSingle();
 
@@ -1602,12 +1602,27 @@ async function saveLegacyAuthenticatedLeaderboardToSupabase(score) {
         throw existingError;
     }
 
+    let leagueKey = getLeagueByKey(existingEntry?.league_key || "").key;
+    if (!existingEntry?.league_key) {
+        const { data: profileRow, error: profileError } = await authState.client
+            .from(config.profileTable)
+            .select("league_key")
+            .eq("id", authState.user.id)
+            .maybeSingle();
+
+        if (profileError) {
+            throw profileError;
+        }
+
+        leagueKey = getLeagueByKey(profileRow?.league_key || leagueDefs[0].key).key;
+    }
+
     const bestScore = Math.max(sanitizeScoreValue(Number(existingEntry?.score || 0)), normalizedScore);
     const payload = {
         user_id: authState.user.id,
         username,
         score: bestScore,
-        league_key: getLeagueForScore(bestScore).key,
+        league_key: leagueKey,
         updated_at: new Date().toISOString()
     };
 
@@ -1857,6 +1872,7 @@ function createInitialState() {
         shabbatPhaseEndsAt: 0,
         shabbatTransitionEndsAt: 0,
         shabbatNextTriggerLevel: 0,
+        shabbatTriggeredThisRound: false,
         shabbatDodgedForbidden: 0,
         shabbatCountdownSecondShown: 0,
         shabbatIntroActive: false,
@@ -2158,7 +2174,7 @@ function configureLeaderboardOptIn(score = state?.score || 0) {
     if (leaderboardAuthHint) {
         leaderboardAuthHint.classList.toggle("error", false);
         leaderboardAuthHint.textContent = signedIn
-            ? `Es zählt dein bester Lauf im aktuellen ${leagueRotationDays}-Tage-Zyklus. Die Top-Plätze steigen auf, die letzten Plätze steigen ab (in kleinen Ligen anteilig).`
+            ? `Es zählt dein bester Lauf im aktuellen ${leagueRotationDays}-Tage-Zyklus. Nur die Top ${promotionSlots} steigen auf, die letzten ${demotionSlots} steigen ab.`
             : `Ohne Login spielst du nur in der Gast-Liga. Auch dort werden Einträge nicht lokal gespeichert.`;
     }
 
@@ -2268,7 +2284,13 @@ function scheduleNextShabbatTriggerLevel() {
 }
 
 function maybeStartShabbatCountdown() {
-    if (!state || state.shabbatModeActive || state.shabbatCountdownActive || state.level < shabbatMinLevel) {
+    if (
+        !state
+        || state.shabbatModeActive
+        || state.shabbatCountdownActive
+        || state.shabbatTriggeredThisRound
+        || state.level < shabbatMinLevel
+    ) {
         return;
     }
 
@@ -2293,6 +2315,7 @@ function startShabbatMode() {
     if (!state) return;
 
     state.shabbatModeActive = true;
+    state.shabbatTriggeredThisRound = true;
     state.shabbatCountdownActive = false;
     state.shabbatCountdownEndsAt = 0;
     state.shabbatCountdownSecondShown = 0;
@@ -2335,7 +2358,6 @@ function updateShabbatState() {
         state.shabbatPhaseEndsAt = 0;
         state.shabbatTransitionEndsAt = 0;
         state.shabbatMovementForDodges = 0;
-        scheduleNextShabbatTriggerLevel();
         setStatus("Schabbat-Mode endet, normaler Modus kommt zurück.");
         updateHUD();
     }
