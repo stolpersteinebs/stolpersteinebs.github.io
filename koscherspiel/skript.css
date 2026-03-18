@@ -368,6 +368,42 @@ h1 {
     background: transparent;
 }
 
+.bubble-item {
+    width: 92px;
+    height: 92px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.95);
+    background: radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.95) 0%, rgba(173, 222, 255, 0.88) 52%, rgba(110, 165, 243, 0.88) 100%);
+    box-shadow: 0 8px 16px rgba(0, 32, 78, 0.2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 10px;
+    line-height: 1.05;
+}
+
+.bubble-emoji {
+    font-size: 1.2rem;
+}
+
+.bubble-text {
+    font-size: 0.56rem;
+    font-weight: 700;
+    text-align: center;
+    color: #0c2a4f;
+    text-wrap: balance;
+}
+
+.shabbat-item-forbidden .bubble-text {
+    color: #681515;
+}
+
+.shabbat-item-allowed {
+    background: radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.96) 0%, rgba(193, 241, 215, 0.92) 52%, rgba(109, 206, 152, 0.9) 100%);
+}
+
 .powerup {
     border-radius: 50%;
     border: 2px solid rgba(255, 255, 255, 0.9);
