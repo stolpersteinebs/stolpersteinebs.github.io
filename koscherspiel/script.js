@@ -578,7 +578,7 @@ function buildLeagueSnapshotFromEntries(entries, options = {}) {
     });
 }
 
-function buildDisplayLeaderboardEntries(entries) {
+function buildDisplayLeaderboardEntries(entries, leagueKey = getCurrentLeagueSnapshot().leagueKey) {
     const realEntries = (Array.isArray(entries) ? entries : [])
         .map((entry, index) => normalizeLeagueSnapshotEntry(entry, index))
         .filter(Boolean)
@@ -592,13 +592,39 @@ function buildDisplayLeaderboardEntries(entries) {
     }
 
     const botCount = leaderboardSize - realEntries.length;
-    const highestPlayerScore = realEntries.reduce((maxScore, entry) => Math.max(maxScore, entry.score), 0);
-    const botCeiling = highestPlayerScore > 0 ? Math.max(0, highestPlayerScore - 1) : 0;
+    const leagueBaselineScore = getLeagueBaselineScore(leagueKey);
+    const calibratedScores = realEntries
+        .map((entry) => Math.max(leagueBaselineScore, entry.score))
+        .sort((a, b) => b - a);
+    const highestPlayerScore = calibratedScores[0] || 0;
+    const percentileScore = calibratedScores.length
+        ? calibratedScores[Math.floor((calibratedScores.length - 1) * 0.6)]
+        : leagueBaselineScore;
+    const leagueAverageScore = calibratedScores.length
+        ? calibratedScores.reduce((sum, score) => sum + score, 0) / calibratedScores.length
+        : leagueBaselineScore;
+    const currentUserLeagueScore = realEntries.find((entry) => entry.isCurrentUser)?.score || 0;
+    const userHighscoreScore = sanitizeScoreValue(getStoredHighscore());
+    const personalReferenceScore = Math.max(currentUserLeagueScore, userHighscoreScore);
+    const performanceReferenceScore = Math.round(
+        (leagueAverageScore * 0.5) +
+        (percentileScore * 0.3) +
+        (personalReferenceScore * 0.2)
+    );
+    const leagueSpan = Math.max(4, Math.round((highestPlayerScore - leagueBaselineScore) * 0.5));
+    const headroom = Math.max(2, Math.round(leagueSpan * 0.15));
+    const defaultCeiling = leagueBaselineScore + Math.max(3, Math.round(leagueSpan * 0.25));
+    const rawBotCeiling = highestPlayerScore > 0
+        ? Math.max(leagueBaselineScore, performanceReferenceScore + headroom)
+        : defaultCeiling;
+    const botCeiling = Math.max(leagueBaselineScore, rawBotCeiling);
+    const botStep = Math.max(1, Math.round((leagueSpan + 4) / leaderboardSize));
 
     const bots = Array.from({ length: botCount }, (_, index) => {
         const baseName = mysteriousBotNames[index % mysteriousBotNames.length];
         const suffix = Math.floor(index / mysteriousBotNames.length) + 1;
-        const botScore = Math.max(0, botCeiling - (index * 2));
+        const rawBotScore = botCeiling - (index * botStep);
+        const botScore = Math.max(leagueBaselineScore, rawBotScore);
 
         return {
             rank: 0,
@@ -636,6 +662,14 @@ function getLeagueRangeLabel(leagueKey) {
     }
 
     return `${league.minScore} bis ${nextLeague.minScore - 1} Punkte`;
+}
+
+function getLeagueBaselineScore(leagueKey) {
+    if (!leagueKey || leagueKey === guestLeagueDef.key) {
+        return 0;
+    }
+
+    return getLeagueByKey(leagueKey).minScore;
 }
 
 function stripDiacritics(value) {
@@ -1084,11 +1118,12 @@ function renderLeaderboard(entries = getCurrentLeagueSnapshot().entries) {
     leaderboardList.innerHTML = "";
     updateLeaderboardHeader();
 
-    const displayEntries = buildDisplayLeaderboardEntries(entries);
+    const currentSnapshot = getCurrentLeagueSnapshot();
+    const displayEntries = buildDisplayLeaderboardEntries(entries, currentSnapshot.leagueKey);
 
     if (displayEntries.length === 0) {
         const emptyItem = document.createElement("li");
-        emptyItem.textContent = getCurrentLeagueSnapshot().guest
+        emptyItem.textContent = currentSnapshot.guest
             ? "Noch keine Einträge in der Gast-Liga"
             : "Noch keine Einträge in deiner Liga";
         leaderboardList.appendChild(emptyItem);
