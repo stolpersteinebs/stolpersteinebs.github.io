@@ -4,7 +4,7 @@ permalink: /pessach/
 layout: default
 ---
 
-**Pessach – Fest der Befreiung**
+# Pessach – Fest der Befreiung
 
 Pessach ist eines der wichtigsten Feste im Judentum. Es erinnert an den Auszug der Israeliten aus der Sklaverei in Ägypten und steht damit für Freiheit, Befreiung und Hoffnung. Die Israeliten waren der Überlieferung nach Sklaven des Pharaos, bis Gott ihnen durch Mose half, Ägypten zu verlassen und ein Leben in Freiheit zu beginnen.
 
