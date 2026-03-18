@@ -426,11 +426,29 @@ function serializeSupabaseInFilterValues(values) {
         .join(",");
 }
 
-async function deleteLeaderboardRowsByIds(config, ids) {
-    if (!Array.isArray(ids) || !ids.length) return;
+async function insertLeaderboardRow(config, name, score) {
+    const endpoint = `${config.url}/rest/v1/${encodeURIComponent(config.table)}`;
+    const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+            apikey: config.key,
+            Authorization: `Bearer ${config.key}`,
+            "Content-Type": "application/json",
+            Prefer: "return=minimal"
+        },
+        body: JSON.stringify([{ name, score }])
+    });
 
-    const filter = `in.(${serializeSupabaseInFilterValues(ids)})`;
-    const endpoint = `${config.url}/rest/v1/${encodeURIComponent(config.table)}?id=${encodeURIComponent(filter)}`;
+    if (!response.ok) {
+        throw new Error(isEnglish ? "Supabase POST failed" : "Supabase POST fehlgeschlagen");
+    }
+}
+
+async function deleteLeaderboardRowsByNames(config, names) {
+    if (!Array.isArray(names) || !names.length) return;
+
+    const filter = `in.(${serializeSupabaseInFilterValues(names)})`;
+    const endpoint = `${config.url}/rest/v1/${encodeURIComponent(config.table)}?name=${encodeURIComponent(filter)}`;
     const response = await fetch(endpoint, {
         method: "DELETE",
         headers: {
@@ -446,7 +464,7 @@ async function deleteLeaderboardRowsByIds(config, ids) {
 }
 
 async function cleanupDuplicateLeaderboardEntries(config) {
-    const endpoint = `${config.url}/rest/v1/${encodeURIComponent(config.table)}?select=id,name,score&order=score.desc,id.desc`;
+    const endpoint = `${config.url}/rest/v1/${encodeURIComponent(config.table)}?select=name,score`;
     const response = await fetch(endpoint, {
         method: "GET",
         headers: {
@@ -463,51 +481,47 @@ async function cleanupDuplicateLeaderboardEntries(config) {
     const payload = await parseJsonSafely(response);
     if (!Array.isArray(payload) || !payload.length) return;
 
-    const keepByName = new Map();
-    const duplicateIds = [];
-
+    const entriesByName = new Map();
     payload.forEach((entry) => {
         if (!entry || typeof entry !== "object") return;
-        if (typeof entry.id === "undefined" || entry.id === null) return;
+        const score = Number(entry.score);
+        if (!Number.isFinite(score)) return;
 
         const trimmedName = typeof entry.name === "string" ? entry.name.trim() : "";
-        const normalizedName = (trimmedName || (isEnglish ? "Anonymous" : "Anonym"))
-            .toLocaleLowerCase(isEnglish ? "en-US" : "de-DE");
+        const effectiveName = trimmedName || (isEnglish ? "Anonymous" : "Anonym");
+        const normalizedName = effectiveName.toLocaleLowerCase(isEnglish ? "en-US" : "de-DE");
 
-        if (keepByName.has(normalizedName)) {
-            duplicateIds.push(entry.id);
-        } else {
-            keepByName.set(normalizedName, entry.id);
+        if (!entriesByName.has(normalizedName)) {
+            entriesByName.set(normalizedName, []);
         }
+
+        entriesByName.get(normalizedName).push({
+            name: effectiveName,
+            score
+        });
     });
 
-    if (!duplicateIds.length) return;
+    for (const groupEntries of entriesByName.values()) {
+        if (!Array.isArray(groupEntries) || groupEntries.length <= 1) continue;
 
-    const chunkSize = 50;
-    for (let index = 0; index < duplicateIds.length; index += chunkSize) {
-        const chunk = duplicateIds.slice(index, index + chunkSize);
+        let bestEntry = groupEntries[0];
+        for (let index = 1; index < groupEntries.length; index += 1) {
+            const candidate = groupEntries[index];
+            if (candidate.score >= bestEntry.score) {
+                bestEntry = candidate;
+            }
+        }
+
+        const namesToDelete = Array.from(new Set(groupEntries.map((entry) => entry.name)));
         // eslint-disable-next-line no-await-in-loop
-        await deleteLeaderboardRowsByIds(config, chunk);
+        await deleteLeaderboardRowsByNames(config, namesToDelete);
+        // eslint-disable-next-line no-await-in-loop
+        await insertLeaderboardRow(config, bestEntry.name, bestEntry.score);
     }
 }
 
 async function saveLeaderboardToSupabase(config, name, score) {
-    const endpoint = `${config.url}/rest/v1/${encodeURIComponent(config.table)}`;
-    const response = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-            apikey: config.key,
-            Authorization: `Bearer ${config.key}`,
-            "Content-Type": "application/json",
-            Prefer: "return=minimal"
-        },
-        body: JSON.stringify([{ name, score }])
-    });
-
-    if (!response.ok) {
-        throw new Error(isEnglish ? "Supabase POST failed" : "Supabase POST fehlgeschlagen");
-    }
-
+    await insertLeaderboardRow(config, name, score);
     await cleanupDuplicateLeaderboardEntries(config);
     return loadLeaderboardFromSupabase(config);
 }
