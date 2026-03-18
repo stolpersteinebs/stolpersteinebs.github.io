@@ -413,6 +413,84 @@ async function loadLeaderboardFromSupabase(config) {
     return normalizeLeaderboard(payload);
 }
 
+function serializeSupabaseInFilterValues(values) {
+    return values
+        .map((value) => {
+            if (typeof value === "number" && Number.isFinite(value)) {
+                return String(value);
+            }
+
+            const escaped = String(value).replace(/"/g, '\\"');
+            return `"${escaped}"`;
+        })
+        .join(",");
+}
+
+async function deleteLeaderboardRowsByIds(config, ids) {
+    if (!Array.isArray(ids) || !ids.length) return;
+
+    const filter = `in.(${serializeSupabaseInFilterValues(ids)})`;
+    const endpoint = `${config.url}/rest/v1/${encodeURIComponent(config.table)}?id=${encodeURIComponent(filter)}`;
+    const response = await fetch(endpoint, {
+        method: "DELETE",
+        headers: {
+            apikey: config.key,
+            Authorization: `Bearer ${config.key}`,
+            Prefer: "return=minimal"
+        }
+    });
+
+    if (!response.ok) {
+        throw new Error(isEnglish ? "Supabase DELETE failed" : "Supabase DELETE fehlgeschlagen");
+    }
+}
+
+async function cleanupDuplicateLeaderboardEntries(config) {
+    const endpoint = `${config.url}/rest/v1/${encodeURIComponent(config.table)}?select=id,name,score&order=score.desc,id.desc`;
+    const response = await fetch(endpoint, {
+        method: "GET",
+        headers: {
+            apikey: config.key,
+            Authorization: `Bearer ${config.key}`,
+            Accept: "application/json"
+        }
+    });
+
+    if (!response.ok) {
+        throw new Error(isEnglish ? "Supabase GET failed" : "Supabase GET fehlgeschlagen");
+    }
+
+    const payload = await parseJsonSafely(response);
+    if (!Array.isArray(payload) || !payload.length) return;
+
+    const keepByName = new Map();
+    const duplicateIds = [];
+
+    payload.forEach((entry) => {
+        if (!entry || typeof entry !== "object") return;
+        if (typeof entry.id === "undefined" || entry.id === null) return;
+
+        const trimmedName = typeof entry.name === "string" ? entry.name.trim() : "";
+        const normalizedName = (trimmedName || (isEnglish ? "Anonymous" : "Anonym"))
+            .toLocaleLowerCase(isEnglish ? "en-US" : "de-DE");
+
+        if (keepByName.has(normalizedName)) {
+            duplicateIds.push(entry.id);
+        } else {
+            keepByName.set(normalizedName, entry.id);
+        }
+    });
+
+    if (!duplicateIds.length) return;
+
+    const chunkSize = 50;
+    for (let index = 0; index < duplicateIds.length; index += chunkSize) {
+        const chunk = duplicateIds.slice(index, index + chunkSize);
+        // eslint-disable-next-line no-await-in-loop
+        await deleteLeaderboardRowsByIds(config, chunk);
+    }
+}
+
 async function saveLeaderboardToSupabase(config, name, score) {
     const endpoint = `${config.url}/rest/v1/${encodeURIComponent(config.table)}`;
     const response = await fetch(endpoint, {
@@ -430,6 +508,7 @@ async function saveLeaderboardToSupabase(config, name, score) {
         throw new Error(isEnglish ? "Supabase POST failed" : "Supabase POST fehlgeschlagen");
     }
 
+    await cleanupDuplicateLeaderboardEntries(config);
     return loadLeaderboardFromSupabase(config);
 }
 
