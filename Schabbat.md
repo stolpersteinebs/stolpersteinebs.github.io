@@ -1,6 +1,7 @@
 ---
 layout: default
 permalink: /schabbat/
+title: Der Schabbat
 ---
 
 # Der Schabbat
