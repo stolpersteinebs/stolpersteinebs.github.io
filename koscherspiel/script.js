@@ -234,6 +234,16 @@ const shabbatForbiddenActions = [
     { name: "Ernten", emoji: "🌾" },
     { name: "Hämmern", emoji: "🔨" }
 ];
+const shabbatAllowedActions = [
+    { name: "Kiddusch machen", emoji: "🍷" },
+    { name: "Challa essen", emoji: "🍞" },
+    { name: "Beten", emoji: "🕯️" },
+    { name: "Tora lernen", emoji: "📖" },
+    { name: "Singen", emoji: "🎶" },
+    { name: "Spazieren", emoji: "🚶" },
+    { name: "Mit Familie feiern", emoji: "👨‍👩‍👧‍👦" },
+    { name: "Ausruhen", emoji: "🛋️" }
+];
 
 const shabbatCountdownSeconds = 5;
 const shabbatMinLevel = 10;
@@ -243,6 +253,7 @@ const shabbatBaseDurationMs = 24000;
 const shabbatTransitionDurationMs = 9000;
 const shabbatForbiddenScoreEveryDodges = 5;
 const shabbatDodgeBaseReward = 2;
+const shabbatAllowedCatchReward = 1.5;
 const shabbatMovementPenaltyPerPx = 0.012;
 const shabbatFallSpeedMultiplier = 0.72;
 const shabbatSpawnIntervalMultiplier = 0.82;
@@ -2337,10 +2348,24 @@ function spawnShabbatForbiddenItem() {
         isPowerup: false,
         isKosher: false,
         isShabbatForbidden: true,
-        className: "item emoji-item shabbat-item",
+        className: "item shabbat-item shabbat-item-forbidden",
         label: selected?.name || "Schabbat-verbotene Tätigkeit",
         emoji: selected?.emoji || "⚠️",
-        emojiOnly: true
+        bubbleText: selected?.name || "Verboten"
+    };
+}
+
+function spawnShabbatAllowedItem() {
+    const selected = shabbatAllowedActions[Math.floor(Math.random() * shabbatAllowedActions.length)];
+
+    return {
+        isPowerup: false,
+        isKosher: true,
+        isShabbatAllowed: true,
+        className: "item shabbat-item shabbat-item-allowed",
+        label: selected?.name || "Erlaubte Schabbat-Tätigkeit",
+        emoji: selected?.emoji || "✅",
+        bubbleText: selected?.name || "Erlaubt"
     };
 }
 
@@ -2359,10 +2384,8 @@ function spawnPowerup() {
 function spawnFood() {
     const intensity = shabbatIntensity();
     if (intensity > 0) {
-        const forbiddenChance = 0.2 + intensity * 0.25;
-        if (Math.random() < forbiddenChance) {
-            return spawnShabbatForbiddenItem();
-        }
+        const forbiddenChance = 0.55 + intensity * 0.2;
+        return Math.random() < forbiddenChance ? spawnShabbatForbiddenItem() : spawnShabbatAllowedItem();
     }
 
     const kosherChance = intensity > 0 ? 0.7 : 0.82;
@@ -2401,14 +2424,21 @@ function spawnItem() {
     const shabbatRunning = shabbatIntensity() > 0;
     const spawned = !shabbatRunning && Math.random() < 0.12 ? spawnPowerup() : spawnFood();
     itemEl.className = spawned.className;
+    const spawnedSize = spawned.bubbleText ? 92 : itemWidth;
 
-    const x = Math.random() * (gameWidth() - itemWidth);
+    const x = Math.random() * Math.max(1, gameWidth() - spawnedSize);
     const y = -40;
 
     if (spawned.isPowerup) {
         itemEl.textContent = spawned.icon;
         itemEl.setAttribute("role", "img");
         itemEl.setAttribute("aria-label", spawned.label);
+    } else if (spawned.bubbleText) {
+        itemEl.classList.add("bubble-item");
+        itemEl.innerHTML = `
+            <span class="bubble-emoji">${spawned.emoji || "🫧"}</span>
+            <span class="bubble-text">${spawned.bubbleText}</span>
+        `;
     } else if (spawned.emojiOnly) {
         itemEl.classList.add("emoji-item");
         itemEl.textContent = spawned.emoji || "🍽️";
@@ -2429,7 +2459,10 @@ function spawnItem() {
         isPowerup: spawned.isPowerup,
         powerupType: spawned.powerupType,
         isKosher: spawned.isKosher,
-        isShabbatForbidden: spawned.isShabbatForbidden
+        isShabbatForbidden: spawned.isShabbatForbidden,
+        isShabbatAllowed: spawned.isShabbatAllowed,
+        width: spawnedSize,
+        height: spawnedSize
     });
 }
 
@@ -2517,6 +2550,11 @@ function handleCatch(item, index) {
 
         state.shabbatDodgedForbidden = 0;
         state.shabbatMovementForDodges = 0;
+    } else if (item.isShabbatAllowed) {
+        const scoreMultiplier = 1 + getAbilityValue("scoreMultiplier");
+        const reward = Math.round(shabbatAllowedCatchReward * scoreMultiplier * 10) / 10;
+        state.score += reward;
+        setStatus(`+${reward} für erlaubte Schabbat-Tätigkeit!`);
     } else if (item.isKosher) {
         const scoreMultiplier = 1 + getAbilityValue("scoreMultiplier");
         const basePoints = hasPowerup("double") ? 2 : 1;
@@ -2561,6 +2599,11 @@ function handleMissed(item, index) {
             updateHUD();
         }
 
+        removeItem(index);
+        return;
+    }
+
+    if (item.isShabbatAllowed) {
         removeItem(index);
         return;
     }
@@ -2671,11 +2714,12 @@ function updateItems(deltaSeconds) {
         const item = state.items[i];
 
         if (!item.isPowerup && item.isKosher && hasPowerup("magnet") && state.isMoving) {
-            const targetX = state.playerX + (currentPlayerWidth() - itemWidth) / 2;
+            const itemSize = item.width || itemWidth;
+            const targetX = state.playerX + (currentPlayerWidth() - itemSize) / 2;
             const dx = targetX - item.x;
             const magnetStep = Math.min(Math.abs(dx), magnetPullSpeed * deltaSeconds);
             item.x += Math.sign(dx) * magnetStep;
-            item.x = clamp(item.x, 0, gameWidth() - itemWidth);
+            item.x = clamp(item.x, 0, gameWidth() - itemSize);
         }
 
         item.y += currentFallSpeed() * deltaSeconds;
@@ -2684,8 +2728,8 @@ function updateItems(deltaSeconds) {
         const itemRect = {
             x: item.x,
             y: item.y,
-            width: itemWidth,
-            height: itemWidth
+            width: item.width || itemWidth,
+            height: item.height || itemWidth
         };
 
         if (intersects(itemRect, playerRect)) {
