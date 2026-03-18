@@ -247,10 +247,10 @@ const shabbatAllowedActions = [
 
 const shabbatCountdownSeconds = 5;
 const shabbatMinLevel = 10;
-const shabbatLevelIntervalMin = 2;
-const shabbatLevelIntervalMax = 5;
-const shabbatBaseDurationMs = 24000;
-const shabbatTransitionDurationMs = 9000;
+const shabbatLevelIntervalMin = 4;
+const shabbatLevelIntervalMax = 8;
+const shabbatBaseDurationMs = 16000;
+const shabbatTransitionDurationMs = 5000;
 const shabbatForbiddenScoreEveryDodges = 5;
 const shabbatDodgeBaseReward = 2;
 const shabbatAllowedCatchReward = 1.5;
