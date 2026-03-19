@@ -11,7 +11,7 @@ immutable
 as $$
     -- Punktbasierte Liga-Zuordnung wurde entfernt:
     -- Score allein darf keinen Auf-/Abstieg mehr ausloesen.
-    select 'bronze'::text;
+    select 'silver'::text;
 $$;
 
 create or replace function public.touch_updated_at()
@@ -95,7 +95,7 @@ create table if not exists public.profiles (
     abilities jsonb not null default '{}'::jsonb,
     selected_cart text not null default 'classic',
     ultimate_cheat_enabled boolean not null default false,
-    league_key text not null default 'bronze',
+    league_key text not null default 'silver',
     league_group integer not null default 1 check (league_group >= 1),
     league_cycle_id bigint not null default 0,
     created_at timestamptz not null default timezone('utc', now()),
@@ -110,7 +110,7 @@ alter table public.profiles
     add column if not exists abilities jsonb not null default '{}'::jsonb,
     add column if not exists selected_cart text not null default 'classic',
     add column if not exists ultimate_cheat_enabled boolean not null default false,
-    add column if not exists league_key text not null default 'bronze',
+    add column if not exists league_key text not null default 'silver',
     add column if not exists league_group integer not null default 1,
     add column if not exists league_cycle_id bigint not null default 0,
     add column if not exists created_at timestamptz not null default timezone('utc', now()),
@@ -139,7 +139,7 @@ begin
     end if;
 
     insert into public.profiles (id, username, league_key, league_group, league_cycle_id)
-    values (new.id, normalized_username, 'bronze', 1, public.koscher_current_cycle_id())
+    values (new.id, normalized_username, 'silver', 1, public.koscher_current_cycle_id())
     on conflict (id) do update
     set username = excluded.username;
 
@@ -156,7 +156,7 @@ create table if not exists public.leaderboard (
     user_id uuid,
     username text,
     score integer not null default 0 check (score >= 0),
-    league_key text not null default 'bronze',
+    league_key text not null default 'silver',
     league_group integer not null default 1 check (league_group >= 1),
     cycle_id bigint not null default 0,
     is_guest boolean not null default false,
@@ -168,7 +168,7 @@ alter table public.leaderboard
     add column if not exists user_id uuid,
     add column if not exists username text,
     add column if not exists score integer not null default 0,
-    add column if not exists league_key text not null default 'bronze',
+    add column if not exists league_key text not null default 'silver',
     add column if not exists league_group integer not null default 1,
     add column if not exists cycle_id bigint not null default 0,
     add column if not exists is_guest boolean not null default false,
@@ -247,7 +247,7 @@ with seeded_profiles as (
         coalesce(
             nullif(p.league_key, ''),
             latest_entry.league_key,
-            'bronze'
+            'silver'
         ) as target_league
     from public.profiles p
     left join lateral (
@@ -427,7 +427,7 @@ begin
         return;
     end if;
 
-    target_league := coalesce(nullif(profile_row.league_key, ''), 'bronze');
+    target_league := coalesce(nullif(profile_row.league_key, ''), 'silver');
 
     if coalesce(profile_row.league_cycle_id, 0) > 0 then
         select ranked.rank_position, ranked.member_count
@@ -678,7 +678,8 @@ set search_path = public
 as $$
 declare
     caller_role text := coalesce(auth.jwt() ->> 'role', current_setting('role', true));
-    current_cycle bigint := public.koscher_current_cycle_id();
+    destination_cycle bigint := public.koscher_current_cycle_id();
+    source_cycle bigint := public.koscher_current_cycle_id() - 1;
     moved_count integer := 0;
     group_row record;
     ranked_row record;
@@ -691,13 +692,21 @@ begin
         raise exception 'Nur Service-Rollen duerfen den Ligawechsel erzwingen.';
     end if;
 
+    if source_cycle < 0 then
+        return jsonb_build_object(
+            'sourceCycleId', source_cycle,
+            'cycleId', destination_cycle,
+            'movedProfiles', 0
+        );
+    end if;
+
     for group_row in
         select
             lb.league_key,
             lb.league_group,
             count(*)::integer as member_count
         from public.leaderboard lb
-        where lb.cycle_id = current_cycle
+        where lb.cycle_id = source_cycle
           and lb.is_guest = false
           and lb.user_id is not null
         group by lb.league_key, lb.league_group
@@ -716,7 +725,7 @@ begin
                         order by lb.score desc, lb.updated_at asc, lb.user_id asc
                     ) as rank_position
                 from public.leaderboard lb
-                where lb.cycle_id = current_cycle
+                where lb.cycle_id = source_cycle
                   and lb.is_guest = false
                   and lb.user_id is not null
                   and lb.league_key = group_row.league_key
@@ -734,12 +743,12 @@ begin
             end if;
 
             if target_league <> group_row.league_key then
-                target_group := public.koscher_pick_group(target_league, current_cycle);
+                target_group := public.koscher_pick_group(target_league, destination_cycle);
 
                 update public.profiles
                 set league_key = target_league,
                     league_group = target_group,
-                    league_cycle_id = current_cycle,
+                    league_cycle_id = destination_cycle,
                     updated_at = timezone('utc', now())
                 where id = ranked_row.user_id;
 
@@ -749,7 +758,7 @@ begin
                     score = 0,
                     updated_at = timezone('utc', now())
                 where user_id = ranked_row.user_id
-                  and cycle_id = current_cycle
+                  and cycle_id = destination_cycle
                   and is_guest = false;
 
                 moved_count := moved_count + 1;
@@ -758,7 +767,8 @@ begin
     end loop;
 
     return jsonb_build_object(
-        'cycleId', current_cycle,
+        'sourceCycleId', source_cycle,
+        'cycleId', destination_cycle,
         'movedProfiles', moved_count
     );
 end;
