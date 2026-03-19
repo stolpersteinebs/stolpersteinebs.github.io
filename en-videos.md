@@ -5,20 +5,15 @@ permalink: /en/videos/
 ---
 Here you can add exhibition videos.
 
-## Embed a video
+## Upload a video file
 
-1. Upload your video to a platform such as YouTube or Vimeo.
-2. Copy the embed code (iframe).
-3. Replace the URL in the example below with your own video.
+1. Place your video file in `assets/videos/` (for example `exhibition.mp4`).
+2. Update the filename in the `src` attribute below.
+3. Optionally add more `<source>` files (such as `webm`) for better browser compatibility.
 
-<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:12px;">
-  <iframe
-    src="https://www.youtube.com/embed/dQw4w9WgXcQ"
-    title="Embedded video"
-    style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;"
-    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-    allowfullscreen>
-  </iframe>
-</div>
+<video controls preload="metadata" style="width:100%;max-width:960px;border-radius:12px;">
+  <source src="/assets/videos/exhibition.mp4" type="video/mp4">
+  Your browser does not support the video element.
+</video>
 
-> Tip: You can add multiple videos by copying the iframe block.
+> Tip: You can add multiple videos by copying the `<video>` block.
