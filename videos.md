@@ -6,8 +6,8 @@ permalink: /videos/
 Hier ist dein eingebundenes Video:
 
 <video controls preload="metadata" playsinline style="width:100%;max-width:960px;border-radius:12px;">
-  <source src="/assets/videos/IMG_0829.mp4" type="video/mp4">
-  <source src="/assets/videos/IMG_0829.mp4">
+  <source src="/assets/videos/Mein Film 7.mov" type="video/mp4">
+  <source src="/assets/videos/Mein Film 7.mov">
   Dein Browser kann das Video nicht direkt abspielen.
   <a href="/assets/videos/Mein Film 7.mov" download>Video herunterladen</a>
 </video>
