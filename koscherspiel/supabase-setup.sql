@@ -9,18 +9,9 @@ returns text
 language sql
 immutable
 as $$
-    select case
-        when coalesce(input_score, 0) >= 170 then 'diamond'
-        when coalesce(input_score, 0) >= 140 then 'obsidian'
-        when coalesce(input_score, 0) >= 115 then 'pearl'
-        when coalesce(input_score, 0) >= 90 then 'amethyst'
-        when coalesce(input_score, 0) >= 70 then 'emerald'
-        when coalesce(input_score, 0) >= 50 then 'ruby'
-        when coalesce(input_score, 0) >= 35 then 'sapphire'
-        when coalesce(input_score, 0) >= 20 then 'gold'
-        when coalesce(input_score, 0) >= 10 then 'silver'
-        else 'bronze'
-    end;
+    -- Punktbasierte Liga-Zuordnung wurde entfernt:
+    -- Score allein darf keinen Auf-/Abstieg mehr ausloesen.
+    select 'bronze'::text;
 $$;
 
 create or replace function public.touch_updated_at()
@@ -256,7 +247,7 @@ with seeded_profiles as (
         coalesce(
             nullif(p.league_key, ''),
             latest_entry.league_key,
-            public.koscher_league_from_score(p.highscore)
+            'bronze'
         ) as target_league
     from public.profiles p
     left join lateral (
@@ -686,6 +677,7 @@ security definer
 set search_path = public
 as $$
 declare
+    caller_role text := coalesce(auth.jwt() ->> 'role', current_setting('role', true));
     current_cycle bigint := public.koscher_current_cycle_id();
     moved_count integer := 0;
     group_row record;
@@ -695,6 +687,10 @@ declare
     target_league text;
     target_group integer;
 begin
+    if caller_role not in ('service_role', 'supabase_admin', 'postgres') then
+        raise exception 'Nur Service-Rollen duerfen den Ligawechsel erzwingen.';
+    end if;
+
     for group_row in
         select
             lb.league_key,
@@ -828,4 +824,5 @@ grant execute on function public.koscher_submit_guest_score(text, integer) to an
 grant execute on function public.koscher_get_my_league_snapshot() to authenticated;
 grant execute on function public.koscher_submit_authenticated_score(integer) to authenticated;
 grant execute on function public.koscher_ensure_profile_league(uuid) to authenticated;
-grant execute on function public.koscher_force_league_rotation() to authenticated;
+revoke execute on function public.koscher_force_league_rotation() from anon, authenticated;
+grant execute on function public.koscher_force_league_rotation() to service_role;
